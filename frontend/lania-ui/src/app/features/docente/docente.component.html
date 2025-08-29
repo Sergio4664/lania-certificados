@@ -1,0 +1,14 @@
+<h2>Gestión de Docentes</h2>
+
+<form (ngSubmit)="createDocente()">
+  <input [(ngModel)]="newDocente.full_name" name="full_name" placeholder="full_name" required>
+  <input [(ngModel)]="newDocente.email" name="email" placeholder="Email" required>
+  <input [(ngModel)]="newDocente.telefono" name="telefono" placeholder="Teléfono">
+  <button type="submit">Agregar Docente</button>
+</form>
+
+<ul>
+  <li *ngFor="let docente of docentes">
+    {{ docente.full_name }} - {{ docente.email }}
+  </li>
+</ul>
