@@ -1,7 +1,7 @@
 # backend/app/routers/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.database import get_db  # ✅ Import correcto
+from app.database import get_db
 from app.schemas.auth import Login, Token
 from app.core.security import create_access_token, verify_password
 from app.models.user import User

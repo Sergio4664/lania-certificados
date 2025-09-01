@@ -1,10 +1,5 @@
 # backend/app/models/enums.py
 from enum import Enum as PyEnum
-from app.database import Base 
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import MetaData
-
-Base = declarative_base(metadata=MetaData())
 
 class CertificateStatus(str, PyEnum):
     EN_PROCESO = "EN_PROCESO"

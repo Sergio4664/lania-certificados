@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+# backend/app/models/user.py
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime
@@ -7,7 +8,7 @@ from datetime import datetime
 class User(Base):
     __tablename__ = "app_user"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False)
     full_name = Column(String, nullable=False)
     role = Column(String, nullable=False)

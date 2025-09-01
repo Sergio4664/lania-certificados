@@ -212,16 +212,24 @@ interface Certificate {
               <h3>Registrar Docente</h3>
               <form (ngSubmit)="createDocente()" class="form-grid">
                 <div class="form-group">
-                  <label>Nombre Completo</label>
+                  <label>Nombre Completo *</label>
                   <input [(ngModel)]="newDocente.full_name" name="full_name" required>
                 </div>
                 <div class="form-group">
-                  <label>Email</label>
+                  <label>Email *</label>
                   <input type="email" [(ngModel)]="newDocente.email" name="email" required>
                 </div>
                 <div class="form-group">
-                  <label>Contraseña</label>
+                  <label>Contraseña *</label>
                   <input type="password" [(ngModel)]="newDocente.password" name="password" required>
+                </div>
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input [(ngModel)]="newDocente.telefono" name="telefono" placeholder="Opcional">
+                </div>
+                <div class="form-group">
+                  <label>Especialidad</label>
+                  <input [(ngModel)]="newDocente.especialidad" name="especialidad" placeholder="Opcional">
                 </div>
                 <div class="form-actions">
                   <button type="button" class="secondary-btn" (click)="showDocenteForm = false">Cancelar</button>
@@ -1139,10 +1147,13 @@ export class DashboardComponent implements OnInit {
   selectedDocenteIds: number[] = [];
 
   // Form models
+   // Form models
   newDocente = {
     full_name: '',
     email: '',
-    password: ''
+    password: '',
+    telefono: '',
+    especialidad: ''
   };
 
   newCourse = {
@@ -1293,14 +1304,34 @@ export class DashboardComponent implements OnInit {
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    this.http.post('http://127.0.0.1:8000/api/admin/docentes', this.newDocente, { headers })
+    // Validar que todos los campos requeridos estén presentes
+    if (!this.newDocente.full_name || !this.newDocente.email || !this.newDocente.password) {
+      alert('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    // Enviar datos completos incluyendo password
+    const docenteData = {
+      full_name: this.newDocente.full_name,
+      email: this.newDocente.email,
+      password: this.newDocente.password,
+      telefono: this.newDocente.telefono || null,
+      especialidad: this.newDocente.especialidad || null
+    };
+
+    this.http.post('http://127.0.0.1:8000/api/admin/docentes', docenteData, { headers })
       .subscribe({
         next: () => {
           this.loadData();
           this.showDocenteForm = false;
-          this.newDocente = { full_name: '', email: '', password: '' };
+          this.newDocente = { full_name: '', email: '', password: '', telefono: '', especialidad: '' };
+          alert('Docente creado exitosamente');
         },
-        error: (err) => console.error('Error al crear al docente:', err)
+        error: (err) => {
+          console.error('Error al crear docente:', err);
+          const errorMessage = err.error?.detail || 'Error desconocido';
+          alert('Error al crear docente: ' + errorMessage);
+        }
       });
   }
 

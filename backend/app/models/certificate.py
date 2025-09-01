@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, LargeBinary
+# backend/app/models/certificate.py
+from sqlalchemy import Column, BigInteger, String, ForeignKey, DateTime, LargeBinary
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime
@@ -7,9 +8,9 @@ from datetime import datetime
 class Certificate(Base):
     __tablename__ = "certificate"
 
-    id = Column(Integer, primary_key=True, index=True)
-    course_id = Column(Integer, ForeignKey("course.id"), nullable=False)
-    participant_id = Column(Integer, ForeignKey("participant.id"), nullable=False)
+    id = Column(BigInteger, primary_key=True, index=True)
+    course_id = Column(BigInteger, ForeignKey("course.id"), nullable=False)
+    participant_id = Column(BigInteger, ForeignKey("participant.id"), nullable=False)
 
     kind = Column(String, nullable=False)
     status = Column(String, nullable=False, default="EN_PROCESO")

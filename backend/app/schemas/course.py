@@ -45,10 +45,10 @@ class CourseCreate(CourseBase):
     docente_ids: Optional[List[int]] = []  # Lista de IDs de docentes asignados
 
 class CourseUpdate(BaseModel):
-    name: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    hours: int | None = None
+    name: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    hours: Optional[int] = None
     docente_ids: Optional[List[int]] = None
     
     @validator('end_date', always=True)
@@ -71,7 +71,3 @@ class CourseOut(CourseBase):
 
     class Config:
         from_attributes = True
-        # Permitir que Pydantic convierta automáticamente las fechas
-        json_encoders = {
-            date: lambda v: v.isoformat() if v else None
-        }

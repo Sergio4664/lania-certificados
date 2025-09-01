@@ -1,11 +1,12 @@
-# app/schemas/participant.py
+# backend/app/schemas/participant.py
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Optional
 
 class ParticipantBase(BaseModel):
     email: EmailStr
     full_name: str
-    phone: str | None = None
+    phone: Optional[str] = None
 
 class ParticipantCreate(ParticipantBase):
     """Schema para crear un participante"""
@@ -13,9 +14,9 @@ class ParticipantCreate(ParticipantBase):
 
 class ParticipantUpdate(BaseModel):
     """Schema para actualizar un participante (todos los campos opcionales)"""
-    email: EmailStr | None = None
-    full_name: str | None = None
-    phone: str | None = None
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
 
 class ParticipantOut(ParticipantBase):
     """Schema para respuesta con los datos del participante"""

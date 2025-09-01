@@ -1,8 +1,8 @@
+# backend/app/models/docente.py
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
-from app.database import Base
 from sqlalchemy.orm import relationship
-
+from app.database import Base
 
 
 class Docente(Base):
@@ -15,6 +15,12 @@ class Docente(Base):
     especialidad = Column(String(150), nullable=True)
     fecha_registro = Column(DateTime, default=func.now())
     is_active = Column(Boolean, default=True)
+    password = Column(String(250), nullable=True)
+    user_id = Column(Integer, nullable=True)
     
-
-    
+    # Relación many-to-many con Course
+    courses = relationship(
+        "Course",
+        secondary="course_docentes",
+        back_populates="docentes"
+    )

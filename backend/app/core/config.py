@@ -1,20 +1,29 @@
-# app/core/config.py
+# backend/app/core/config.py
 from pydantic import BaseModel
-from functools import lru_cache
+from typing import List
 import os
 
 class Settings(BaseModel):
-    database_url: str = "postgresql+psycopg2://lania_user:12345678@localhost:5432/lania_certificates"
-    secret_key: str = "12345678"
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
-    cors_origins: list[str] = ["http://localhost:4200"]
+    # Database
+    database_url: str = os.getenv("DATABASE_URL", "postgresql://lania_user:12345678@localhost/lania_certificates")
+    
+    # CORS
+    cors_origins: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:4200",
+        "http://127.0.0.1:8080",
+    ]
+    
+    # JWT
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "12345678")
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 30
 
-@lru_cache
+    class Config:
+        env_file = ".env"
+
 def get_settings() -> Settings:
-    return Settings(
-        database_url=os.getenv("DATABASE_URL", "postgresql+psycopg2://lania_user:12345678@localhost:5432/lania_certificates"),
-        secret_key=os.getenv("SECRET_KEY", "12345678"),
-        algorithm=os.getenv("ALGORITHM", "HS256"),
-        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
-    )
+    return Settings()

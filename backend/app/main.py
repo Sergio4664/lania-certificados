@@ -3,7 +3,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.database import Base, engine  # ✅ Import correcto
+from app.database import engine, Base
+from app.models import *  # Importar todos los modelos
 
 from app.routers import (
     auth, 
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Configuración
 settings = get_settings()
-app = FastAPI(title="LANIA Certificaciones API", version="0.2.0")
+app = FastAPI(title="LANIA Certificaciones API", version="1.0.0")
 
 # Exception handler global
 @app.exception_handler(Exception)
@@ -34,12 +35,6 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"detail": f"Error interno del servidor: {str(exc)}"}
     )
-
-origins = [
-    "http://localhost:3000",   # si usas React/Vue
-    "http://localhost:8000",   # si usas FastAPI frontend
-]
-
 
 # Middleware de CORS
 app.add_middleware(
@@ -61,13 +56,13 @@ except Exception as e:
 # Endpoint raíz para verificar que la API está funcionando
 @app.get("/")
 def read_root():
-    return {"message": "LANIA Certificaciones API v0.2.0", "status": "running"}
+    return {"message": "LANIA Certificaciones API v1.0.0", "status": "running"}
 
 # Health check endpoint
 @app.get("/health")
 def health_check():
     try:
-        # Probar conexión a la base de datos usando get_db
+        # Probar conexión a la base de datos
         from app.database import SessionLocal
         db = SessionLocal()
         db.execute("SELECT 1")

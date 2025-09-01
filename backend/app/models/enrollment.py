@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, ForeignKey
+# backend/app/models/enrollment.py
+from sqlalchemy import Column, BigInteger, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -6,9 +7,9 @@ from app.database import Base
 class Enrollment(Base):
     __tablename__ = "enrollment"
 
-    id = Column(Integer, primary_key=True, index=True)
-    course_id = Column(Integer, ForeignKey("course.id"))
-    participant_id = Column(Integer, ForeignKey("participant.id"))
+    id = Column(BigInteger, primary_key=True, index=True)
+    course_id = Column(BigInteger, ForeignKey("course.id"))
+    participant_id = Column(BigInteger, ForeignKey("participant.id"))
 
     # relaciones
     course = relationship("Course", back_populates="enrollments")

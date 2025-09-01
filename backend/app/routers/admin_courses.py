@@ -2,23 +2,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.database import SessionLocal, get_db
+from app.database import get_db
 from app.models.course import Course
 from app.models.user import User
 from app.models.docente import Docente
-from app.schemas.course import CourseCreate, CourseUpdate, CourseOut
+from app.schemas.course import CourseCreate, CourseUpdate, CourseOut, DocenteInfo
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin/courses", tags=["admin-courses"])
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/", response_model=CourseOut)
 def create_course(course: CourseCreate, db: Session = Depends(get_db)):
@@ -30,12 +23,11 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
         # Verificar que el creador existe y es admin activo
         creator = db.query(User).filter(
             User.id == course_data['created_by'],
-            User.is_active == True,
-            #User.role == "ADMIN"
+            User.is_active == True
         ).first()
         
         if not creator:
-            raise HTTPException(400, "El usuario creador no existe, no está activo o no es admin")
+            raise HTTPException(400, "El usuario creador no existe o no está activo")
         
         db_course = Course(**course_data)
         db.add(db_course)
@@ -56,7 +48,8 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
                 raise HTTPException(400, f"Docentes no encontrados o inactivos: {missing_ids}")
             
             # Asignar docentes al curso
-            db_course.docentes.extend(docentes)
+            for docente in docentes:
+                db_course.docentes.append(docente)
         
         db.commit()
         db.refresh(db_course)
@@ -71,11 +64,11 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
             hours=db_course.hours,
             created_by=db_course.created_by,
             docentes=[
-                {
-                    "id": docente.id,
-                    "full_name": docente.full_name,
-                    "email": docente.email
-                }
+                DocenteInfo(
+                    id=docente.id,
+                    full_name=docente.full_name,
+                    email=docente.email
+                )
                 for docente in db_course.docentes
             ]
         )
@@ -181,7 +174,8 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
             
             # Reemplazar la lista de docentes
             course.docentes.clear()
-            course.docentes.extend(docentes)
+            for docente in docentes:
+                course.docentes.append(docente)
         
         db.commit()
         db.refresh(course)
