@@ -1,8 +1,10 @@
+// src/app/features/auth/login/login.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../core/auth-token.interceptor';
+import { LoginDTO } from '../../../shared/interfaces/auth.interfaces';
 
 @Component({
   selector: 'app-login',
@@ -42,13 +44,14 @@ import { Router } from '@angular/router';
             </label>
             <input 
               id="email"
-              type="text"
-              [(ngModel)]="email" 
+              type="email"
+              [(ngModel)]="credentials.email" 
               name="email" 
               (focus)="onEmailFocus()"
               (blur)="onEmailBlur()"
               [class.placeholder-text]="isEmailPlaceholder"
               [class.error]="error"
+              placeholder="Ingrese su correo institucional"
               required 
             />
           </div>
@@ -64,13 +67,14 @@ import { Router } from '@angular/router';
             </label>
             <input 
               id="password"
-              [type]="isPasswordPlaceholder ? 'text' : 'password'"
-              [(ngModel)]="password" 
+              type="password"
+              [(ngModel)]="credentials.password" 
               name="password" 
               (focus)="onPasswordFocus()"
               (blur)="onPasswordBlur()"
               [class.placeholder-text]="isPasswordPlaceholder"
               [class.error]="error"
+              placeholder="Ingrese su contraseña"
               required 
             />
           </div>
@@ -206,7 +210,6 @@ import { Router } from '@angular/router';
       box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
     }
 
-    /* Estilos para el placeholder personalizado */
     .form-group input.placeholder-text {
       color: #999 !important;
       font-style: italic;
@@ -304,78 +307,79 @@ import { Router } from '@angular/router';
   `]
 })
 export default class LoginComponent {
-  private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private router = inject(Router);
   
-  email = 'Ingrese su correo institucional';
-  password = 'Password';
+  credentials: LoginDTO = {
+    email: '',
+    password: ''
+  };
+  
   loading = false;
   error = '';
 
   // Getters para verificar si son placeholders
   get isEmailPlaceholder(): boolean {
-    return this.email === 'Ingrese su correo institucional';
+    return this.credentials.email === '';
   }
 
   get isPasswordPlaceholder(): boolean {
-    return this.password === 'Password';
+    return this.credentials.password === '';
   }
 
-  // Eventos para el campo email
+  // Eventos para los campos
   onEmailFocus() {
-    if (this.isEmailPlaceholder) {
-      this.email = '';
-    }
+    this.error = '';
   }
 
   onEmailBlur() {
-    if (this.email.trim() === '') {
-      this.email = 'Ingrese su correo institucional';
-    }
+    // No hacer nada específico en blur
   }
 
-  // Eventos para el campo password
   onPasswordFocus() {
-    if (this.isPasswordPlaceholder) {
-      this.password = '';
-    }
+    this.error = '';
   }
 
   onPasswordBlur() {
-    if (this.password.trim() === '') {
-      this.password = 'Password';
-    }
+    // No hacer nada específico en blur
   }
 
   onSubmit() {
-    // Validar que no sean placeholders
-    if (this.isEmailPlaceholder || this.isPasswordPlaceholder) {
+    // Validar campos
+    if (!this.credentials.email.trim() || !this.credentials.password.trim()) {
       this.error = 'Por favor complete todos los campos.';
       return;
     }
 
-    // Validar que no estén vacíos
-    if (!this.email.trim() || !this.password.trim()) {
-      this.error = 'Por favor complete todos los campos.';
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.credentials.email)) {
+      this.error = 'Por favor ingrese un email válido.';
       return;
     }
 
     this.loading = true;
     this.error = '';
     
-    this.http.post<{access_token: string}>('http://127.0.0.1:8000/auth/login', {
-      email: this.email,
-      password: this.password
-    }).subscribe({
+    this.authService.login(this.credentials).subscribe({
       next: (response) => {
-        localStorage.setItem('access_token', response.access_token);
+        console.log('Login successful:', response);
         this.router.navigate(['/dashboard']);
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+        console.error('Login error:', err);
+        
+        // Manejar diferentes tipos de errores
+        if (err.status === 401) {
+          this.error = 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+        } else if (err.status === 0) {
+          this.error = 'No se puede conectar con el servidor. Verifique su conexión.';
+        } else {
+          this.error = 'Error del servidor. Inténtelo de nuevo más tarde.';
+        }
+        
         this.loading = false;
-        console.error('Error de login:', err);
       }
     });
   }
