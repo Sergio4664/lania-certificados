@@ -202,3 +202,5 @@ export class AuthService {
     return !!this.getToken();
   }
 }
+
+export { DocenteDTO };
