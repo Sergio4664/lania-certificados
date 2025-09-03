@@ -1,6 +1,7 @@
 # backend/app/models/enums.py
 from enum import Enum as PyEnum
 
+
 class CertificateStatus(str, PyEnum):
     EN_PROCESO = "EN_PROCESO"
     FALTA_TAREAS = "FALTA_TAREAS"
@@ -9,8 +10,5 @@ class CertificateStatus(str, PyEnum):
     REVOCADO = "REVOCADO"
 
 class CertificateKind(str, PyEnum):
-    ASISTENCIA = "ASISTENCIA"
-    APROBACION = "APROBACION" 
-    PARTICIPACION = "PARTICIPACION"
-    DIPLOMADO = "DIPLOMADO"
-    TALLER = "TALLER"
+    PARTICIPANTE = "PARTICIPANTE"  # Para píldoras educativas
+    PONENTE = "PONENTE"           # Para conferencias

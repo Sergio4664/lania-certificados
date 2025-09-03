@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.certificate import Certificate
 from app.models.enums import CertificateStatus
-from app.services.pdf_service import generate_certificate_pdf
+from app.services.html_pdf_service import generate_certificate_html_pdf
 import os
 import logging
 
@@ -22,12 +22,16 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
         # Generar token único para QR
         certificate.qr_token = str(uuid.uuid4())
         
-        # Generar PDF
+        # Generar PDF usando templates HTML
         try:
-            pdf_bytes = generate_certificate_pdf(
+            pdf_bytes = generate_certificate_html_pdf(
+                kind=certificate.kind,
                 participant_name=participant["full_name"],
                 course_name=course["name"],
-                hours=course["hours"],
+                course_hours=course["hours"],
+                course_date=course.get("start_date", datetime.now().strftime("%d/%m/%Y")),
+                serial=certificate.serial,
+                qr_token=certificate.qr_token,
                 issue_date=datetime.now().date()
             )
             certificate.pdf_content = pdf_bytes
@@ -35,7 +39,7 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
             # Crear directorio si no existe
             os.makedirs("certificates", exist_ok=True)
             
-            # Guardar archivo físico (opcional)
+            # Guardar archivo físico
             pdf_filename = f"certificates/{certificate.serial}.pdf"
             with open(pdf_filename, "wb") as f:
                 f.write(pdf_bytes)

@@ -1,38 +1,54 @@
 // src/app/features/courses/course.service.ts
+
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interfaces/course.interfaces';
 
-export interface CourseDTO {
-  id: number;
-  code: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  hours: number;
-  created_by: number; // en tu FastAPI esto hace de teacher_id actualmente
-}
+// Exportar las interfaces para uso externo
+export { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interfaces/course.interfaces';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class CourseService {
   private http = inject(HttpClient);
-  private base = environment.apiUrl; // Changed from apiBase to apiUrl to match environment
+  private apiUrl = environment.apiUrl;
 
-  listCourses() {
-    return this.http.get<CourseDTO[]>(`${this.base}/api/admin/courses`);
+  list(): Observable<CourseDTO[]> {
+    return this.http.get<CourseDTO[]>(`${this.apiUrl}/api/admin/courses`);
   }
 
-  createCourse(data: Partial<CourseDTO>) {
-    return this.http.post<CourseDTO>(`${this.base}/api/admin/courses`, data);
+  get(id: number): Observable<CourseDTO> {
+    return this.http.get<CourseDTO>(`${this.apiUrl}/api/admin/courses/${id}`);
   }
 
-  // REQUIERE endpoint en FastAPI: PUT /api/admin/courses/:id/assign-docente
-  assignTeacher(courseId: number, docente_id: number) {
-    return this.http.put<{message:string}>(`${this.base}/api/admin/courses/${courseId}/assign-docente`, { docente_id });
+  create(data: CreateCourseDTO): Observable<CourseDTO> {
+    return this.http.post<CourseDTO>(`${this.apiUrl}/api/admin/courses`, data);
   }
 
-  // REQUIERE endpoint en FastAPI: GET /api/teacher/my-courses
-  listMyCourses() {
-    return this.http.get<CourseDTO[]>(`${this.base}/api/teacher/my-courses`);
+  update(id: number, data: UpdateCourseDTO): Observable<CourseDTO> {
+    return this.http.put<CourseDTO>(`${this.apiUrl}/api/admin/courses/${id}`, data);
+  }
+
+  delete(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/api/admin/courses/${id}`);
+  }
+
+  // Legacy methods
+  listCourses(): Observable<CourseDTO[]> {
+    return this.list();
+  }
+
+  createCourse(data: CreateCourseDTO): Observable<CourseDTO> {
+    return this.create(data);
+  }
+
+  listMyCourses(): Observable<CourseDTO[]> {
+    return this.http.get<CourseDTO[]>(`${this.apiUrl}/api/teacher/my-courses`);
+  }
+
+  // Método para asignar docente (si se necesita)
+  assignTeacher(courseId: number, docente_id: number): Observable<{message: string}> {
+    return this.http.put<{message: string}>(`${this.apiUrl}/api/admin/courses/${courseId}/assign-docente`, { docente_id });
   }
 }

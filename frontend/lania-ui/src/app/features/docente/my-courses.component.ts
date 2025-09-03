@@ -1,7 +1,8 @@
 // src/app/features/teacher/my-courses.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CourseService, CourseDTO } from '../courses/course.service';
+import { CourseService } from '../courses/course.service';
+import { CourseDTO } from '../../shared/interfaces/course.interfaces'; // Importar directamente de las interfaces
 
 @Component({
   standalone: true,

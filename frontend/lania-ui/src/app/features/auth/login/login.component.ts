@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth-token.interceptor';
-import { LoginDTO } from '../../../shared/interfaces/auth.interfaces';
+import { LoginDTO } from '../../../shared/interfaces/auth.interface';
 
 @Component({
   selector: 'app-login',

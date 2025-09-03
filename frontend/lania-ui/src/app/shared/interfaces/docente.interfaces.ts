@@ -4,10 +4,10 @@ export interface DocenteDTO {
   id: number;
   full_name: string;
   email: string;
-  is_active: boolean;
   telefono?: string;
   especialidad?: string;
-  user_id?: number;
+  is_active: boolean;
+  fecha_registro: string;
 }
 
 export interface CreateDocenteDTO {
