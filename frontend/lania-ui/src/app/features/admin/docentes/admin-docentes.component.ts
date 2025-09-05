@@ -40,10 +40,6 @@ import { DocenteDTO, CreateDocenteDTO } from '../../../shared/interfaces/docente
             <input type="email" [(ngModel)]="newDocente.email" name="email" required>
           </div>
           <div class="form-group">
-            <label>Contraseña *</label>
-            <input type="password" [(ngModel)]="newDocente.password" name="password" required>
-          </div>
-          <div class="form-group">
             <label>Teléfono</label>
             <input [(ngModel)]="newDocente.telefono" name="telefono" placeholder="Opcional">
           </div>
@@ -310,7 +306,6 @@ export default class AdminDocentesComponent implements OnInit {
   newDocente: CreateDocenteDTO = {
     full_name: '',
     email: '',
-    password: '',
     telefono: '',
     especialidad: ''
   };
@@ -332,7 +327,7 @@ export default class AdminDocentesComponent implements OnInit {
 
   createDocente() {
     // Validar campos requeridos
-    if (!this.newDocente.full_name || !this.newDocente.email || !this.newDocente.password) {
+    if (!this.newDocente.full_name || !this.newDocente.email) {
       alert('Por favor complete todos los campos requeridos');
       return;
     }
@@ -371,7 +366,6 @@ export default class AdminDocentesComponent implements OnInit {
     this.newDocente = {
       full_name: '',
       email: '',
-      password: '',
       telefono: '',
       especialidad: ''
     };

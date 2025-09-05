@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.docente import Docente
 from app.schemas.docente import DocenteCreate, DocenteUpdate, DocenteOut
-from app.core.security import get_password_hash
 from typing import List
 import logging
 
@@ -17,16 +16,17 @@ def create_docente(docente: DocenteCreate, db: Session = Depends(get_db)):
     """Crear un nuevo docente"""
     try:
         # Verificar si ya existe el email
-        existing = db.query(Docente).filter(Docente.email == docente.email).first()
-        if existing:
+        existing_email = db.query(Docente).filter(Docente.email == docente.email).first()
+        if existing_email:
             raise HTTPException(400, "Ya existe un docente con ese email")
+
+        # Verificar si ya existe el teléfono
+        existing_telefono = db.query(Docente).filter(Docente.telefono == docente.telefono).first()
+        if existing_telefono:
+            raise HTTPException(400, "Ya existe un docente con ese teléfono")
         
         # Crear nuevo docente
-        docente_data = docente.dict()
-        if docente_data.get('password'):
-            docente_data['password'] = get_password_hash(docente_data['password'])
-        
-        db_docente = Docente(**docente_data)
+        db_docente = Docente(**docente.dict())
         db.add(db_docente)
         db.commit()
         db.refresh(db_docente)
@@ -74,6 +74,12 @@ def update_docente(docente_id: int, data: DocenteUpdate, db: Session = Depends(g
             existing = db.query(Docente).filter(Docente.email == data.email).first()
             if existing:
                 raise HTTPException(400, "Ya existe un docente con ese email")
+
+        # Verificar teléfono único si se está actualizando
+        if data.telefono and data.telefono != docente.telefono:
+            existing = db.query(Docente).filter(Docente.telefono == data.telefono).first()
+            if existing:
+                raise HTTPException(400, "Ya existe un docente con ese teléfono")
         
         # Actualizar solo los campos proporcionados
         for field, value in data.dict(exclude_unset=True).items():
@@ -90,19 +96,19 @@ def update_docente(docente_id: int, data: DocenteUpdate, db: Session = Depends(g
         raise HTTPException(500, f"Error interno: {str(e)}")
 
 @router.delete("/{docente_id}")
-def disable_docente(docente_id: int, db: Session = Depends(get_db)):
-    """Desactivar un docente"""
+def delete_docente(docente_id: int, db: Session = Depends(get_db)):
+    """Eliminar un docente"""
     try:
         docente = db.query(Docente).get(docente_id)
         if not docente:
             raise HTTPException(404, "Docente no encontrado")
         
-        docente.is_active = False
+        db.delete(docente)
         db.commit()
-        return {"message": "Docente desactivado correctamente"}
+        return {"message": "Docente eliminado correctamente"}
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Error desactivando docente: {str(e)}")
+        logger.error(f"Error eliminando docente: {str(e)}")
         raise HTTPException(500, f"Error interno: {str(e)}")

@@ -12,3 +12,13 @@ class CertificateStatus(str, PyEnum):
 class CertificateKind(str, PyEnum):
     PARTICIPANTE = "PARTICIPANTE"  # Para píldoras educativas
     PONENTE = "PONENTE"           # Para conferencias
+
+class CourseType(str, PyEnum):
+    PILDORA_EDUCATIVA = "PILDORA_EDUCATIVA"
+    INYECCION_EDUCATIVA = "INYECCION_EDUCATIVA"
+    CURSO_EDUCATIVO = "CURSO_EDUCATIVO"
+
+class CourseModality(str, PyEnum):
+    REMOTA = "REMOTA"
+    PRESENCIAL = "PRESENCIAL"
+    HIBRIDA = "HIBRIDA"

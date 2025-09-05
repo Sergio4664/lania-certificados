@@ -63,6 +63,8 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
             end_date=db_course.end_date,
             hours=db_course.hours,
             created_by=db_course.created_by,
+            course_type=db_course.course_type,
+            modality=db_course.modality,
             docentes=[
                 DocenteInfo(
                     id=docente.id,
@@ -102,6 +104,8 @@ def list_courses(db: Session = Depends(get_db)):
                 "end_date": course.end_date.isoformat() if course.end_date else None,
                 "hours": course.hours,
                 "created_by": course.created_by,
+                "course_type": course.course_type,
+                "modality": course.modality,
                 "docentes": [
                     {
                         "id": docente.id,
@@ -132,6 +136,8 @@ def get_course(course_id: int, db: Session = Depends(get_db)):
             "end_date": course.end_date.isoformat(),
             "hours": course.hours,
             "created_by": course.created_by,
+            "course_type": course.course_type,
+            "modality": course.modality,
             "docentes": [
                 {
                     "id": docente.id,
@@ -188,6 +194,8 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
             "end_date": course.end_date.isoformat(),
             "hours": course.hours,
             "created_by": course.created_by,
+            "course_type": course.course_type,
+            "modality": course.modality,
             "docentes": [
                 {
                     "id": docente.id,

@@ -15,7 +15,6 @@ class Docente(Base):
     especialidad = Column(String(150), nullable=True)
     fecha_registro = Column(DateTime, default=func.now())
     is_active = Column(Boolean, default=True)
-    password = Column(String(250), nullable=True)
     user_id = Column(Integer, nullable=True)
     
     # Relación many-to-many con Course

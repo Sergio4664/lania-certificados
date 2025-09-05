@@ -1,3 +1,4 @@
+// src/app/shared/interfaces/course.interfaces.ts
 export interface DocenteInfo {
   id: number;
   full_name: string;
@@ -13,6 +14,8 @@ export interface CourseDTO {
   hours: number;
   created_by: number;
   docentes?: DocenteInfo[];
+  course_type: 'PILDORA_EDUCATIVA' | 'INYECCION_EDUCATIVA' | 'CURSO_EDUCATIVO';
+  modality: 'REMOTA' | 'PRESENCIAL' | 'HIBRIDA';
 }
 
 export interface CreateCourseDTO {
@@ -23,6 +26,8 @@ export interface CreateCourseDTO {
   hours: number;
   created_by: number;
   docente_ids?: number[];
+  course_type?: 'PILDORA_EDUCATIVA' | 'INYECCION_EDUCATIVA' | 'CURSO_EDUCATIVO';
+  modality?: 'REMOTA' | 'PRESENCIAL' | 'HIBRIDA';
 }
 
 export interface UpdateCourseDTO {
@@ -32,4 +37,6 @@ export interface UpdateCourseDTO {
   end_date?: string;
   hours?: number;
   docente_ids?: number[];
+  course_type?: 'PILDORA_EDUCATIVA' | 'INYECCION_EDUCATIVA' | 'CURSO_EDUCATIVO';
+  modality?: 'REMOTA' | 'PRESENCIAL' | 'HIBRIDA';
 }

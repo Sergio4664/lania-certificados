@@ -1,44 +1,13 @@
+// src/app/features/dashboard/dashboard.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-
-interface Docente {
-  id: number;
-  full_name: string;
-  email: string;
-  is_active: boolean;
-}
-
-interface Course {
-  id: number;
-  code: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  hours: number;
-  created_by: number;
-  docentes?: Docente[];
-}
-
-interface Participant {
-  id: number;
-  email: string;
-  full_name: string;
-  phone?: string;
-  created_at: string;
-}
-
-interface Certificate {
-  id: number;
-  serial: string;
-  kind: string;
-  status: string;
-  course_name: string;
-  participant_name: string;
-  issued_at?: string;
-}
+import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/interfaces/docente.interfaces';
+import { CourseDTO, CreateCourseDTO as CreateCourse } from '../../shared/interfaces/course.interfaces';
+import { ParticipantDTO, CreateParticipantDTO } from '../../shared/interfaces/participant.interfaces';
+import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,7 +15,6 @@ interface Certificate {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="dashboard-container">
-      <!-- Header -->
       <header class="dashboard-header">
         <div class="header-content">
           <div class="logo-section">
@@ -81,9 +49,7 @@ interface Certificate {
         </div>
       </header>
 
-      <!-- Main Content -->
       <main class="dashboard-main">
-        <!-- Sidebar -->
         <nav class="sidebar">
           <div class="nav-item" 
                [class.active]="activeModule === 'overview'" 
@@ -137,9 +103,7 @@ interface Certificate {
           </div>
         </nav>
 
-        <!-- Content Area -->
         <div class="content-area">
-          <!-- Overview Module -->
           <div *ngIf="activeModule === 'overview'" class="module-content">
             <h2>Panel de Control</h2>
             <div class="stats-grid">
@@ -194,11 +158,10 @@ interface Certificate {
             </div>
           </div>
 
-          <!-- Docentes Module -->
           <div *ngIf="activeModule === 'docentes'" class="module-content">
             <div class="module-header">
               <h2>Gestión de Docentes</h2>
-              <button class="primary-btn" (click)="showDocenteForm = !showDocenteForm">
+              <button class="primary-btn" (click)="showDocenteForm = !showDocenteForm; editingDocente = null; resetDocenteForm()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -207,44 +170,39 @@ interface Certificate {
               </button>
             </div>
 
-            <!-- Docente Form -->
             <div *ngIf="showDocenteForm" class="form-card">
-              <h3>Registrar Docente</h3>
-              <form (ngSubmit)="createDocente()" class="form-grid">
+              <h3>{{ editingDocente ? 'Editar Docente' : 'Registrar Docente' }}</h3>
+              <form (ngSubmit)="editingDocente ? updateDocente() : createDocente()" class="form-grid">
                 <div class="form-group">
                   <label>Nombre Completo *</label>
-                  <input [(ngModel)]="newDocente.full_name" name="full_name" required>
+                  <input [(ngModel)]="docenteForm.full_name" name="full_name" required>
                 </div>
                 <div class="form-group">
                   <label>Email *</label>
-                  <input type="email" [(ngModel)]="newDocente.email" name="email" required>
+                  <input type="email" [(ngModel)]="docenteForm.email" name="email" required>
                 </div>
                 <div class="form-group">
-                  <label>Contraseña *</label>
-                  <input type="password" [(ngModel)]="newDocente.password" name="password" required>
-                </div>
-                <div class="form-group">
-                  <label>Teléfono</label>
-                  <input [(ngModel)]="newDocente.telefono" name="telefono" placeholder="Opcional">
+                  <label>Teléfono *</label>
+                  <input [(ngModel)]="docenteForm.telefono" name="telefono" required>
                 </div>
                 <div class="form-group">
                   <label>Especialidad</label>
-                  <input [(ngModel)]="newDocente.especialidad" name="especialidad" placeholder="Opcional">
+                  <input [(ngModel)]="docenteForm.especialidad" name="especialidad" placeholder="Opcional">
                 </div>
                 <div class="form-actions">
                   <button type="button" class="secondary-btn" (click)="showDocenteForm = false">Cancelar</button>
-                  <button type="submit" class="primary-btn">Crear Docente</button>
+                  <button type="submit" class="primary-btn">{{ editingDocente ? 'Actualizar' : 'Crear' }} Docente</button>
                 </div>
               </form>
             </div>
 
-            <!-- Docentes Table -->
             <div class="data-table">
               <table>
                 <thead>
                   <tr>
                     <th>Nombre</th>
                     <th>Email</th>
+                    <th>Teléfono</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -253,19 +211,23 @@ interface Certificate {
                   <tr *ngFor="let docente of docentes">
                     <td>{{docente.full_name}}</td>
                     <td>{{docente.email}}</td>
+                    <td>{{docente.telefono || 'N/A'}}</td>
                     <td>
                       <span class="status" [class]="docente.is_active ? 'status-active' : 'status-inactive'">
                         {{docente.is_active ? 'Activo' : 'Inactivo'}}
                       </span>
                     </td>
                     <td>
-                      <button class="icon-btn delete" 
-                              (click)="disableDocente(docente.id)" 
-                              [disabled]="!docente.is_active"
-                              title="Desactivar docente">
+                      <button class="icon-btn edit" (click)="editDocente(docente)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M18 6L6 18"></path>
-                          <path d="M6 6l12 12"></path>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      <button class="icon-btn delete" (click)="deleteDocente(docente.id)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                       </button>
                     </td>
@@ -275,7 +237,6 @@ interface Certificate {
             </div>
           </div>
 
-          <!-- Courses Module -->
           <div *ngIf="activeModule === 'courses'" class="module-content">
             <div class="module-header">
               <h2>Gestión de Cursos</h2>
@@ -288,7 +249,6 @@ interface Certificate {
               </button>
             </div>
 
-            <!-- Course Form -->
             <div *ngIf="showCourseForm" class="form-card">
               <h3>Crear Nuevo Curso</h3>
               <form (ngSubmit)="createCourse()" class="form-grid">
@@ -311,6 +271,14 @@ interface Certificate {
                 <div class="form-group">
                   <label>Horas</label>
                   <input type="number" [(ngModel)]="newCourse.hours" name="hours" required>
+                </div>
+                <div class="form-group">
+                  <label>Tipo de Curso</label>
+                  <select [(ngModel)]="newCourse.course_type" name="course_type" required>
+                    <option value="CURSO_EDUCATIVO">Curso Educativo</option>
+                    <option value="PILDORA_EDUCATIVA">Píldora Educativa</option>
+                    <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
+                  </select>
                 </div>
                 <div class="form-group full-width">
                   <label>Docentes Asignados</label>
@@ -347,13 +315,13 @@ interface Certificate {
               </form>
             </div>
 
-            <!-- Courses Table -->
             <div class="data-table">
               <table>
                 <thead>
                   <tr>
                     <th>Código</th>
                     <th>Nombre</th>
+                    <th>Tipo</th>
                     <th>Inicio</th>
                     <th>Fin</th>
                     <th>Horas</th>
@@ -365,6 +333,7 @@ interface Certificate {
                   <tr *ngFor="let course of courses">
                     <td>{{course.code}}</td>
                     <td>{{course.name}}</td>
+                    <td>{{course.course_type.replace('_', ' ')}}</td>
                     <td>{{course.start_date | date:'dd/MM/yyyy'}}</td>
                     <td>{{course.end_date | date:'dd/MM/yyyy'}}</td>
                     <td>{{course.hours}}h</td>
@@ -392,7 +361,6 @@ interface Certificate {
             </div>
           </div>
 
-          <!-- Participants Module -->
           <div *ngIf="activeModule === 'participants'" class="module-content">
             <div class="module-header">
               <h2>Gestión de Participantes</h2>
@@ -405,7 +373,6 @@ interface Certificate {
               </button>
             </div>
 
-            <!-- Participant Form -->
             <div *ngIf="showParticipantForm" class="form-card">
               <h3>Registrar Participante</h3>
               <form (ngSubmit)="createParticipant()" class="form-grid">
@@ -428,7 +395,6 @@ interface Certificate {
               </form>
             </div>
 
-            <!-- Participants Table -->
             <div class="data-table">
               <table>
                 <thead>
@@ -460,7 +426,6 @@ interface Certificate {
             </div>
           </div>
 
-          <!-- Certificates Module -->
           <div *ngIf="activeModule === 'certificates'" class="module-content">
             <div class="module-header">
               <h2>Gestión de Certificados</h2>
@@ -473,7 +438,6 @@ interface Certificate {
               </button>
             </div>
 
-            <!-- Certificate Form -->
             <div *ngIf="showCertificateForm" class="form-card">
               <h3>Emitir Certificado</h3>
               <form (ngSubmit)="createCertificate()" class="form-grid">
@@ -513,7 +477,6 @@ interface Certificate {
               </form>
             </div>
 
-            <!-- Certificates Table -->
             <div class="data-table">
               <table>
                 <thead>
@@ -1132,50 +1095,50 @@ export class DashboardComponent implements OnInit {
   activeModule = 'overview';
 
   // Data arrays
-  courses: Course[] = [];
-  participants: Participant[] = [];
-  certificates: Certificate[] = [];
-  docentes: Docente[] = [];
+  courses: CourseDTO[] = [];
+  participants: ParticipantDTO[] = [];
+  certificates: CertificateDTO[] = [];
+  docentes: DocenteDTO[] = [];
 
   // Form visibility flags
   showCourseForm = false;
   showParticipantForm = false;
   showCertificateForm = false;
   showDocenteForm = false;
+  editingDocente: DocenteDTO | null = null;
 
   // Docente selection for courses
   selectedDocenteIds: number[] = [];
 
   // Form models
-   // Form models
-  newDocente = {
+  docenteForm: CreateDocenteDTO = {
     full_name: '',
     email: '',
-    password: '',
     telefono: '',
     especialidad: ''
   };
 
-  newCourse = {
+  newCourse: CreateCourse = {
     code: '',
     name: '',
     start_date: '',
     end_date: '',
     hours: 0,
     created_by: 2,
+    course_type: 'CURSO_EDUCATIVO',
     docente_ids: [] as number[]
   };
 
-  newParticipant = {
+  newParticipant: CreateParticipantDTO = {
     email: '',
     full_name: '',
     phone: ''
   };
 
-  newCertificate = {
+  newCertificate: CreateCertificateDTO = {
     course_id: '',
     participant_id: '',
-    kind: ''
+    kind: 'PARTICIPANTE'
   };
 
   ngOnInit() {
@@ -1183,7 +1146,7 @@ export class DashboardComponent implements OnInit {
   }
 
   // Computed properties
-  get activeDocentes(): Docente[] {
+  get activeDocentes(): DocenteDTO[] {
     return this.docentes.filter(t => t.is_active);
   }
 
@@ -1224,19 +1187,19 @@ export class DashboardComponent implements OnInit {
     const headers = { Authorization: `Bearer ${token}` };
 
     // Load courses
-    this.http.get<Course[]>('http://127.0.0.1:8000/api/admin/courses', { headers })
+    this.http.get<CourseDTO[]>('http://127.0.0.1:8000/api/admin/courses', { headers })
       .subscribe(data => this.courses = data);
 
     // Load participants  
-    this.http.get<Participant[]>('http://127.0.0.1:8000/api/admin/participants', { headers })
+    this.http.get<ParticipantDTO[]>('http://127.0.0.1:8000/api/admin/participants', { headers })
       .subscribe(data => this.participants = data);
 
     // Load certificates
-    this.http.get<Certificate[]>('http://127.0.0.1:8000/api/admin/certificates', { headers })
+    this.http.get<CertificateDTO[]>('http://127.0.0.1:8000/api/admin/certificates', { headers })
       .subscribe(data => this.certificates = data);
 
     // Load docentes
-    this.http.get<Docente[]>('http://127.0.0.1:8000/api/admin/docentes', { headers })
+    this.http.get<DocenteDTO[]>('http://127.0.0.1:8000/api/admin/docentes', { headers })
       .subscribe(data => this.docentes = data);
   }
 
@@ -1263,6 +1226,7 @@ export class DashboardComponent implements OnInit {
             end_date: '', 
             hours: 0, 
             created_by: 2,
+            course_type: 'CURSO_EDUCATIVO',
             docente_ids: []
           };
         },
@@ -1294,7 +1258,7 @@ export class DashboardComponent implements OnInit {
         next: () => {
           this.loadData();
           this.showCertificateForm = false;
-          this.newCertificate = { course_id: '', participant_id: '', kind: '' };
+          this.newCertificate = { course_id: '', participant_id: '', kind: 'PARTICIPANTE' };
         },
         error: (err) => console.error('Error creating certificate:', err)
       });
@@ -1304,27 +1268,22 @@ export class DashboardComponent implements OnInit {
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Validar que todos los campos requeridos estén presentes
-    if (!this.newDocente.full_name || !this.newDocente.email || !this.newDocente.password) {
+    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono) {
       alert('Por favor complete todos los campos requeridos');
       return;
     }
 
-    // Enviar datos completos incluyendo password
-    const docenteData = {
-      full_name: this.newDocente.full_name,
-      email: this.newDocente.email,
-      password: this.newDocente.password,
-      telefono: this.newDocente.telefono || null,
-      especialidad: this.newDocente.especialidad || null
-    };
+    if (!this.docenteForm.email.endsWith('@lania.edu.mx')) {
+      alert('El correo debe tener el dominio @lania.edu.mx');
+      return;
+    }
 
-    this.http.post('http://127.0.0.1:8000/api/admin/docentes', docenteData, { headers })
+    this.http.post('http://127.0.0.1:8000/api/admin/docentes', this.docenteForm, { headers })
       .subscribe({
         next: () => {
           this.loadData();
           this.showDocenteForm = false;
-          this.newDocente = { full_name: '', email: '', password: '', telefono: '', especialidad: '' };
+          this.resetDocenteForm();
           alert('Docente creado exitosamente');
         },
         error: (err) => {
@@ -1334,16 +1293,74 @@ export class DashboardComponent implements OnInit {
         }
       });
   }
+  
+  editDocente(docente: DocenteDTO) {
+    this.editingDocente = docente;
+    this.docenteForm = {
+      full_name: docente.full_name,
+      email: docente.email,
+      telefono: docente.telefono || '',
+      especialidad: docente.especialidad || ''
+    };
+    this.showDocenteForm = true;
+  }
 
-  disableDocente(id: number) {
+  updateDocente() {
+    if (!this.editingDocente) return;
+
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
+    
+    const updateData: UpdateDocenteDTO = {
+      full_name: this.docenteForm.full_name,
+      email: this.docenteForm.email,
+      telefono: this.docenteForm.telefono,
+      especialidad: this.docenteForm.especialidad
+    };
 
-    this.http.delete(`http://127.0.0.1:8000/api/admin/docentes/${id}`, { headers })
+    this.http.put(`http://127.0.0.1:8000/api/admin/docentes/${this.editingDocente.id}`, updateData, { headers })
       .subscribe({
-        next: () => this.loadData(),
-        error: (err) => console.error('Error disabling teacher:', err)
+        next: () => {
+          this.loadData();
+          this.showDocenteForm = false;
+          this.editingDocente = null;
+          this.resetDocenteForm();
+          alert('Docente actualizado exitosamente');
+        },
+        error: (err) => {
+          console.error('Error al actualizar docente:', err);
+          const errorMessage = err.error?.detail || 'Error desconocido';
+          alert('Error al actualizar docente: ' + errorMessage);
+        }
       });
+  }
+
+  deleteDocente(id: number) {
+    if (confirm('¿Está seguro que desea eliminar este docente?')) {
+      const token = localStorage.getItem('access_token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      this.http.delete(`http://127.0.0.1:8000/api/admin/docentes/${id}`, { headers })
+        .subscribe({
+          next: () => {
+            this.loadData();
+            alert('Docente eliminado exitosamente');
+          },
+          error: (err) => {
+            console.error('Error eliminando docente:', err);
+            alert('Error al eliminar docente');
+          }
+        });
+    }
+  }
+
+  resetDocenteForm() {
+    this.docenteForm = {
+      full_name: '',
+      email: '',
+      telefono: '',
+      especialidad: ''
+    };
   }
 
   downloadCertificate(serial: string) {

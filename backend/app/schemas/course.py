@@ -2,6 +2,7 @@
 from pydantic import BaseModel, validator
 from datetime import date
 from typing import Optional, List
+from app.models.enums import CourseType, CourseModality
 
 class DocenteInfo(BaseModel):
     """Información básica del docente para mostrar en los cursos"""
@@ -15,6 +16,8 @@ class CourseBase(BaseModel):
     start_date: date
     end_date: date
     hours: int
+    course_type: CourseType = CourseType.CURSO_EDUCATIVO
+    modality: CourseModality = CourseModality.PRESENCIAL
     
     @validator('end_date')
     def end_date_must_be_after_start_date(cls, v, values):
@@ -49,6 +52,8 @@ class CourseUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     hours: Optional[int] = None
+    course_type: Optional[CourseType] = None
+    modality: Optional[CourseModality] = None
     docente_ids: Optional[List[int]] = None
     
     @validator('end_date', always=True)

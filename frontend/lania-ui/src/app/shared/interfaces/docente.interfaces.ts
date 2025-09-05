@@ -1,5 +1,4 @@
 // src/app/shared/interfaces/docente.interfaces.ts
-
 export interface DocenteDTO {
   id: number;
   full_name: string;
@@ -13,8 +12,7 @@ export interface DocenteDTO {
 export interface CreateDocenteDTO {
   full_name: string;
   email: string;
-  password: string;
-  telefono?: string;
+  telefono: string; 
   especialidad?: string;
 }
 
