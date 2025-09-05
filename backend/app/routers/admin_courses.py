@@ -6,12 +6,21 @@ from app.database import get_db
 from app.models.course import Course
 from app.models.user import User
 from app.models.docente import Docente
+from app.models.participant import Participant
+from app.models.enrollment import Enrollment
 from app.schemas.course import CourseCreate, CourseUpdate, CourseOut, DocenteInfo
+from app.schemas.participant import ParticipantOut
+from pydantic import BaseModel
+from typing import List
 import logging
+
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin/courses", tags=["admin-courses"])
+
+class EnrollmentRequest(BaseModel):
+    participant_id: int
 
 @router.post("/", response_model=CourseOut)
 def create_course(course: CourseCreate, db: Session = Depends(get_db)):
@@ -230,3 +239,46 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Error al eliminar curso {course_id}: {str(e)}")
         raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+    
+@router.get("/{course_id}/participants", response_model=List[ParticipantOut])
+def get_course_participants(course_id: int, db: Session = Depends(get_db)):
+    """Obtiene la lista de participantes inscritos en un curso."""
+    course = db.query(Course).get(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+    
+    participants = db.query(Participant).join(Enrollment).filter(Enrollment.course_id == course_id).all()
+    return participants
+
+@router.post("/{course_id}/enroll")
+def enroll_participant_in_course(course_id: int, enrollment_request: EnrollmentRequest, db: Session = Depends(get_db)):
+    """Inscribe a un participante en un curso."""
+    course = db.query(Course).get(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+        
+    participant = db.query(Participant).get(enrollment_request.participant_id)
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participante no encontrado")
+
+    existing_enrollment = db.query(Enrollment).filter_by(course_id=course_id, participant_id=enrollment_request.participant_id).first()
+    if existing_enrollment:
+        raise HTTPException(status_code=400, detail="El participante ya está inscrito en este curso")
+
+    new_enrollment = Enrollment(course_id=course_id, participant_id=enrollment_request.participant_id)
+    db.add(new_enrollment)
+    db.commit()
+    
+    return {"message": "Participante inscrito correctamente"}
+
+@router.delete("/{course_id}/enroll/{participant_id}")
+def unenroll_participant_from_course(course_id: int, participant_id: int, db: Session = Depends(get_db)):
+    """Desinscribe a un participante de un curso."""
+    enrollment = db.query(Enrollment).filter_by(course_id=course_id, participant_id=participant_id).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Inscripción no encontrada")
+        
+    db.delete(enrollment)
+    db.commit()
+    
+    return {"message": "Participante desinscrito correctamente"}
