@@ -23,7 +23,7 @@ import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
       </div>
       <div class="stat-info">
         <h3>{{courses.length}}</h3>
-        <p>Cursos Activos</p>
+        <p>Productos Educativos Activos</p>
       </div>
     </div>
     <div class="stat-card">

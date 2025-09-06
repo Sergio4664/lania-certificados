@@ -8,6 +8,7 @@ import { ParticipantDTO, CreateParticipantDTO, UpdateParticipantDTO } from '../.
 @Component({
   selector: 'app-admin-participants',
   standalone: true,
+  imports: [CommonModule, FormsModule],
    template: `
   <div class="module-content">
   <div class="module-header">
@@ -344,4 +345,3 @@ export default class AdminParticipantsComponent implements OnInit {
     }
   }
 }
-

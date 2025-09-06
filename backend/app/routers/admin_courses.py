@@ -1,5 +1,5 @@
 # backend/app/routers/admin_courses.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
@@ -9,11 +9,12 @@ from app.models.docente import Docente
 from app.models.participant import Participant
 from app.models.enrollment import Enrollment
 from app.schemas.course import CourseCreate, CourseUpdate, CourseOut, DocenteInfo
-from app.schemas.participant import ParticipantOut
+from app.schemas.participant import ParticipantOut, ParticipantCreate
 from pydantic import BaseModel
 from typing import List
 import logging
-
+import pandas as pd
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,74 @@ router = APIRouter(prefix="/api/admin/courses", tags=["admin-courses"])
 class EnrollmentRequest(BaseModel):
     participant_id: int
 
+@router.post("/{course_id}/upload-participants/", response_model=List[ParticipantOut])
+async def upload_participants(course_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    course = db.query(Course).get(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+
+    try:
+        contents = await file.read()
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        elif file.filename.endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use CSV o Excel.")
+
+        # Normalizar nombres de columnas (minúsculas y sin espacios)
+        df.columns = [col.strip().lower() for col in df.columns]
+
+        if 'email' not in df.columns or 'full_name' not in df.columns:
+            raise HTTPException(status_code=400, detail="El archivo debe contener las columnas 'email' y 'full_name'.")
+
+        newly_enrolled_participants = []
+        for index, row in df.iterrows():
+            participant_email = row.get('email')
+            participant_name = row.get('full_name')
+            # Buscar por 'phone' o 'telefono'
+            participant_phone = row.get('phone', row.get('telefono'))
+
+            if not isinstance(participant_email, str) or not isinstance(participant_name, str):
+                continue
+
+            participant = db.query(Participant).filter(Participant.email == participant_email).first()
+            if not participant:
+                new_participant_data = {
+                    "email": participant_email,
+                    "full_name": participant_name
+                }
+                # Añadir teléfono solo si existe y no está vacío
+                if participant_phone and pd.notna(participant_phone):
+                    new_participant_data["phone"] = str(participant_phone)
+
+                new_participant = ParticipantCreate(**new_participant_data)
+                participant = Participant(**new_participant.dict())
+                db.add(participant)
+                db.commit()
+                db.refresh(participant)
+
+            existing_enrollment = db.query(Enrollment).filter_by(course_id=course_id, participant_id=participant.id).first()
+            if not existing_enrollment:
+                new_enrollment = Enrollment(course_id=course_id, participant_id=participant.id)
+                db.add(new_enrollment)
+                db.commit()
+                newly_enrolled_participants.append(participant)
+
+        return newly_enrolled_participants
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error al procesar el archivo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
+
+
 @router.post("/", response_model=CourseOut)
 def create_course(course: CourseCreate, db: Session = Depends(get_db)):
     try:
-        # Crear el curso
         course_data = course.dict()
         docente_ids = course_data.pop('docente_ids', [])
         
-        # Verificar que el creador existe y es admin activo
         creator = db.query(User).filter(
             User.id == course_data['created_by'],
             User.is_active == True
@@ -40,11 +101,9 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
         
         db_course = Course(**course_data)
         db.add(db_course)
-        db.flush()  # Para obtener el ID sin hacer commit completo
+        db.flush()
         
-        # Asignar docentes si se proporcionaron
         if docente_ids:
-            # Filtrar que sean docentes activos
             docentes = db.query(Docente).filter(
                 Docente.id.in_(docente_ids),
                 Docente.is_active == True
@@ -56,14 +115,12 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
                 missing_ids = [did for did in docente_ids if did not in found_ids]
                 raise HTTPException(400, f"Docentes no encontrados o inactivos: {missing_ids}")
             
-            # Asignar docentes al curso
             for docente in docentes:
                 db_course.docentes.append(docente)
         
         db.commit()
         db.refresh(db_course)
         
-        # Convertir a dict manualmente para incluir docentes
         result = CourseOut(
             id=db_course.id,
             code=db_course.code,
@@ -169,14 +226,11 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
         if not course:
             raise HTTPException(404, "Curso no encontrado")
         
-        # Actualizar campos básicos
         update_data = data.dict(exclude_unset=True, exclude={'docente_ids'})
         for field, value in update_data.items():
             setattr(course, field, value)
         
-        # Actualizar docentes si se proporcionaron
         if data.docente_ids is not None:
-            # Obtener docentes activos
             docentes = db.query(Docente).filter(
                 Docente.id.in_(data.docente_ids),
                 Docente.is_active == True
@@ -187,7 +241,6 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
                 missing_ids = [did for did in data.docente_ids if did not in found_ids]
                 raise HTTPException(400, f"Docentes no encontrados o inactivos: {missing_ids}")
             
-            # Reemplazar la lista de docentes
             course.docentes.clear()
             for docente in docentes:
                 course.docentes.append(docente)
@@ -242,7 +295,6 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
     
 @router.get("/{course_id}/participants", response_model=List[ParticipantOut])
 def get_course_participants(course_id: int, db: Session = Depends(get_db)):
-    """Obtiene la lista de participantes inscritos en un curso."""
     course = db.query(Course).get(course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Curso no encontrado")
@@ -252,7 +304,6 @@ def get_course_participants(course_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{course_id}/enroll")
 def enroll_participant_in_course(course_id: int, enrollment_request: EnrollmentRequest, db: Session = Depends(get_db)):
-    """Inscribe a un participante en un curso."""
     course = db.query(Course).get(course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Curso no encontrado")
@@ -273,7 +324,6 @@ def enroll_participant_in_course(course_id: int, enrollment_request: EnrollmentR
 
 @router.delete("/{course_id}/enroll/{participant_id}")
 def unenroll_participant_from_course(course_id: int, participant_id: int, db: Session = Depends(get_db)):
-    """Desinscribe a un participante de un curso."""
     enrollment = db.query(Enrollment).filter_by(course_id=course_id, participant_id=participant_id).first()
     if not enrollment:
         raise HTTPException(status_code=404, detail="Inscripción no encontrada")

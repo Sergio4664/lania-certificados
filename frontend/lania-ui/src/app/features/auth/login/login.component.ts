@@ -354,7 +354,7 @@ export default class LoginComponent {
     this.authService.login(this.credentials).subscribe({
       next: (response) => {
         console.log('Login successful:', response);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/admin/dashboard']);
         this.loading = false;
       },
       error: (err) => {

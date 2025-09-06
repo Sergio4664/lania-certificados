@@ -25,8 +25,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
               </svg>
             </div>
             <div>
-              <h1>LANIA - Certificaciones</h1>
-              <p>Sistema de Gestión de Certificados</p>
+              <h1>LANIA - CONSTANCIAS</h1>
+              <p>Sistema de Gestión de Constancias</p>
             </div>
           </div>
           <div class="user-section">
@@ -54,7 +54,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
           </a>
           <a class="nav-item" routerLink="/admin/courses" routerLinkActive="active">
             <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-            Cursos
+            Productos Educativos
           </a>
           <a class="nav-item" routerLink="/admin/participants" routerLinkActive="active">
             <svg width="20" height="20" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>

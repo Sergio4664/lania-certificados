@@ -30,7 +30,7 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
       <div class="form-group">
         <label>Curso *</label>
         <select [(ngModel)]="newCertificate.course_id" name="course_id" required>
-          <option [ngValue]="null" disabled>Seleccionar curso...</option>
+          <option [ngValue]="null" disabled>Seleccione el producto educativo...</option>
           <option *ngFor="let course of courses" [value]="course.id">
             {{ course.name }} ({{ course.code }})
           </option>
@@ -67,7 +67,7 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
         <tr>
           <th>Serial</th>
           <th>Participante</th>
-          <th>Curso</th>
+          <th>Nombre del Producto Educativo</th>
           <th>Tipo</th>
           <th>Estado</th>
           <th>Fecha de Emisión</th>
@@ -264,7 +264,7 @@ export default class AdminCertificatesComponent implements OnInit {
   participants: ParticipantDTO[] = [];
   
   showForm = false;
-  certificateForm!: CreateCertificateDTO;
+  newCertificate!: CreateCertificateDTO;
 
   constructor() {
     this.resetForm();
@@ -290,7 +290,7 @@ export default class AdminCertificatesComponent implements OnInit {
   }
 
   resetForm() {
-    this.certificateForm = {
+    this.newCertificate = {
       course_id: '',
       participant_id: '',
       kind: 'PARTICIPANTE' // Valor por defecto
@@ -303,7 +303,7 @@ export default class AdminCertificatesComponent implements OnInit {
   }
 
   issueCertificate() {
-    if (!this.certificateForm.course_id || !this.certificateForm.participant_id) {
+    if (!this.newCertificate.course_id || !this.newCertificate.participant_id) {
       alert('Por favor, seleccione un curso y un participante.');
       return;
     }
@@ -311,7 +311,7 @@ export default class AdminCertificatesComponent implements OnInit {
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    this.http.post('http://127.0.0.1:8000/api/admin/certificates/issue', this.certificateForm, { headers })
+    this.http.post('http://127.0.0.1:8000/api/admin/certificates/issue', this.newCertificate, { headers })
       .subscribe({
         next: () => {
           alert('Constancia emitida exitosamente.');

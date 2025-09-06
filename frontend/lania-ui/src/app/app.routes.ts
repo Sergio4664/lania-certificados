@@ -6,7 +6,7 @@ import PublicVerifyComponent from './features/public-verify/public-verify.compon
 // Admin
 import DashboardLayoutComponent from './features/dashboard/dashboard-layout.component';
 import AdminOverviewComponent from './features/dashboard/admin-overview.component';
-import AdminCoursesComponent from './features/dashboard/admin-courses.component';
+import { AdminCoursesComponent } from './features/dashboard/admin-courses.component';
 import AdminDocentesComponent from './features/dashboard/admin-docentes.component';
 import AdminParticipantsComponent from './features/dashboard/admin-participants.component';
 import AdminCertificatesComponent from './features/dashboard/admin-certificates.component';
