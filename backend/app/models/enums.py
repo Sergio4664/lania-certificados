@@ -10,8 +10,10 @@ class CertificateStatus(str, PyEnum):
     REVOCADO = "REVOCADO"
 
 class CertificateKind(str, PyEnum):
-    PARTICIPANTE = "PARTICIPANTE"  # Para píldoras educativas
-    PONENTE = "PONENTE"           # Para conferencias
+    PILDORA_PARTICIPANTE = "PILDORA_PARTICIPANTE"
+    PILDORA_PONENTE = "PILDORA_PONENTE"
+    APROBACION = "APROBACION"
+    ASISTENCIA = "ASISTENCIA"
 
 class CourseType(str, PyEnum):
     PILDORA_EDUCATIVA = "PILDORA_EDUCATIVA"

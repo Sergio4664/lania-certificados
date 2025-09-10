@@ -44,7 +44,7 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
           </div>
           <div class="form-group">
             <label>Teléfono</label>
-            <input [(ngModel)]="docenteForm.telefono" name="telefono" placeholder="Opcional">
+            <input [(ngModel)]="docenteForm.telefono" name="telefono" placeholder="Obligatorio">
           </div>
           <div class="form-group">
             <label>Especialidad</label>
@@ -433,6 +433,15 @@ export default class AdminDocentesComponent implements OnInit {
 
   updateDocente() {
     if (!this.editingDocente) return;
+
+    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono) {
+      alert('Por favor complete todos los campos requeridos.');
+      return;
+    }
+    if (!this.docenteForm.email.endsWith('@lania.edu.mx')) {
+        alert('El correo debe tener el dominio @lania.edu.mx');
+        return;
+    }
 
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };

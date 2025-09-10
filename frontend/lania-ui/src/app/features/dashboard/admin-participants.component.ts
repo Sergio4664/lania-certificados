@@ -35,7 +35,7 @@ import { ParticipantDTO, CreateParticipantDTO, UpdateParticipantDTO } from '../.
       </div>
       <div class="form-group">
         <label>Teléfono</label>
-        <input [(ngModel)]="participantForm.phone" name="phone" placeholder="Opcional">
+        <input [(ngModel)]="participantForm.phone" name="phone" required>
       </div>
       <div class="form-actions">
         <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
@@ -272,9 +272,15 @@ export default class AdminParticipantsComponent implements OnInit {
   }
 
   createParticipant() {
-    if (!this.participantForm.full_name || !this.participantForm.email) {
-      alert('Por favor, complete el nombre y el email.');
+    if (!this.participantForm.full_name || !this.participantForm.email || !this.participantForm.phone) {
+      alert('Por favor, complete todos los campos.');
       return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.participantForm.email)) {
+        alert('Por favor, ingrese un correo electrónico con un dominio válido (ej. @gmail.com).');
+        return;
     }
 
     const token = localStorage.getItem('access_token');
@@ -307,6 +313,17 @@ export default class AdminParticipantsComponent implements OnInit {
   updateParticipant() {
     if (!this.editingParticipant) return;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (this.participantForm.email && !emailRegex.test(this.participantForm.email)) {
+        alert('Por favor, ingrese un correo electrónico con un dominio válido (ej. @gmail.com).');
+        return;
+    }
+
+    if (!this.participantForm.full_name || !this.participantForm.email || !this.participantForm.phone) {
+      alert('Por favor, complete todos los campos.');
+      return;
+    }
+    
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
     

@@ -42,10 +42,12 @@ def download_pdf(serial: str, db: Session = Depends(get_db)):
         if not cert.pdf_path:
             raise HTTPException(404, "Archivo PDF no encontrado")
             
+        # MODIFICACIÓN: content_disposition_type="inline" para previsualización
         return FileResponse(
             cert.pdf_path, 
             media_type="application/pdf", 
-            filename=f"{serial}.pdf"
+            filename=f"{serial}.pdf",
+            content_disposition_type="inline" 
         )
     except HTTPException:
         raise

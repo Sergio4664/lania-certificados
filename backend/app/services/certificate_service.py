@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.certificate import Certificate
 from app.models.enums import CertificateStatus
-from app.services.html_pdf_service import generate_certificate_html_pdf
+from app.services.pdf_service import generate_certificate_pdf
 import os
 import logging
 
@@ -16,36 +16,33 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
     Procesa un certificado: genera serial, QR token, PDF y actualiza estado
     """
     try:
-        # Generar serial único
         certificate.serial = f"LANIA-{datetime.now().strftime('%Y')}-{secrets.token_hex(4).upper()}"
-        
-        # Generar token único para QR
         certificate.qr_token = str(uuid.uuid4())
         
-        # Generar PDF usando templates HTML
         try:
-            pdf_bytes = generate_certificate_html_pdf(
-                kind=certificate.kind,
+            template_pdf_path = "app/static/Formato constancias.pdf"
+            
+            pdf_bytes = generate_certificate_pdf(
                 participant_name=participant["full_name"],
                 course_name=course["name"],
-                course_hours=course["hours"],
-                course_date=course.get("start_date", datetime.now().strftime("%d/%m/%Y")),
+                hours=course["hours"],
+                issue_date=datetime.now().date(),
+                template_path=template_pdf_path,
+                kind=certificate.kind,
                 serial=certificate.serial,
                 qr_token=certificate.qr_token,
-                issue_date=datetime.now().date()
+                course_modality=course["modality"].value,
+                course_date=course["start_date"].strftime("%d/%m/%Y")
             )
             certificate.pdf_content = pdf_bytes
             
-            # Crear directorio si no existe
             os.makedirs("certificates", exist_ok=True)
             
-            # Guardar archivo físico
             pdf_filename = f"certificates/{certificate.serial}.pdf"
             with open(pdf_filename, "wb") as f:
                 f.write(pdf_bytes)
             certificate.pdf_path = pdf_filename
             
-            # Actualizar timestamps y estado
             certificate.issued_at = datetime.now(timezone.utc)
             certificate.updated_at = datetime.now(timezone.utc)
             certificate.status = CertificateStatus.LISTO_PARA_DESCARGAR
@@ -54,7 +51,6 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
             logger.error(f"Error generando PDF: {e}")
             certificate.status = CertificateStatus.EN_PROCESO
         
-        # Guardar cambios
         db.commit()
         db.refresh(certificate)
         

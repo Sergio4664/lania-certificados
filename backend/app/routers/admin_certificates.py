@@ -8,67 +8,64 @@ from app.models.participant import Participant
 from app.models.enums import CertificateStatus
 from app.services.certificate_service import issue_certificate
 import logging
+import os
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin/certificates", tags=["admin-certificates"])
 
-@router.post("/issue")
+class IssueResponse(BaseModel):
+    id: int
+    serial: str
+    kind: str
+    status: str
+    course_name: str
+    participant_name: str
+    issued_at: Optional[datetime] = None
+    qr_token: str
+    pdf_path: Optional[str] = None
+
+@router.post("/issue", response_model=IssueResponse)
 def issue(data: dict, db: Session = Depends(get_db)):
-    """
-    Emite un certificado. Esperamos:
-    {
-      "course_id": 1,
-      "participant_id": 1, 
-      "kind": "APROBACION"
-    }
-    """
+    """ Emite un certificado. """
     try:
         course = db.query(Course).get(data["course_id"])
         participant = db.query(Participant).get(data["participant_id"])
-        
         if not course or not participant:
             raise HTTPException(status_code=404, detail="Curso o participante inexistente")
-        
-        # Verificar si ya existe un certificado para esta combinación
         existing = db.query(Certificate).filter(
             Certificate.course_id == course.id,
             Certificate.participant_id == participant.id,
             Certificate.kind == data["kind"]
         ).first()
-        
         if existing:
             raise HTTPException(status_code=400, detail="Ya existe un certificado de este tipo para este participante y curso")
         
-        # Crear certificado inicial
         cert = Certificate(
-            course_id=course.id, 
-            participant_id=participant.id, 
-            kind=data["kind"],
-            status=CertificateStatus.EN_PROCESO,
-            serial="TEMP",  # Temporal, se actualiza en issue_certificate
-            qr_token="TEMP"  # Temporal, se actualiza en issue_certificate
+            course_id=course.id, participant_id=participant.id, kind=data["kind"],
+            status=CertificateStatus.EN_PROCESO, serial="TEMP", qr_token="TEMP"
         )
-        
         db.add(cert)
         db.commit()
         db.refresh(cert)
         
-        # Procesar el certificado (generar PDF, serial, etc.)
         cert = issue_certificate(
-            db, 
-            cert,
+            db, cert,
             participant={"full_name": participant.full_name},
-            course={"name": course.name, "hours": course.hours}
+            course={
+                "name": course.name, "hours": course.hours, "start_date": course.start_date,
+                "modality": course.modality
+            }
         )
         
-        return {
-            "id": cert.id, 
-            "serial": cert.serial, 
-            "status": cert.status, 
-            "pdf_path": cert.pdf_path,
-            "qr_token": cert.qr_token
-        }
+        return IssueResponse(
+            id=cert.id, serial=cert.serial, kind=cert.kind, status=cert.status,
+            course_name=course.name, participant_name=participant.full_name,
+            issued_at=cert.issued_at, qr_token=cert.qr_token, pdf_path=cert.pdf_path
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -76,20 +73,17 @@ def issue(data: dict, db: Session = Depends(get_db)):
         logger.error(f"Error emitiendo certificado: {str(e)}")
         raise HTTPException(500, f"Error interno: {str(e)}")
 
-@router.get("/")
+@router.get("/", response_model=List[dict])
 def list_certificates(db: Session = Depends(get_db)):
-    """Lista todos los certificados con información de curso y participante"""
+    """ Lista todos los certificados. """
     try:
-        certificates = db.query(Certificate).all()
+        certificates = db.query(Certificate).order_by(Certificate.id.desc()).all()
         result = []
         for cert in certificates:
             course = db.query(Course).get(cert.course_id)
             participant = db.query(Participant).get(cert.participant_id)
             result.append({
-                "id": cert.id,
-                "serial": cert.serial,
-                "kind": cert.kind,
-                "status": cert.status,
+                "id": cert.id, "serial": cert.serial, "kind": cert.kind, "status": cert.status,
                 "course_name": course.name if course else "N/A",
                 "participant_name": participant.full_name if participant else "N/A",
                 "issued_at": cert.issued_at.isoformat() if cert.issued_at else None
@@ -98,3 +92,25 @@ def list_certificates(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error listando certificados: {str(e)}")
         raise HTTPException(500, f"Error interno: {str(e)}")
+
+@router.delete("/{certificate_id}")
+def delete_certificate(certificate_id: int, db: Session = Depends(get_db)):
+    """ Elimina un certificado por su ID. """
+    try:
+        cert = db.query(Certificate).get(certificate_id)
+        if not cert:
+            raise HTTPException(status_code=404, detail="Certificado no encontrado")
+        
+        # Opcional: eliminar el archivo PDF físico si existe
+        if cert.pdf_path and os.path.exists(cert.pdf_path):
+            os.remove(cert.pdf_path)
+            
+        db.delete(cert)
+        db.commit()
+        return {"message": "Certificado eliminado correctamente"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error eliminando certificado: {str(e)}")
+        raise HTTPException(500, f"Error interno del servidor: {str(e)}")

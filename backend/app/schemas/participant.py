@@ -6,7 +6,7 @@ from typing import Optional
 class ParticipantBase(BaseModel):
     email: EmailStr
     full_name: str
-    phone: Optional[str] = None
+    phone: str
 
 class ParticipantCreate(ParticipantBase):
     """Schema para crear un participante"""
@@ -14,9 +14,9 @@ class ParticipantCreate(ParticipantBase):
 
 class ParticipantUpdate(BaseModel):
     """Schema para actualizar un participante (todos los campos opcionales)"""
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
+    email: EmailStr
+    full_name: str
+    phone: str
 
 class ParticipantOut(ParticipantBase):
     """Schema para respuesta con los datos del participante"""
