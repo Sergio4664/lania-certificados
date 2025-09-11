@@ -24,7 +24,6 @@ def generate_certificate_pdf(participant_name: str, course_name: str, hours: int
     c = canvas.Canvas(packet, pagesize=letter)
     
     # --- Coordenadas y Estilos ---
-    # Coordenadas (X, Y) desde la esquina inferior izquierda en puntos.
     center_x = letter[0] / 2
 
     # "Otorga la presente"
@@ -37,31 +36,40 @@ def generate_certificate_pdf(participant_name: str, course_name: str, hours: int
     c.setFillColorRGB(0.8, 0.2, 0.2)
     c.drawCentredString(center_x, 20.3 * cm, "CONSTANCIA")
 
-    # "a:" o "al:"
+    # --- LÓGICA MEJORADA PARA "a:" o "al:" ---
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0, 0, 0)
-    label = "al:" if kind == "PILDORA_PONENTE" else "a:"
+    # Si el 'kind' termina en "_PONENTE", se asume que es para un ponente.
+    label = "al:" if kind.endswith("_PONENTE") else "a:"
     c.drawCentredString(center_x, 18.5 * cm, label)
 
     # Nombre del Participante/Ponente
     c.setFont("Helvetica-Bold", 26)
     c.drawCentredString(center_x, 17.5 * cm, participant_name)
 
-    # Razón de la constancia
+    # --- LÓGICA MEJORADA PARA LA RAZÓN DE LA CONSTANCIA ---
     y_reason_line1 = 15.5 * cm
     c.setFont("Helvetica", 12)
-    if kind == "PILDORA_PONENTE":
-        c.drawCentredString(center_x, y_reason_line1, "Por su participación como ponente en la conferencia")
-    else:
-        c.drawCentredString(center_x, y_reason_line1, "Por su asistencia a la píldora educativa")
+    
+    reason_text = {
+        "PILDORA_PARTICIPANTE": "Por su asistencia a la píldora educativa",
+        "PILDORA_PONENTE": "Por su participación como ponente en la conferencia",
+        "INYECCION_PARTICIPANTE": "Por su participación en la Inyección Educativa",
+        "INYECCION_PONENTE": "Por su participación como ponente en la Inyección Educativa",
+        "CURSO_PARTICIPANTE": "Por su asistencia al curso",
+        "CURSO_PONENTE": "Por haber aprobado el curso"
+    }
+    # Se obtiene el texto del diccionario, con un valor por defecto si no se encuentra.
+    line1 = reason_text.get(kind, "Por su participación en el evento")
+    c.drawCentredString(center_x, y_reason_line1, line1)
 
     # Nombre del curso
     c.setFont("Helvetica-Bold", 18)
     c.drawCentredString(center_x, y_reason_line1 - 0.7 * cm, f'"{course_name}"')
     
-    # Detalles del curso
+    # Detalles del curso (duración o fecha de impartición)
     c.setFont("Helvetica", 11)
-    if kind != "PILDORA_PONENTE":
+    if not kind.endswith("_PONENTE"):
         c.drawCentredString(center_x, y_reason_line1 - 1.4 * cm, f"con duración de {hours} horas, modalidad {course_modality.lower()}")
     else:
         c.drawCentredString(center_x, y_reason_line1 - 1.4 * cm, f"impartida el {course_date}")

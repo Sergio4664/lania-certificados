@@ -6,6 +6,13 @@ import { HttpClient } from '@angular/common/http';
 import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 import { CourseDTO } from '../../shared/interfaces/course.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
+import { DocenteDTO } from '../../shared/interfaces/docente.interfaces'; // Importar DocenteDTO
+
+//Interfaz simple para unificar las opciones del menu desplegable
+interface RecipientOption {
+  id: number,
+  full_name: string
+}
 
 @Component({
   selector: 'app-admin-certificates',
@@ -15,7 +22,7 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
   <div class="module-content">
     <div class="module-header">
       <h2>Gestión de Constancias</h2>
-      <button class="primary-btn" (click)="showForm = !showForm">
+      <button class="primary-btn" (click)="showForm = true; resetForm()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -28,34 +35,41 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
       <h3>Emitir Nueva Constancia</h3>
       <form (ngSubmit)="issueCertificate()" class="form-grid">
         <div class="form-group">
-          <label>Curso *</label>
-          <select [(ngModel)]="newCertificate.course_id" name="course_id" required>
+          <label>Producto Educativo *</label>
+          <select [(ngModel)]="newCertificate.course_id" name="course_id" (change)="updateCertificateKind()" required>
             <option [ngValue]="null" disabled>Seleccione el producto educativo...</option>
             <option *ngFor="let course of courses" [value]="course.id">
               {{ course.name }} ({{ course.code }})
             </option>
           </select>
         </div>
+
         <div class="form-group">
-          <label>Participante *</label>
+          <label>Destinatario *</label>
+          <select [(ngModel)]="selectedRecipientType" name="recipient_type" (change)="onRecipientTypeChange()">
+            <option value="participant">Participante</option>
+            <option value="docente">Docente (Ponente)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>{{ selectedRecipientType === 'participant' ? 'Participante' : 'Docente' }} *</label>
+          <!-- CORRECCIÓN: El *ngFor ahora usa las listas de opciones unificadas -->
           <select [(ngModel)]="newCertificate.participant_id" name="participant_id" required>
-            <option [ngValue]="null" disabled>Seleccionar participante...</option>
-            <option *ngFor="let p of participants" [value]="p.id">
-              {{ p.full_name }}
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            <option *ngFor="let person of (selectedRecipientType === 'participant' ? participantOptions : docenteOptions)" [value]="person.id">
+              {{ person.full_name }}
             </option>
           </select>
         </div>
+        
         <div class="form-group">
-          <label>Tipo de Constancia *</label>
-          <select [(ngModel)]="newCertificate.kind" name="kind" required>
-            <option value="PILDORA_PARTICIPANTE">Píldora (Participante)</option>
-            <option value="PILDORA_PONENTE">Píldora (Ponente)</option>
-            <option value="APROBACION">Aprobación (Curso)</option>
-            <option value="ASISTENCIA">Asistencia (Curso)</option>
-          </select>
+          <label>Tipo de Constancia (Automático)</label>
+          <input type="text" [value]="getKindDisplayName(newCertificate.kind)" name="kind_display" disabled class="form-control-disabled">
         </div>
+
         <div class="form-actions">
-          <button type="button" class="secondary-btn" (click)="showForm = false; resetForm()">Cancelar</button>
+          <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
           <button type="submit" class="primary-btn">Emitir</button>
         </div>
       </form>
@@ -105,7 +119,7 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
   </div>
   `,
   styles: [`
-    .module-content h2 { color: #1e293b; margin: 0 0 24px 0; font-size: 28px; font-weight: 600; }
+ .module-content h2 { color: #1e293b; margin: 0 0 24px 0; font-size: 28px; font-weight: 600; }
     .module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .primary-btn { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
     .primary-btn:hover { transform: translateY(-1px); }
@@ -134,23 +148,33 @@ import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
     .serial-tag { background: #eef2ff; color: #4338ca; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 12px; }
     .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
     .status { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
-    .type-pildora_participante { background: #dbeafe; color: #2563eb; }
-    .type-pildora_ponente { background: #fef3c7; color: #d97706; }
+    .type-pildora_participante, .type-inyeccion_participante { background: #dbeafe; color: #2563eb; }
+    .type-pildora_ponente, .type-inyeccion_ponente { background: #fef3c7; color: #d97706; }
     .type-aprobacion { background: #dcfce7; color: #16a34a; }
     .type-asistencia { background: #e0e7ff; color: #4338ca; }
     .status-listo_para_descargar { background: #dcfce7; color: #16a34a; }
     .status-en_proceso { background: #fef3c7; color: #d97706; }
+    .form-control-disabled { background-color: #f3f4f6; cursor: not-allowed; color: #6b7280; }
   `]
 })
 export default class AdminCertificatesComponent implements OnInit {
   private http = inject(HttpClient);
 
+
   certificates: CertificateDTO[] = [];
   courses: CourseDTO[] = [];
-  participants: ParticipantDTO[] = [];
+ 
+  //Listas originales con los DTOs completos
+  private participants: ParticipantDTO[] = [];
+  private docentes: DocenteDTO[] = []; 
+
+  //Correción: Listas simplificadas solo para el formulario
+  participantOptions: RecipientOption[] = [];
+  docenteOptions: RecipientOption[] = [];
   
   showForm = false;
   newCertificate!: CreateCertificateDTO;
+  selectedRecipientType: 'participant' | 'docente' = 'participant';
 
   constructor() {
     this.resetForm();
@@ -170,8 +194,18 @@ export default class AdminCertificatesComponent implements OnInit {
     this.http.get<CourseDTO[]>('http://127.0.0.1:8000/api/admin/courses', { headers })
       .subscribe(data => this.courses = data);
 
+    //Mapear los datos a las listas de opciones simplificadas
     this.http.get<ParticipantDTO[]>('http://127.0.0.1:8000/api/admin/participants', { headers })
-      .subscribe(data => this.participants = data);
+      .subscribe(data => {
+        this.participants = data;
+        this.participantOptions = data.map(p => ({ id: p.id, full_name: p.full_name }));
+      });
+    
+    this.http.get<DocenteDTO[]>('http://127.0.0.1:8000/api/admin/docentes', { headers })
+      .subscribe(data => {
+        this.docentes = data;
+        this.docenteOptions = data.map(d => ({ id: d.id, full_name: d.full_name }));
+      });
   }
 
   resetForm() {
@@ -180,11 +214,50 @@ export default class AdminCertificatesComponent implements OnInit {
       participant_id: '',
       kind: 'PILDORA_PARTICIPANTE'
     };
+    this.selectedRecipientType = 'participant';
   }
 
   cancelForm() {
     this.showForm = false;
     this.resetForm();
+  }
+
+  onRecipientTypeChange() {
+    this.newCertificate.participant_id = '';
+    this.updateCertificateKind();
+  }
+
+   updateCertificateKind() {
+    if (!this.newCertificate.course_id) return;
+    
+    const course = this.courses.find(c => c.id == this.newCertificate.course_id);
+    if (!course) return;
+
+    const isParticipant = this.selectedRecipientType === 'participant';
+
+    switch (course.course_type) {
+      case 'PILDORA_EDUCATIVA':
+        this.newCertificate.kind = isParticipant ? 'PILDORA_PARTICIPANTE' : 'PILDORA_PONENTE';
+        break;
+      case 'INYECCION_EDUCATIVA':
+        this.newCertificate.kind = isParticipant ? 'INYECCION_PARTICIPANTE' : 'INYECCION_PONENTE';
+        break;
+      case 'CURSO_EDUCATIVO':
+        this.newCertificate.kind = isParticipant ? 'CURSO_PARTICIPANTE' : 'CURSO_PONENTE'; // Ejemplo de lógica para cursos
+        break;
+    }
+  }
+
+  getKindDisplayName(kind: string): string {
+    const names: { [key: string]: string } = {
+      'PILDORA_PARTICIPANTE': 'Píldora (Participante)',
+      'PILDORA_PONENTE': 'Píldora (Ponente)',
+      'INYECCION_PARTICIPANTE': 'Inyección (Participante)',
+      'INYECCION_PONENTE': 'Inyección (Ponente)',
+      'CURSO_PARTICIPANTE': 'Curso (Participante)',
+      'CURSO_PONENTE': 'Curso (Ponente)',
+    };
+    return names[kind] || 'Seleccione opciones';
   }
 
   issueCertificate() {
@@ -200,7 +273,7 @@ export default class AdminCertificatesComponent implements OnInit {
       .subscribe({
         next: (newCert) => {
           alert(`Constancia emitida con estado: ${newCert.status.replace(/_/g, ' ')}.`);
-          this.certificates.unshift(newCert);
+          this.loadInitialData;
           this.cancelForm();
         },
         error: (err) => {
@@ -232,13 +305,5 @@ export default class AdminCertificatesComponent implements OnInit {
           }
         });
     }
-  }
-
-  formatStatus(status: string): string {
-    return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-  }
-
-  getStatusClass(status: string): string {
-    return status.toLowerCase().replace(/_/g, '-');
   }
 }
