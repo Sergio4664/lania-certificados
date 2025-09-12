@@ -3,6 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+
 import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interfaces/course.interfaces';
 import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';

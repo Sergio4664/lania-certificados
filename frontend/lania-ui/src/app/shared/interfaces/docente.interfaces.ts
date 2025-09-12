@@ -3,8 +3,8 @@ export interface DocenteDTO {
   id: number;
   full_name: string;
   email: string;
-  telefono?: string;
-  especialidad?: string;
+  telefono: string;
+  especialidad: string;
   is_active: boolean;
   fecha_registro: string;
 }
@@ -13,7 +13,7 @@ export interface CreateDocenteDTO {
   full_name: string;
   email: string;
   telefono: string; 
-  especialidad?: string;
+  especialidad: string;
 }
 
 export interface UpdateDocenteDTO {

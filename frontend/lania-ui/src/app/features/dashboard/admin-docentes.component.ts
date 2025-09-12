@@ -10,7 +10,7 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="admin-container">
+   <div class="admin-container">
       <header class="admin-header">
         <h1>Gestión de Docentes</h1>
         <div class="header-actions">
@@ -34,22 +34,34 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
       <div *ngIf="showForm" class="form-card">
         <h3>{{ editingDocente ? 'Editar Docente' : 'Registrar Docente' }}</h3>
         <form (ngSubmit)="editingDocente ? updateDocente() : createDocente()" class="form-grid">
+          
+          <div class="form-group">
+            <label>Especialidad *</label>
+            <input [(ngModel)]="docenteForm.especialidad" name="especialidad" required list="especialidades-sugeridas" placeholder="DR., ING., M.C., etc.">
+            <datalist id="especialidades-sugeridas">
+              <option value="DR."></option>
+              <option value="DRA."></option>
+              <option value="M.C."></option>
+              <option value="ING."></option>
+              <option value="LIC."></option>
+              <option value="I.S.C."></option>
+            </datalist>
+          </div>
+
           <div class="form-group">
             <label>Nombre Completo *</label>
             <input [(ngModel)]="docenteForm.full_name" name="full_name" required>
           </div>
+
           <div class="form-group">
             <label>Email *</label>
             <input type="email" [(ngModel)]="docenteForm.email" name="email" required>
           </div>
           <div class="form-group">
             <label>Teléfono</label>
-            <input [(ngModel)]="docenteForm.telefono" name="telefono" placeholder="Obligatorio">
+            <input [(ngModel)]="docenteForm.telefono" name="telefono" placeholder="Opcional">
           </div>
-          <div class="form-group">
-            <label>Especialidad</label>
-            <input [(ngModel)]="docenteForm.especialidad" name="especialidad" placeholder="Opcional">
-          </div>
+          
           <div class="form-actions">
             <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
             <button type="submit" class="primary-btn">{{ editingDocente ? 'Actualizar' : 'Crear' }} Docente</button>
@@ -61,10 +73,9 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
         <table>
           <thead>
             <tr>
-              <th>Nombre</th>
+              <th>Docente</th>
               <th>Email</th>
               <th>Teléfono</th>
-              <th>Especialidad</th>
               <th>Estado</th>
               <th>Fecha Registro</th>
               <th>Acciones</th>
@@ -72,10 +83,9 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
           </thead>
           <tbody>
             <tr *ngFor="let docente of filteredDocentes">
-              <td>{{docente.full_name}}</td>
+              <td>{{docente.especialidad}} {{docente.full_name}}</td>
               <td>{{docente.email}}</td>
               <td>{{docente.telefono || 'N/A'}}</td>
-              <td>{{docente.especialidad || 'N/A'}}</td>
               <td>
                 <span class="status" [class]="docente.is_active ? 'status-active' : 'status-inactive'">
                   {{docente.is_active ? 'Activo' : 'Inactivo'}}
@@ -380,10 +390,11 @@ export default class AdminDocentesComponent implements OnInit {
 
   resetForm() {
     this.docenteForm = {
+      especialidad: '',
       full_name: '',
       email: '',
-      telefono: '',
-      especialidad: ''
+      telefono: ''
+      
     };
   }
   
@@ -394,7 +405,7 @@ export default class AdminDocentesComponent implements OnInit {
   }
 
   createDocente() {
-    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono) {
+    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono || !this.docenteForm.especialidad) {
       alert('Por favor complete todos los campos requeridos.');
       return;
     }
@@ -423,10 +434,10 @@ export default class AdminDocentesComponent implements OnInit {
   editDocente(docente: DocenteDTO) {
     this.editingDocente = docente;
     this.docenteForm = {
+      especialidad: docente.especialidad || '',
       full_name: docente.full_name,
       email: docente.email,
-      telefono: docente.telefono || '',
-      especialidad: docente.especialidad || ''
+      telefono: docente.telefono || ''
     };
     this.showForm = true;
   }
@@ -434,7 +445,7 @@ export default class AdminDocentesComponent implements OnInit {
   updateDocente() {
     if (!this.editingDocente) return;
 
-    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono) {
+    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono || !this.docenteForm.especialidad) {
       alert('Por favor complete todos los campos requeridos.');
       return;
     }

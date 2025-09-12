@@ -4,10 +4,11 @@ from datetime import datetime
 from typing import Optional
 
 class DocenteBase(BaseModel):
+    especialidad: str
     full_name: str
     email: EmailStr
     telefono: Optional[str] = None
-    especialidad: Optional[str] = None
+
 
     @validator('email')
     def validate_email_domain(cls, v):
@@ -20,10 +21,10 @@ class DocenteCreate(DocenteBase):
 
 class DocenteUpdate(BaseModel):
     """Schema para actualizar un docente (todos los campos opcionales)"""
+    especialidad: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
     telefono: Optional[str] = None
-    especialidad: Optional[str] = None
     is_active: Optional[bool] = None
 
     @validator('email')
