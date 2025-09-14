@@ -7,6 +7,7 @@ from app.models.enums import CourseType, CourseModality
 class DocenteInfo(BaseModel):
     """Información básica del docente para mostrar en los cursos"""
     id: int
+    especialidad: str
     full_name: str
     email: str
 
@@ -16,6 +17,7 @@ class CourseBase(BaseModel):
     start_date: date
     end_date: date
     hours: int
+    competencies: Optional[str] = None
     course_type: CourseType = CourseType.CURSO_EDUCATIVO
     modality: CourseModality = CourseModality.PRESENCIAL
     
@@ -52,6 +54,7 @@ class CourseUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     hours: Optional[int] = None
+    competencies: Optional[str] = None
     course_type: Optional[CourseType] = None
     modality: Optional[CourseModality] = None
     docente_ids: Optional[List[int]] = None

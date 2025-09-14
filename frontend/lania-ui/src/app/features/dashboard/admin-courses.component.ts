@@ -63,6 +63,10 @@ import { NotificationService } from '../../shared/services/notification.service'
               <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>Competencias(una por linea)</label>
+            <textarea [(ngModel)]="courseForm.competencies" name="competencies" rows="4" placeholder="Escribe aquí cada competencia en una línea..."></textarea>
+          </div>
           <div class="form-group full-width">
             <label>Docentes Asignados</label>
             <div class="docentes-selection">
@@ -70,7 +74,7 @@ import { NotificationService } from '../../shared/services/notification.service'
                 <div class="checkbox-item" *ngFor="let docente of activeDocentes">
                   <input type="checkbox" [id]="'docente-' + docente.id" [checked]="isDocenteSelected(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
                   <label [for]="'docente-' + docente.id">
-                    {{docente.full_name}} <small>({{docente.email}})</small>
+                    {{docente.full_name}} <small> ({{docente.especialidad}} - {{docente.email}})</small>
                   </label>
                 </div>
               </div>
@@ -103,7 +107,7 @@ import { NotificationService } from '../../shared/services/notification.service'
                 <div class="detail-item docentes">
                   <strong>Docente(s):</strong>
                   <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span>
+                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
                   </div>
                   <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
                 </div>
@@ -134,7 +138,7 @@ import { NotificationService } from '../../shared/services/notification.service'
                 <div class="detail-item docentes">
                   <strong>Docente(s):</strong>
                   <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span>
+                     <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
                   </div>
                   <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
                 </div>
@@ -165,7 +169,7 @@ import { NotificationService } from '../../shared/services/notification.service'
                 <div class="detail-item docentes">
                   <strong>Docente(s):</strong>
                   <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span>
+                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
                   </div>
                   <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
                 </div>
@@ -193,7 +197,7 @@ import { NotificationService } from '../../shared/services/notification.service'
             <div class="detail-item docentes">
               <strong>Docente(s):</strong>
               <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span>
+                <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
               </div>
               <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
             </div>

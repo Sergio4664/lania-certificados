@@ -1,5 +1,5 @@
 # backend/app/models/course.py
-from sqlalchemy import Column, BigInteger, String, Date, ForeignKey, Enum
+from sqlalchemy import Column, BigInteger, String, Date, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.enums import CourseType, CourseModality
@@ -14,6 +14,7 @@ class Course(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     hours = Column(BigInteger, nullable=False)
+    competencies = Column(Text, nullable=True)
     
     course_type = Column(Enum(CourseType), default=CourseType.CURSO_EDUCATIVO)
     modality = Column(Enum(CourseModality), default=CourseModality.PRESENCIAL)
