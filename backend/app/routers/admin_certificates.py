@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
+from pydantic import BaseModel
 from app.models.certificate import Certificate
 from app.models.course import Course
 from app.models.participant import Participant
@@ -14,6 +15,9 @@ from typing import Optional, List
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+class CertificateIssueRequest(BaseModel):
+    include_competencies: bool = False
 
 router = APIRouter(prefix="/api/admin/certificates", tags=["admin-certificates"])
 

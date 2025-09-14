@@ -7,7 +7,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interfaces/course.interfaces';
 import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
-import { NotificationService } from '../../shared/services/notification.service';
 
 @Component({
   selector: 'app-admin-courses',
@@ -63,10 +62,15 @@ import { NotificationService } from '../../shared/services/notification.service'
               <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Competencias(una por linea)</label>
-            <textarea [(ngModel)]="courseForm.competencies" name="competencies" rows="4" placeholder="Escribe aquí cada competencia en una línea..."></textarea>
+
+          <div class="form-group full-width" *ngIf="courseForm.course_type === 'CURSO_EDUCATIVO'">
+            <label>Competencias del Curso</label>
+            <button type="button" class="secondary-btn icon-left" (click)="openCompetenciesModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              {{ courseForm.competencies && courseForm.competencies.length > 0 ? 'Editar Competencias' : 'Añadir Competencias' }}
+            </button>
           </div>
+          
           <div class="form-group full-width">
             <label>Docentes Asignados</label>
             <div class="docentes-selection">
@@ -74,7 +78,7 @@ import { NotificationService } from '../../shared/services/notification.service'
                 <div class="checkbox-item" *ngFor="let docente of activeDocentes">
                   <input type="checkbox" [id]="'docente-' + docente.id" [checked]="isDocenteSelected(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
                   <label [for]="'docente-' + docente.id">
-                    {{docente.full_name}} <small> ({{docente.especialidad}} - {{docente.email}})</small>
+                    {{docente.full_name}} <small>({{docente.email}})</small>
                   </label>
                 </div>
               </div>
@@ -89,95 +93,32 @@ import { NotificationService } from '../../shared/services/notification.service'
 
        <div *ngIf="searchTerm.length === 0">
         <div class="category-section">
-          <div class="category-header">
-            <h3>Píldoras Educativas</h3>
-            <button class="view-more-btn" (click)="showAllPildoras = !showAllPildoras">{{ showAllPildoras ? 'Ver menos' : 'Ver más' }}</button>
-          </div>
+          <div class="category-header"><h3>Píldoras Educativas</h3></div>
           <div class="courses-grid">
-            <div class="course-card" *ngFor="let course of showAllPildoras ? pildoras : pildoras.slice(0, 3)" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)">
-                <h3 class="course-name">{{ course.name }}</h3>
-                <p class="course-code">{{ course.code }}</p>
-                <div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div>
-              </div>
-              <div class="course-card-body">
-                <div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div>
-                <div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div>
-                <div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div>
-                <div class="detail-item docentes">
-                  <strong>Docente(s):</strong>
-                  <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
-                  </div>
-                  <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
-                </div>
-              </div>
-              <div class="course-card-footer">
-                <button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-                <button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-              </div>
+            <div class="course-card" *ngFor="let course of pildoras" (click)="selectCourse(course)">
+              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
             </div>
           </div>
         </div>
         <div class="category-section">
-          <div class="category-header">
-            <h3>Inyecciones Educativas</h3>
-            <button class="view-more-btn" (click)="showAllInyecciones = !showAllInyecciones">{{ showAllInyecciones ? 'Ver menos' : 'Ver más' }}</button>
-          </div>
+          <div class="category-header"><h3>Inyecciones Educativas</h3></div>
           <div class="courses-grid">
-            <div class="course-card" *ngFor="let course of showAllInyecciones ? inyecciones : inyecciones.slice(0, 3)" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)">
-                <h3 class="course-name">{{ course.name }}</h3>
-                <p class="course-code">{{ course.code }}</p>
-                <div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div>
-              </div>
-              <div class="course-card-body">
-                <div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div>
-                <div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div>
-                <div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div>
-                <div class="detail-item docentes">
-                  <strong>Docente(s):</strong>
-                  <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                     <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
-                  </div>
-                  <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
-                </div>
-              </div>
-              <div class="course-card-footer">
-                <button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-                <button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-              </div>
+            <div class="course-card" *ngFor="let course of inyecciones" (click)="selectCourse(course)">
+              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
             </div>
           </div>
         </div>
         <div class="category-section">
-          <div class="category-header">
-            <h3>Cursos Educativos</h3>
-            <button class="view-more-btn" (click)="showAllCursos = !showAllCursos">{{ showAllCursos ? 'Ver menos' : 'Ver más' }}</button>
-          </div>
+          <div class="category-header"><h3>Cursos Educativos</h3></div>
           <div class="courses-grid">
-            <div class="course-card" *ngFor="let course of showAllCursos ? cursos : cursos.slice(0, 3)" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)">
-                <h3 class="course-name">{{ course.name }}</h3>
-                <p class="course-code">{{ course.code }}</p>
-                <div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div>
-              </div>
-              <div class="course-card-body">
-                <div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div>
-                <div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div>
-                <div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div>
-                <div class="detail-item docentes">
-                  <strong>Docente(s):</strong>
-                  <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                    <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
-                  </div>
-                  <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
-                </div>
-              </div>
-              <div class="course-card-footer">
-                <button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-                <button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-              </div>
+             <div class="course-card" *ngFor="let course of cursos" (click)="selectCourse(course)">
+              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
             </div>
           </div>
         </div>
@@ -185,114 +126,49 @@ import { NotificationService } from '../../shared/services/notification.service'
 
       <div *ngIf="searchTerm.length > 0" class="courses-grid">
         <div class="course-card" *ngFor="let course of filteredCourses" (click)="selectCourse(course)">
-           <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)">
-            <h3 class="course-name">{{ course.name }}</h3>
-            <p class="course-code">{{ course.code }}</p>
-            <div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div>
-          </div>
-          <div class="course-card-body">
-            <div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div>
-            <div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div>
-            <div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div>
-            <div class="detail-item docentes">
-              <strong>Docente(s):</strong>
-              <div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                <span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.especialidad }} {{ docente.full_name }}</span>
-              </div>
-              <ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template>
-            </div>
-          </div>
-          <div class="course-card-footer">
-            <button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-            <button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar Curso"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+           <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+           <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+           <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
+        </div>
+      </div>
+      
+      <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header"><h2>Participantes en {{ selectedCourse.name }}</h2><button class="close-btn" (click)="unselectCourse()"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
+          <div class="modal-body">
+            <div class="modal-actions"><div class="add-participant-section"><button class="primary-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Participante</button><div *ngIf="showAddParticipantForm" class="form-card compact"><form (ngSubmit)="enrollParticipant()" class="add-participant-form"><div class="form-group"><label>Seleccionar Participante</label><select [(ngModel)]="participantToAdd" name="participant_id" required><option [ngValue]="null" disabled>-- Elige un participante --</option><option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.email}})</option></select></div><div class="form-actions"><button type="button" class="secondary-btn" (click)="showAddParticipantForm = false">Cancelar</button><button type="submit" class="primary-btn" [disabled]="!participantToAdd">Inscribir</button></div></form></div></div><div class="upload-section form-card compact"><h4>Importar desde Archivo</h4><div class="form-group"><input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx"></div><div class="form-actions"><button class="primary-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button></div></div><div class="send-all-section form-card compact"><h4>Notificación Masiva</h4><button class="secondary-btn" (click)="sendAllCertificates(selectedCourse.id)">Redactar Correo a Todos</button></div></div>
+            <div class="data-table"><table><thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Acciones</th><th>Enviar Constancia</th></tr></thead><tbody><tr *ngFor="let p of courseParticipants"><td>{{ p.full_name }}</td><td>{{ p.email }}</td><td>{{ p.phone || 'N/A' }}</td><td><button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></td><td><div class="send-actions"><button class="icon-btn email" (click)="sendCertificate(p, 'email')" title="Email"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></button><button class="icon-btn whatsapp" (click)="sendCertificate(p, 'whatsapp')" [disabled]="!p.phone" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M16.75 13.96c.25.13.41.2.46.3.06.11.04.61-.21 1.18-.2.56-1.24 1.1-1.7 1.12-.46.02-1.06-.21-1.57-.46-.51-.25-1.33-.8-1.93-1.4-1.13-1.1-1.9-2.45-2.03-2.78-.13-.33-.56-.48-.56-.48s-.18-.02-.38-.02c-.2 0-.46.02-.63.02s-.41.04-.63.48c-.22.44-.82 1.93-.82 1.93s-.25.41-.53.41c-.28 0-.78-.13-.78-.13s-1.33-.56-2.28-1.5c-.94-.94-1.56-2.2-1.56-2.2s-.11-.25-.11-.53c0-.28.13-.41.13-.41s.23-.25.33-.38c.11-.13.2-.2.28-.35.08-.15.11-.33 0-.53-.11-.2-.28-.53-.38-.7-.11-.18-.25-.38-.25-.38s-.14-.18-.33-.25c-.2-.08-.41-.02-.41-.02s-.48.08-.68.2c-.2.13-.35.33-.46.53-.11.2-.18.44-.18.44s-.23.82 0 1.57c.23.75.87 1.93 2.03 3.1 1.15 1.18 2.5 1.83 3.33 2.03.83.2 1.26.18 1.7.18.44 0 1.33-.23 1.33-.23s.41-.18.68-.44c.28-.25.44-.51.44-.51s.23-.28.33-.56c.11-.28.11-.58.06-.78-.06-.2-.13-.28-.23-.41-.11-.13-.23-.25-.33-.35a.33.33 0 0 1-.08-.44c.08-.13.18-.23.28-.35.1-.13.23-.28.35-.38.13-.11.25-.18.25-.18s.16-.13.44-.04c.28.08.38.38.38.38z"/></svg></button></div></td></tr><tr *ngIf="courseParticipants.length === 0"><td colspan="5" class="no-data">No hay participantes inscritos.</td></tr></tbody></table></div>
           </div>
         </div>
       </div>
 
-      <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
+      <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
         <div class="modal-content" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2>Participantes en {{ selectedCourse.name }}</h2>
-            <button class="close-btn" (click)="unselectCourse()">
+            <h2>Gestionar Competencias del Curso</h2>
+            <button class="close-btn" (click)="showCompetenciesModal = false">
               <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <div class="modal-actions">
-              <div class="add-participant-section">
-                  <button class="primary-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Participante Manualmente</button>
-                  <div *ngIf="showAddParticipantForm" class="form-card compact">
-                    <form (ngSubmit)="enrollParticipant()" class="add-participant-form">
-                      <div class="form-group">
-                        <label>Seleccionar Participante</label>
-                        <select [(ngModel)]="participantToAdd" name="participant_id" required>
-                          <option [ngValue]="null" disabled>-- Elige un participante --</option>
-                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.email}}) ({{p.phone}})</option>
-                        </select>
-                      </div>
-                      <div class="form-actions">
-                        <button type="button" class="secondary-btn" (click)="showAddParticipantForm = false">Cancelar</button>
-                        <button type="submit" class="primary-btn" [disabled]="!participantToAdd">Inscribir</button>
-                      </div>
-                    </form>
-                  </div>
-              </div>
-              <div class="upload-section form-card compact">
-                  <h4>Importar Participantes desde Archivo</h4>
-                  <div class="form-group">
-                      <label>Seleccionar archivo (CSV/Excel)</label>
-                      <input type="file" (change)="onFileSelected($event)" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
-                  </div>
-                  <div class="form-actions">
-                      <button class="primary-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
-                  </div>
-              </div>
-              <div class="send-all-section">
-                  <button class="secondary-btn" (click)="sendAllCertificates(selectedCourse.id)">Notificar a todos los Participantes</button>
+            <p class="modal-instructions">Define un máximo de {{ maxCompetencies }} competencias que se evaluarán en este curso.</p>
+            <div class="form-grid-modal">
+              <div class="form-group" *ngFor="let comp of competenciesList; let i = index; trackBy: trackByIndex">
+                <label>Competencia {{i + 1}}</label>
+                <input type="text" [(ngModel)]="competenciesList[i]" name="competencia-{{i}}" placeholder="Ej: Interpreta y transforma datos...">
               </div>
             </div>
-
-            <div class="data-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre Completo</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Acciones</th>
-                    <th>Enviar Constancia</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let p of courseParticipants">
-                    <td>{{ p.full_name }}</td>
-                    <td>{{ p.email }}</td>
-                    <td>{{ p.phone || 'N/A' }}</td>
-                    <td>
-                      <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)">
-                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                      </button>
-                    </td>
-                    <td>
-                      <div class="send-actions">
-                        <button class="icon-btn email" (click)="sendCertificate(p, 'email')" title="Enviar por Email">
-                          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                        </button>
-                        <button class="icon-btn whatsapp" (click)="sendCertificate(p, 'whatsapp')" [disabled]="!p.phone" title="Notificar por WhatsApp">
-                           <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M16.75 13.96c.25.13.41.2.46.3.06.11.04.61-.21 1.18-.2.56-1.24 1.1-1.7 1.12-.46.02-1.06-.21-1.57-.46-.51-.25-1.33-.8-1.93-1.4-1.13-1.1-1.9-2.45-2.03-2.78-.13-.33-.56-.48-.56-.48s-.18-.02-.38-.02c-.2 0-.46.02-.63.02s-.41.04-.63.48c-.22.44-.82 1.93-.82 1.93s-.25.41-.53.41c-.28 0-.78-.13-.78-.13s-1.33-.56-2.28-1.5c-.94-.94-1.56-2.2-1.56-2.2s-.11-.25-.11-.53c0-.28.13-.41.13-.41s.23-.25.33-.38c.11-.13.2-.2.28-.35.08-.15.11-.33 0-.53-.11-.2-.28-.53-.38-.7-.11-.18-.25-.38-.25-.38s-.14-.18-.33-.25c-.2-.08-.41-.02-.41-.02s-.48.08-.68.2c-.2.13-.35.33-.46.53-.11.2-.18.44-.18.44s-.23.82 0 1.57c.23.75.87 1.93 2.03 3.1 1.15 1.18 2.5 1.83 3.33 2.03.83.2 1.26.18 1.7.18.44 0 1.33-.23 1.33-.23s.41-.18.68-.44c.28-.25.44-.51.44-.51s.23-.28.33-.56c.11-.28.11-.58.06-.78-.06-.2-.13-.28-.23-.41-.11-.13-.23-.25-.33-.35a.33.33 0 0 1-.08-.44c.08-.13.18-.23.28-.35.1-.13.23-.28.35-.38.13-.11.25-.18.25-.18s.16-.13.44-.04c.28.08.38.38.38.38z"/></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr *ngIf="courseParticipants.length === 0">
-                    <td colspan="5" class="no-data">No hay participantes inscritos.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="secondary-btn" (click)="showCompetenciesModal = false">Cancelar</button>
+            <button type="button" class="primary-btn icon-left" (click)="saveCompetencies()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              Guardar Competencias
+            </button>
           </div>
         </div>
       </div>
+
     </div>
   `,
   styles: [`
@@ -313,8 +189,8 @@ import { NotificationService } from '../../shared/services/notification.service'
     .form-group { display: flex; flex-direction: column; }
     .form-group.full-width { grid-column: 1 / -1; }
     .form-group label { color: #374151; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-    .form-group input, .form-group select { padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+    .form-group input, .form-group select, .form-group textarea { padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
     .form-group input:disabled { background-color: #f3f4f6; cursor: not-allowed; }
     .form-actions { display: flex; gap: 12px; grid-column: 1 / -1; margin-top: 8px; justify-content: flex-end;}
 
@@ -327,12 +203,12 @@ import { NotificationService } from '../../shared/services/notification.service'
     .checkbox-item label small { display: block; color: #6b7280; font-weight: normal; font-size: 12px; margin-top: 2px; }
     
     /* Button Styles */
-    .primary-btn, .secondary-btn, .view-more-btn { border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .primary-btn { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .primary-btn, .secondary-btn { border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .primary-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
     .primary-btn:hover { transform: translateY(-1px); }
     .secondary-btn { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
     .secondary-btn:hover { background: #e2e8f0; }
-    .view-more-btn { background: none; color: #667eea; padding: 8px 12px; }
+    .secondary-btn.icon-left svg { margin-right: 8px; }
     
     /* Category Section */
     .category-section { margin-bottom: 32px; }
@@ -357,8 +233,6 @@ import { NotificationService } from '../../shared/services/notification.service'
     .course-card-footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 8px; }
     .icon-btn-card { width: 32px; height: 32px; border: none; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; color: #6b7280; background: transparent; }
     .icon-btn-card:hover { background: rgba(0,0,0,0.05); }
-    .icon-btn-card.edit:hover { color: #2563eb; }
-    .icon-btn-card.delete:hover { color: #ef4444; }
     
     /* Modal Styles */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -368,31 +242,26 @@ import { NotificationService } from '../../shared/services/notification.service'
     .close-btn { background: none; border: none; cursor: pointer; padding: 5px; color: #64748b; }
     .close-btn:hover { color: #ef4444; }
     .modal-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
-    
-    .add-participant-form { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
-    .add-participant-form .form-actions { justify-content: flex-end; margin-top: 0; }
     .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 24px; }
-    .send-all-section { grid-column: 1 / -1; }
-
+    
     /* Data Table Styles */
     .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
     .data-table table { width: 100%; }
     .data-table th, .data-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
     .data-table th { background-color: #f1f5f9; color: #374151; font-weight: 600; font-size: 14px; }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tbody tr:nth-child(even) { background-color: #fdfdfe; }
-    .data-table tbody tr:hover { background-color: #f0f4f8; }
-
     .no-data { text-align: center; padding: 32px; color: #9ca3af; font-style: italic; }
-    .icon-btn.delete { background: #fecaca; color: #dc2626; padding: 8px; border-radius: 6px; }
+    .icon-btn { padding: 8px; border-radius: 6px; border:none; display:inline-flex; align-items:center; justify-content:center; }
+    .icon-btn.delete { background: #fecaca; color: #dc2626; }
     .icon-btn.delete:hover:not(:disabled) { background: #fca5a5; }
-
     .send-actions { display: flex; gap: 8px; }
     .icon-btn.email { color: #2563eb; background: #dbeafe; }
-    .icon-btn.email:hover { background: #bfdbfe; }
     .icon-btn.whatsapp { color: #16a34a; background: #dcfce7; }
-    .icon-btn.whatsapp:hover:not(:disabled) { background: #bbf7d0; }
     .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Modal para Competencias */
+    .modal-instructions { margin-bottom: 24px; color: #64748b; font-size: 15px; background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .form-grid-modal { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
   `]
 })
 export class AdminCoursesComponent implements OnInit {
@@ -408,6 +277,10 @@ export class AdminCoursesComponent implements OnInit {
   showAddParticipantForm = false;
   participantToAdd: number | null = null;
   selectedFile: File | null = null;
+
+  showCompetenciesModal = false;
+  maxCompetencies: number = 4;
+  competenciesList: string[] = [];
 
   showCourseForm = false;
   editingCourse: CourseDTO | null = null;
@@ -427,7 +300,7 @@ export class AdminCoursesComponent implements OnInit {
   constructor() {
     this.resetCourseForm();
   }
-
+  
   ngOnInit() {
     this.loadInitialData();
   }
@@ -549,7 +422,7 @@ export class AdminCoursesComponent implements OnInit {
       .subscribe(data => this.courseParticipants = data);
   }
 
-  getInitialCourseForm(): CreateCourseDTO { return { code: '', name: '', start_date: '', end_date: '', hours: 0, created_by: 2, course_type: 'CURSO_EDUCATIVO', docente_ids: [] }; }
+  getInitialCourseForm(): CreateCourseDTO { return { code: '', name: '', start_date: '', end_date: '', hours: 0, created_by: 2, course_type: 'CURSO_EDUCATIVO', docente_ids: [], competencies: '' }; }
   
   resetCourseForm() { 
       this.courseForm = this.getInitialCourseForm(); 
@@ -590,6 +463,7 @@ export class AdminCoursesComponent implements OnInit {
       start_date: formatDate(course.start_date),
       end_date: formatDate(course.end_date),
       hours: course.hours,
+      competencies: course.competencies || '',
       created_by: course.created_by,
       course_type: course.course_type,
       modality: course.modality,
@@ -608,6 +482,7 @@ export class AdminCoursesComponent implements OnInit {
         start_date: this.courseForm.start_date,
         end_date: this.courseForm.end_date,
         hours: this.courseForm.hours,
+        competencies: this.courseForm.competencies,
         course_type: this.courseForm.course_type,
         modality: this.courseForm.modality,
         docente_ids: this.selectedDocenteIds
@@ -726,5 +601,20 @@ export class AdminCoursesComponent implements OnInit {
     const emails = this.courseParticipants.map(p => p.email).join(',');
     const mailtoLink = `mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
     window.open(mailtoLink, '_blank');
+  }
+    // --- Lógica para el Modal de Competencias ---
+  openCompetenciesModal() {
+    const currentCompetencies = this.courseForm.competencies?.split('\n').filter(c => c) || [];
+    this.competenciesList = Array(this.maxCompetencies).fill('').map((_, i) => currentCompetencies[i] || '');
+    this.showCompetenciesModal = true;
+  }
+
+  saveCompetencies() {
+    this.courseForm.competencies = this.competenciesList.filter(c => c && c.trim()).join('\n');
+    this.showCompetenciesModal = false;
+  }
+
+  trackByIndex(index: number, item: any): number{
+    return index;
   }
 }
