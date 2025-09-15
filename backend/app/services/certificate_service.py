@@ -21,6 +21,9 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
         
         try:
             template_pdf_path = "app/static/Formato constancias.pdf"
+        
+            # Define competencies_list from the course data
+            competencies_list = course.get("competencies", "").split('\n') if course.get("competencies") else []
             
             pdf_bytes = generate_certificate_pdf(
                 participant_name=participant["full_name"],
@@ -28,12 +31,11 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
                 hours=course["hours"],
                 issue_date=datetime.now().date(),
                 template_path=template_pdf_path,
-                kind=certificate.kind,
+                kind=certificate.kind.value,
                 serial=certificate.serial,
                 qr_token=certificate.qr_token,
                 course_modality=course["modality"].value,
                 course_date=course["start_date"].strftime("%d/%m/%Y"),
-                include_competencies=certificate.include_competencies,
                 competencies=competencies_list
             )
             certificate.pdf_content = pdf_bytes
