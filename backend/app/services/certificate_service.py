@@ -32,7 +32,9 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
                 serial=certificate.serial,
                 qr_token=certificate.qr_token,
                 course_modality=course["modality"].value,
-                course_date=course["start_date"].strftime("%d/%m/%Y")
+                course_date=course["start_date"].strftime("%d/%m/%Y"),
+                include_competencies=certificate.include_competencies,
+                competencies=competencies_list
             )
             certificate.pdf_content = pdf_bytes
             

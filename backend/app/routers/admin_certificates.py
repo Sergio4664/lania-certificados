@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.models.certificate import Certificate
 from app.models.course import Course
 from app.models.participant import Participant
-from app.models.enums import CertificateStatus
+from app.models.enums import CertificateStatus, CertificateKind
 from app.services.certificate_service import issue_certificate
 import logging
 import os
@@ -17,7 +17,9 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class CertificateIssueRequest(BaseModel):
-    include_competencies: bool = False
+    course_id: int
+    participant_id: int
+    kind: CertificateKind
 
 router = APIRouter(prefix="/api/admin/certificates", tags=["admin-certificates"])
 
@@ -33,24 +35,33 @@ class IssueResponse(BaseModel):
     pdf_path: Optional[str] = None
 
 @router.post("/issue", response_model=IssueResponse)
-def issue(data: dict, db: Session = Depends(get_db)):
+def issue(data: CertificateIssueRequest, db: Session = Depends(get_db)):
     """ Emite un certificado. """
     try:
-        course = db.query(Course).get(data["course_id"])
-        participant = db.query(Participant).get(data["participant_id"])
+        course = db.query(Course).get(data.course_id)
+        participant = db.query(Participant).get(data.participant_id)
         if not course or not participant:
             raise HTTPException(status_code=404, detail="Curso o participante inexistente")
+        
+        if "COMPETENCIAS" in data.kind.value and not course.competencies:
+             raise HTTPException(status_code=400, detail="Este curso no tiene competencias definidas para generar este tipo de constancia.")
+
         existing = db.query(Certificate).filter(
             Certificate.course_id == course.id,
             Certificate.participant_id == participant.id,
-            Certificate.kind == data["kind"]
+            Certificate.kind == data.kind
         ).first()
+
         if existing:
-            raise HTTPException(status_code=400, detail="Ya existe un certificado de este tipo para este participante y curso")
+            raise HTTPException(status_code=400, detail="Ya existe una constancia de este tipo para este participante y curso")
         
         cert = Certificate(
-            course_id=course.id, participant_id=participant.id, kind=data["kind"],
-            status=CertificateStatus.EN_PROCESO, serial="TEMP", qr_token="TEMP"
+            course_id=course.id, 
+            participant_id=participant.id, 
+            kind=data.kind,
+            status=CertificateStatus.EN_PROCESO, 
+            serial="TEMP", 
+            qr_token="TEMP"
         )
         db.add(cert)
         db.commit()
@@ -60,8 +71,11 @@ def issue(data: dict, db: Session = Depends(get_db)):
             db, cert,
             participant={"full_name": participant.full_name},
             course={
-                "name": course.name, "hours": course.hours, "start_date": course.start_date,
-                "modality": course.modality
+                "name": course.name, 
+                "hours": course.hours, 
+                "start_date": course.start_date,
+                "modality": course.modality,
+                "competencies": course.competencies
             }
         )
         
