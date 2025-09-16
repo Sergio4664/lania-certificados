@@ -12,18 +12,6 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
       <header class="dashboard-header">
         <div class="header-content">
           <div class="logo-section">
-            <div class="logo">
-              <svg width="40" height="40" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="30" cy="30" r="25" fill="url(#gradient)" stroke="#e74c3c" stroke-width="2"/>
-                <text x="30" y="35" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">L</text>
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#c0392b;stop-opacity:1" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
             <div>
               <h1>LANIA - CONSTANCIAS</h1>
               <p>Sistema de Gestión de Constancias</p>

@@ -5,6 +5,14 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 
+//Interfaz para la respuesta del endpoint masivo
+export interface BulkIssueResponse {
+  issued: number;
+  skipped: number;
+  errors: string[];
+  message: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CertificateService {
   private http = inject(HttpClient);
@@ -16,6 +24,15 @@ export class CertificateService {
 
   issue(data: CreateCertificateDTO): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/api/admin/certificates/issue`, data);
+  }
+
+  //Método para le emisión masiva
+  issueBulk(courseId: number, participantIds: number[], withCompetencies: boolean): Observable<BulkIssueResponse> {
+    const payload = {
+      participant_ids: participantIds,
+      with_competencies: withCompetencies
+    };
+    return this.http.post<BulkIssueResponse>(`${this.apiUrl}/api/admin/courses/${courseId}/issue-bulk-certificates`, payload);
   }
 
   downloadBySerial(serial: string): void {

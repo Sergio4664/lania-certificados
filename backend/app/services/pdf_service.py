@@ -21,9 +21,9 @@ except locale.Error:
 
 def draw_multiline_text(c, text, x, y, max_width, style):
     p = Paragraph(text, style)
-    p.wrapOn(c, max_width, 10 * cm)
+    p.wrapOn(c, max_width, 10 * cm) 
     p.drawOn(c, x - (max_width / 2), y - p.height)
-    return p.height
+    return p.height # Devuelve la altura del párrafo dibujado
 
 def generate_certificate_pdf(
     participant_name: str, 
@@ -81,10 +81,9 @@ def generate_certificate_pdf(
     text_width = 18 * cm
 
     if "COMPETENCIAS" in kind and competencies:
-        # Versión con Competencias
         text = f'Por haber acreditado en el curso <b>"{course_name}"</b> ({hours} horas de trabajo), la evaluación de las competencias:'
         height = draw_multiline_text(c, text, center_x, y_position, text_width, style_normal)
-        y_position -= height + 0.5 * cm
+        y_position -= (height + 0.5 * cm)
         
         style_competency = styles['Normal']
         style_competency.fontName = 'Helvetica'
@@ -95,10 +94,10 @@ def generate_certificate_pdf(
         for comp in competencies:
             p = Paragraph(f"• {comp}", style_competency)
             p.wrapOn(c, text_width - 1*cm, 10 * cm)
-            p.drawOn(c, 2.5 * cm, y_position - p.height)
-            y_position -= p.height + 0.1 * cm
+            p_height = p.height
+            p.drawOn(c, 2.5 * cm, y_position - p_height)
+            y_position -= (p_height + 0.1 * cm)
     else:
-        # Versión Normal
         reason_text = {
             "PILDORA_PARTICIPANTE": "Por su asistencia a la píldora educativa",
             "PILDORA_PONENTE": "Por su participación como ponente en la conferencia",
@@ -108,10 +107,13 @@ def generate_certificate_pdf(
             "CURSO_PONENTE": "Por haber aprobado el curso"
         }
         line1 = reason_text.get(kind, "Por su participación en el evento")
-        draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
-        y_position -= 0.7 * cm
-        draw_multiline_text(c, f'"{course_name}"', center_x, y_position, text_width, style_bold)
-        y_position -= 0.7 * cm
+        
+        # CORRECCIÓN: Se captura la altura de cada línea y se ajusta la posición de la siguiente
+        height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
+        y_position -= (height1 + 0.2 * cm) 
+        
+        height2 = draw_multiline_text(c, f'"{course_name}"', center_x, y_position, text_width, style_bold)
+        y_position -= (height2 + 0.2 * cm)
         
         if not "PONENTE" in kind:
             details_text = f"con duración de {hours} horas, modalidad {course_modality.lower()}"
@@ -119,7 +121,7 @@ def generate_certificate_pdf(
             details_text = f"impartida el {course_date}"
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
-    # Firma y fecha (ajustadas si es necesario)
+    # Firma y fecha 
     y_firma = 6.0 * cm
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, y_firma, "Dr. Juan Manuel Gutiérrez Méndez")

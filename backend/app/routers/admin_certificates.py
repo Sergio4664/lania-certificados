@@ -34,6 +34,103 @@ class IssueResponse(BaseModel):
     qr_token: str
     pdf_path: Optional[str] = None
 
+class BulkIssueRequest(BaseModel):
+    participant_ids: List[int]
+    with_competencies: bool = False
+
+# NUEVO: Endpoint para la emisión masiva de certificados
+@router.post("/{course_id}/issue-bulk-certificates", summary="Emite certificados masivamente para un curso")
+def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Session = Depends(get_db)):
+    course = db.query(Course).get(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+
+    if request.with_competencies:
+        if course.course_type != 'CURSO_EDUCATIVO':
+            raise HTTPException(status_code=400, detail="Las constancias de competencias solo están disponibles para 'CURSO_EDUCATIVO'")
+        if not course.competencies:
+            raise HTTPException(status_code=400, detail="Este curso no tiene competencias definidas para generar este tipo de constancia.")
+
+    issued_count = 0
+    skipped_count = 0
+    errors = []
+
+    # Obtener participantes válidos y que estén inscritos en el curso
+    valid_participants = db.query(Participant).join(Enrollment).filter(
+        Enrollment.course_id == course_id,
+        Participant.id.in_(request.participant_ids)
+    ).all()
+    
+    valid_participant_map = {p.id: p for p in valid_participants}
+
+    for participant_id in request.participant_ids:
+        participant = valid_participant_map.get(participant_id)
+        if not participant:
+            errors.append(f"Participante con ID {participant_id} no está inscrito en el curso.")
+            continue
+
+        # Determinar el tipo de constancia a emitir
+        kind = None
+        if course.course_type == 'CURSO_EDUCATIVO':
+            kind = CertificateKind.CURSO_COMPETENCIAS_PARTICIPANTE if request.with_competencies else CertificateKind.CURSO_PARTICIPANTE
+        elif course.course_type == 'PILDORA_EDUCATIVA':
+            kind = CertificateKind.PILDORA_PARTICIPANTE
+        elif course.course_type == 'INYECCION_EDUCATIVA':
+            kind = CertificateKind.INYECCION_PARTICIPANTE
+        
+        if not kind:
+            errors.append(f"No se pudo determinar el tipo de constancia para el participante {participant.full_name}")
+            continue
+
+        # Verificar si ya existe una constancia de este tipo
+        existing = db.query(Certificate).filter(
+            Certificate.course_id == course_id,
+            Certificate.participant_id == participant_id,
+            Certificate.kind == kind
+        ).first()
+
+        if existing:
+            skipped_count += 1
+            continue
+
+        try:
+            # Crear y procesar el certificado
+            cert = Certificate(
+                course_id=course.id, 
+                participant_id=participant.id, 
+                kind=kind,
+                status='EN_PROCESO', 
+                serial="TEMP", 
+                qr_token="TEMP"
+            )
+            db.add(cert)
+            db.commit()
+            db.refresh(cert)
+
+            issue_certificate(
+                db, cert,
+                participant={"full_name": participant.full_name},
+                course={
+                    "name": course.name, 
+                    "hours": course.hours, 
+                    "start_date": course.start_date,
+                    "modality": course.modality,
+                    "competencies": course.competencies
+                }
+            )
+            issued_count += 1
+        except Exception as e:
+            logger.error(f"Error emitiendo certificado para participante {participant_id}: {str(e)}")
+            errors.append(f"Error para {participant.full_name}: {str(e)}")
+            db.rollback()
+
+    return {
+        "issued": issued_count,
+        "skipped": skipped_count,
+        "errors": errors,
+        "message": f"Proceso completado. Emitidos: {issued_count}, Omitidos (ya existían): {skipped_count}."
+    }
+
 @router.post("/issue", response_model=IssueResponse)
 def issue(data: CertificateIssueRequest, db: Session = Depends(get_db)):
     """ Emite un certificado. """

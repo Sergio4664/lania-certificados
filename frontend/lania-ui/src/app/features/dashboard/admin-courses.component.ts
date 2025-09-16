@@ -8,7 +8,8 @@ import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interf
 import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
 import { CertificateDTO, CreateCertificateDTO } from '@app/shared/interfaces/certificate.interfaces';
-import { CertificateService } from '../certificates/certificate.service';
+import { CertificateService, BulkIssueResponse } from '../certificates/certificate.service';
+
 
 @Component({
   selector: 'app-admin-courses',
@@ -138,8 +139,93 @@ import { CertificateService } from '../certificates/certificate.service';
         <div class="modal-content" (click)="$event.stopPropagation()">
           <div class="modal-header"><h2>Participantes en {{ selectedCourse.name }}</h2><button class="close-btn" (click)="unselectCourse()"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
           <div class="modal-body">
-            <div class="modal-actions"><div class="add-participant-section"><button class="primary-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Participante</button><div *ngIf="showAddParticipantForm" class="form-card compact"><form (ngSubmit)="enrollParticipant()" class="add-participant-form"><div class="form-group"><label>Seleccionar Participante</label><select [(ngModel)]="participantToAdd" name="participant_id" required><option [ngValue]="null" disabled>-- Elige un participante --</option><option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.email}})</option></select></div><div class="form-actions"><button type="button" class="secondary-btn" (click)="showAddParticipantForm = false">Cancelar</button><button type="submit" class="primary-btn" [disabled]="!participantToAdd">Inscribir</button></div></form></div></div><div class="upload-section form-card compact"><h4>Importar desde Archivo</h4><div class="form-group"><input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx"></div><div class="form-actions"><button class="primary-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button></div></div><div class="send-all-section form-card compact"><h4>Notificación Masiva</h4><button class="secondary-btn" (click)="sendAllCertificates(selectedCourse.id)">Redactar Correo a Todos</button></div></div>
-            <div class="data-table"><table><thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Acciones</th><th>Emitir Constancia</th></tr></thead><tbody><tr *ngFor="let p of courseParticipants"><td>{{ p.full_name }}</td><td>{{ p.email }}</td><td>{{ p.phone || 'N/A' }}</td><td><button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></td><td><div class="send-actions"><button class="secondary-btn small-btn" (click)="issueCertificate(p.id, false)">Normal</button><button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(p.id, true)">Competencias</button></div></td></tr><tr *ngIf="courseParticipants.length === 0"><td colspan="5" class="no-data">No hay participantes inscritos.</td></tr></tbody></table></div>
+            
+            <div class="modal-actions-grid">
+              <div class="form-card compact">
+                <h4>Añadir e Importar Participantes</h4>
+                <div class="add-participant-section">
+                  <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Manualmente</button>
+                  <div *ngIf="showAddParticipantForm" class="form-card nested-form">
+                    <form (ngSubmit)="enrollParticipant()">
+                      <div class="form-group">
+                        <label>Seleccionar Participante</label>
+                        <select [(ngModel)]="participantToAdd" name="participant_id" required>
+                          <option [ngValue]="null" disabled>-- Elige un participante --</option>
+                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.email}})</option>
+                        </select>
+                      </div>
+                      <div class="form-actions">
+                        <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
+                        <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <div class="upload-section">
+                  <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
+                  <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
+                  <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+                  <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir</button>
+                </div>
+              </div>
+
+              <div class="form-card compact">
+                <h4>Emisión Masiva de Constancias</h4>
+                <div class="bulk-actions">
+                  <button class="primary-btn" (click)="issueBulkCertificates(false)" [disabled]="courseParticipants.length === 0">Emitir a todos (Normal)</button>
+                  <div *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'">
+                    <p>O seleccione participantes para emitir constancias <strong>de competencias.</strong></p>
+                    <button class="secondary-btn" (click)="issueBulkCertificates(true)" [disabled]="competencyRecipients.size === 0">Emitir a Seleccionados (Competencias)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                            [checked]="areAllCompetencyRecipientsSelected"
+                            (change)="toggleAllCompetencyRecipients($event)"
+                            title="Seleccionar Todos">
+                    </th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Acciones</th>
+                    <th>Emitir Constancia Individual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of courseParticipants">
+                    <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                            [checked]="isRecipientSelected(p.id)"
+                            (change)="toggleCompetencyRecipient(p.id, $event)">
+                    </td>
+                    <td>{{ p.full_name }}</td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.phone || 'N/A' }}</td>
+                    <td>
+                      <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)" title="Eliminar del curso">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="send-actions">
+                        <button class="secondary-btn small-btn" (click)="issueCertificate(p.id, false)">Normal</button>
+                        <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(p.id, true)">Competencias</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="courseParticipants.length === 0">
+                    <td [attr.colspan]="selectedCourse.course_type === 'CURSO_EDUCATIVO' ? 6 : 5" class="no-data">No hay participantes inscritos.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -186,7 +272,7 @@ import { CertificateService } from '../certificates/certificate.service';
     /* Form Styles */
     .form-card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
     .form-card h3, .form-card h4 { color: #1e293b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; }
-    .form-card.compact { padding: 20px; margin-top: 20px; }
+    .form-card.compact { padding: 20px; margin-top: 0; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
     .form-group { display: flex; flex-direction: column; }
     .form-group.full-width { grid-column: 1 / -1; }
@@ -238,35 +324,41 @@ import { CertificateService } from '../certificates/certificate.service';
     
     /* Modal Styles */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .modal-content { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 90%; max-width: 1100px; max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-content { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 90%; max-width: 1250px; max-height: 90vh; display: flex; flex-direction: column; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #e2e8f0; }
     .modal-header h2 { margin: 0; font-size: 22px; color: #1e293b;}
     .close-btn { background: none; border: none; cursor: pointer; padding: 5px; color: #64748b; }
     .close-btn:hover { color: #ef4444; }
     .modal-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
-    .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 24px; }
-    
+    .modal-actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; align-items: start; margin-bottom: 24px; }
+    .form-card.compact h4 { font-size: 16px; margin-bottom: 16px; }
+    .add-participant-section, .upload-section { margin-bottom: 12px; }
+    .upload-section { display: flex; align-items: center; gap: 10px; }
+    .upload-section span { font-size: 12px; color: #64748b; }
+    .form-card.nested-form { padding: 16px; margin-top: 12px; background-color: #f8fafc; border-radius: 8px; }
+    .bulk-actions { display: flex; flex-direction: column; gap: 12px; }
+    .bulk-actions p { font-size: 14px; color: #475569; margin-top: 8px; }
+    .bulk-actions button { width: 100%; justify-content: center; }
+
     /* Data Table Styles */
     .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
     .data-table table { width: 100%; }
-    .data-table th, .data-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
+    .data-table th, .data-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
     .data-table th { background-color: #f1f5f9; color: #374151; font-weight: 600; font-size: 14px; }
     .no-data { text-align: center; padding: 32px; color: #9ca3af; font-style: italic; }
     .icon-btn { padding: 8px; border-radius: 6px; border:none; display:inline-flex; align-items:center; justify-content:center; }
-    .icon-btn.delete { background: #fecaca; color: #dc2626; }
+    .icon-btn.delete { color: #ef4444; background: #fee2e2; }
     .icon-btn.delete:hover:not(:disabled) { background: #fca5a5; }
     .send-actions { display: flex; gap: 8px; }
-    .icon-btn.email { color: #2563eb; background: #dbeafe; }
-    .icon-btn.whatsapp { color: #16a34a; background: #dcfce7; }
+    .small-btn { padding: 6px 12px; font-size: 12px; }
     .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .data-table .checkbox-col { width: 40px; text-align: center; padding-left: 16px; padding-right: 0; }
+    .data-table .checkbox-col input { transform: scale(1.3); cursor: pointer; }
     
     /* Modal para Competencias */
     .modal-instructions { margin-bottom: 24px; color: #64748b; font-size: 15px; background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
     .form-grid-modal { display: grid; grid-template-columns: 1fr; gap: 16px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-
-    .send-actions { display: flex; gap: 8px; }
-    .small-btn { padding: 6px 12px; font-size: 12px; }
   `]
 })
 export class AdminCoursesComponent implements OnInit {
@@ -303,6 +395,8 @@ export class AdminCoursesComponent implements OnInit {
   showAllInyecciones = false;
   showAllCursos = false;
 
+  competencyRecipients = new Set<number>();
+
   constructor() {
     this.resetCourseForm();
   }
@@ -334,6 +428,7 @@ export class AdminCoursesComponent implements OnInit {
         next: (newlyEnrolled) => {
           alert(`${newlyEnrolled.length} participantes han sido inscritos exitosamente.`);
           this.loadParticipantsForCourse(this.selectedCourse!.id);
+          this.selectedFile = null; // Reset file input
         },
         error: (err) => {
           console.error('Error al subir el archivo:', err);
@@ -372,6 +467,7 @@ export class AdminCoursesComponent implements OnInit {
     this.courseParticipants = [];
     this.showAddParticipantForm = false;
     this.participantToAdd = null;
+    this.competencyRecipients.clear();
   }
   
   isDocenteSelected(docenteId: number): boolean { 
@@ -541,7 +637,7 @@ export class AdminCoursesComponent implements OnInit {
           this.showAddParticipantForm = false;
           this.participantToAdd = null;
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error enrolling participant', err);
           alert(`Error:${err.error?.detail || 'No se pudo inscribir al participante.'}` );
         }
@@ -550,7 +646,7 @@ export class AdminCoursesComponent implements OnInit {
 
   removeParticipantFromCourse(participantId: number) {
     if (!this.selectedCourse) return;
-    if (!confirm('¿Está seguro que desea eliminar este participante de este producto educativo')) return;
+    if (!confirm('¿Está seguro que desea eliminar este participante de este producto educativo?')) return;
 
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
@@ -558,11 +654,11 @@ export class AdminCoursesComponent implements OnInit {
     this.http.delete(`http://127.0.0.1:8000/api/admin/courses/${this.selectedCourse.id}/enroll/${participantId}`, { headers })
       .subscribe({
         next: () => {
-          alert('El participante  ha sido eliminado exitosamente de este prodcuto educativo exitosamente');
+          alert('El participante ha sido eliminado exitosamente de este producto educativo.');
           this.loadParticipantsForCourse(this.selectedCourse!.id);
         },
-        error: (err) => {
-          console.error('Error al eliminanr el participante de este producto educativo:', err); 
+        error: (err: any) => {
+          console.error('Error al eliminar el participante de este producto educativo:', err); 
           alert(`Error:${err.error?.detail || 'No se pudo desinscribir al participante.'}` );
         }
       });
@@ -597,7 +693,6 @@ export class AdminCoursesComponent implements OnInit {
     this.certificateService.issue(payload).subscribe({
       next: (res) => {
         alert(`Constancia emitida para ${res.participant_name}. Serial: ${res.serial}`);
-        // Opcional: recargar datos o actualizar estado localmente
       },
       error: (err) => {
         console.error('Error issuing certificate:', err);
@@ -606,47 +701,63 @@ export class AdminCoursesComponent implements OnInit {
     });
   }
   
-  sendCertificate(participant: ParticipantDTO, method: 'email' | 'whatsapp') {
+  issueBulkCertificates(withCompetencies: boolean): void {
     if (!this.selectedCourse) return;
-    
-    const subject = `Tu constancia del curso "${this.selectedCourse.name}"`;
-    const emailBody = `
-      <h1>¡Felicidades, ${participant.full_name}!</h1>
-      <p>Adjunto encontrarás tu constancia de participación para el producto educativo "${this.selectedCourse.name}".</p>
-      <p>Gracias por tu participación.</p>
-      <p>Atentamente,<br>El equipo de LANIA</p>
-    `;
-    const whatsappMessage = `Hola ${participant.full_name}, te informamos que tu constancia para el producto educativo "${this.selectedCourse.name}" ha sido generada y enviada a tu correo electrónico.`;
 
-    if (method === 'email') {
-      const mailtoLink = `mailto:${participant.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-      window.open(mailtoLink, '_blank');
-    } else if (method === 'whatsapp') {
-      if (!participant.phone) {
-        alert('Este participante no tiene un número de teléfono registrado.');
+    let participantIds: number[] = [];
+    let confirmationMessage: string = '';
+
+    if (withCompetencies) {
+      if (this.competencyRecipients.size === 0) {
+        alert('Por favor, seleccione al menos un participante para emitir constancias de competencias.');
         return;
       }
-      const whatsappLink = `https://wa.me/${participant.phone}?text=${encodeURIComponent(whatsappMessage)}`;
-      window.open(whatsappLink, '_blank');
+      participantIds = Array.from(this.competencyRecipients);
+      confirmationMessage = `¿Está seguro que desea emitir constancias DE COMPETENCIAS para los ${participantIds.length} participantes seleccionados?`;
+    } else {
+      if (this.courseParticipants.length === 0) {
+        alert('No hay participantes en este curso para emitir constancias.');
+        return;
+      }
+      participantIds = this.courseParticipants.map(p => p.id);
+      confirmationMessage = `¿Está seguro que desea emitir constancias NORMALES para los ${participantIds.length} participantes de este curso? \n\nEsta acción omitirá a quienes ya tengan una.`;
+    }
+
+    if (confirm(confirmationMessage)) {
+      this.certificateService.issueBulk(this.selectedCourse.id, participantIds, withCompetencies).subscribe({
+        next: (response: BulkIssueResponse) => {
+          alert(response.message);
+          if (response.errors && response.errors.length > 0) {
+            console.error('Errores durante la emisión masiva:', response.errors);
+          }
+        },
+        error: (err: any) => {
+          console.error('Error en la emisión masiva:', err);
+          alert(`Error al procesar la solicitud: ${err.error?.detail || 'Error desconocido'}`);
+        }
+      });
     }
   }
-
+  
   sendAllCertificates(courseId: number) {
     if (!this.selectedCourse) return;
     
-    const subject = `Tu constancia del curso "${this.selectedCourse.name}"`;
+    const subject = `Notificación del curso "${this.selectedCourse.name}"`;
     const emailBody = `
-      <h1>¡Felicidades!</h1>
-      <p>Adjunto encontrarás tu constancia de participación para el producto educativo "${this.selectedCourse.name}".</p>
-      <p>Gracias por tu participación.</p>
+      <h1>Estimados participantes,</h1>
+      <p>Este es un correo para el grupo del producto educativo "${this.selectedCourse.name}".</p>
       <p>Atentamente,<br>El equipo de LANIA</p>
     `;
 
     const emails = this.courseParticipants.map(p => p.email).join(',');
+    if (!emails) {
+      alert('No hay participantes con correos electrónicos para notificar.');
+      return;
+    }
     const mailtoLink = `mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
     window.open(mailtoLink, '_blank');
   }
-    // --- Lógica para el Modal de Competencias ---
+
   openCompetenciesModal() {
     const currentCompetencies = this.courseForm.competencies?.split('\n').filter(c => c) || [];
     this.competenciesList = Array(this.maxCompetencies).fill('').map((_, i) => currentCompetencies[i] || '');
@@ -662,4 +773,30 @@ export class AdminCoursesComponent implements OnInit {
     return index;
   }
 
+  toggleAllCompetencyRecipients(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.checked) {
+      this.courseParticipants.forEach(p => this.competencyRecipients.add(p.id));
+    } else {
+      this.competencyRecipients.clear();
+    }
+  }
+  
+  isRecipientSelected(participantId: number): boolean {
+    return this.competencyRecipients.has(participantId);
+  }
+  
+  get areAllCompetencyRecipientsSelected(): boolean {
+    if (this.courseParticipants.length === 0) return false;
+    return this.competencyRecipients.size === this.courseParticipants.length;
+  }
+
+  toggleCompetencyRecipient(participantId: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.checked) {
+      this.competencyRecipients.add(participantId);
+    } else {
+      this.competencyRecipients.delete(participantId);
+    }
+  }
 }
