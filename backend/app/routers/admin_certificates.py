@@ -7,6 +7,7 @@ from app.models.certificate import Certificate
 from app.models.course import Course
 from app.models.participant import Participant
 from app.models.enums import CertificateStatus, CertificateKind
+from app.models.docente import Docente
 from app.services.certificate_service import issue_certificate
 import logging
 import os
@@ -38,6 +39,11 @@ class BulkIssueRequest(BaseModel):
     participant_ids: List[int]
     with_competencies: bool = False
 
+class DocenteCertificateIssueRequest(BaseModel):
+    course_id: int
+    docente_id: int
+    kind: CertificateKind
+
 # NUEVO: Endpoint para la emisión masiva de certificados
 @router.post("/{course_id}/issue-bulk-certificates", summary="Emite certificados masivamente para un curso")
 def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Session = Depends(get_db)):
@@ -54,6 +60,81 @@ def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Sessi
     issued_count = 0
     skipped_count = 0
     errors = []
+
+    #Endpoint para emitir constancias a docentes
+@router.post("/issue-for-docente", response_model=IssueResponse, summary="Emite una constancia para un docente.")
+def issue_for_docente(data: DocenteCertificateIssueRequest, db: Session = Depends(get_db)):
+    """
+    Emite una constancia para un docente.
+    Si no existe un participante con el email del docente, se crea uno automáticamente.
+    """
+    try:
+        course = db.query(Course).get(data.course_id)
+        docente = db.query(Docente).get(data.docente_id)
+        if not course or not docente:
+            raise HTTPException(status_code=404, detail="Curso o docente inexistente")
+
+        if "PONENTE" not in data.kind.value:
+            raise HTTPException(status_code=400, detail="El tipo de constancia debe ser de ponente.")
+
+        if "COMPETENCIAS" in data.kind.value and not course.competencies:
+            raise HTTPException(status_code=400, detail="Este curso no tiene competencias definidas.")
+
+        # Buscar o crear un participante correspondiente al docente
+        participant = db.query(Participant).filter(Participant.email == docente.email).first()
+        if not participant:
+            participant = Participant(
+                full_name=docente.full_name,
+                email=docente.email,
+                phone=docente.telefono
+            )
+            db.add(participant)
+            db.commit()
+            db.refresh(participant)
+
+        # Verificar si ya existe una constancia
+        existing = db.query(Certificate).filter(
+            Certificate.course_id == course.id,
+            Certificate.participant_id == participant.id,
+            Certificate.kind == data.kind
+        ).first()
+
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe una constancia de este tipo para este docente y curso")
+        
+        # Crear y procesar el certificado
+        cert = Certificate(
+            course_id=course.id, 
+            participant_id=participant.id, 
+            kind=data.kind,
+            status=CertificateStatus.EN_PROCESO, 
+            serial="TEMP", 
+            qr_token="TEMP"
+        )
+        db.add(cert)
+        db.commit()
+        db.refresh(cert)
+        
+        cert = issue_certificate(
+            db, cert,
+            participant={"full_name": participant.full_name},
+            course={
+                "name": course.name, "hours": course.hours, "start_date": course.start_date,
+                "modality": course.modality, "competencies": course.competencies
+            }
+        )
+        
+        return IssueResponse(
+            id=cert.id, serial=cert.serial, kind=cert.kind, status=cert.status,
+            course_name=course.name, participant_name=participant.full_name,
+            issued_at=cert.issued_at, qr_token=cert.qr_token, pdf_path=cert.pdf_path
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error emitiendo constancia para docente: {str(e)}")
+        raise HTTPException(500, f"Error interno: {str(e)}")
 
     # Obtener participantes válidos y que estén inscritos en el curso
     valid_participants = db.query(Participant).join(Enrollment).filter(

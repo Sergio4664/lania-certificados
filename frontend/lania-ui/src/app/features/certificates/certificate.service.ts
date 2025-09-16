@@ -13,6 +13,13 @@ export interface BulkIssueResponse {
   message: string;
 }
 
+//Interfaz para la solicitud de constancia de docente
+export interface CreateDocenteCertificateDTO {
+  course_id: number | string;
+  docente_id: number | string;
+  kind: 'PILDORA_PONENTE' | 'INYECCION_PONENTE' | 'CURSO_PONENTE' | 'CURSO_COMPETENCIAS_PONENTE';
+}
+
 @Injectable({ providedIn: 'root' })
 export class CertificateService {
   private http = inject(HttpClient);
@@ -26,8 +33,13 @@ export class CertificateService {
     return this.http.post<any>(`${this.apiUrl}/api/admin/certificates/issue`, data);
   }
 
+  //Método para emitir constancia para un docente
+  issueForDocente(data: CreateDocenteCertificateDTO): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/api/admin/certificates/issue-for-docente`, data);
+  }
+
   //Método para le emisión masiva
-  issueBulk(courseId: number, participantIds: number[], withCompetencies: boolean): Observable<BulkIssueResponse> {
+  issueBulk(courseId: number, participantIds: number[], docenteIds: number[], withCompetencies: boolean): Observable<BulkIssueResponse> {
     const payload = {
       participant_ids: participantIds,
       with_competencies: withCompetencies
