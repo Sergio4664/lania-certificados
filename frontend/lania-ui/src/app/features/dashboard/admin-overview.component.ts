@@ -5,7 +5,7 @@ import { CourseDTO } from '../../shared/interfaces/course.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
 import { CertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
-import { UserDTO } from './admin-users.component';
+import { UserDTO } from '../admin/users/admin-users.component';
 
 @Component({
   selector: 'app-admin-overview',

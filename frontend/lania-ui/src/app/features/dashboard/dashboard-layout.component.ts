@@ -80,7 +80,7 @@ export default class DashboardLayoutComponent {
   menuItems = [
     { 
       label: 'Dashboard', 
-      routerLink: '/admin/overview', 
+      routerLink: '/admin/dashboard', 
       svgIcon: `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>` 
     },
     { 
@@ -105,7 +105,7 @@ export default class DashboardLayoutComponent {
     },
     { 
       label: 'Admins', 
-      routerLink: '/admin/users', 
+      routerLink: '/admin/usuarios', 
       svgIcon: `<svg viewBox="0 0 24 24"><path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3z"></path><path d="M12 12.75c1.63 0 3-1.37 3-3.25S13.63 6.25 12 6.25s-3 1.12-3 3.25 1.37 3.25 3 3.25z"></path></svg>`
     }
   ];
