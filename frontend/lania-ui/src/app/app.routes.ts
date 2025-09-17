@@ -10,7 +10,7 @@ import { AdminCoursesComponent } from './features/dashboard/admin-courses.compon
 import AdminDocentesComponent from './features/dashboard/admin-docentes.component';
 import AdminParticipantsComponent from './features/dashboard/admin-participants.component';
 import AdminCertificatesComponent from './features/dashboard/admin-certificates.component';
-
+import { AdminUsersComponent } from './features/admin/users/admin-users.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -27,6 +27,7 @@ export const routes: Routes = [
     { path: 'docentes', component: AdminDocentesComponent },
     { path: 'participants', component: AdminParticipantsComponent },
     { path: 'certificates', component: AdminCertificatesComponent },
+    { path: 'usuarios', component: AdminUsersComponent},
     //Rederigido a la vista general por defecto
     { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
   ] 

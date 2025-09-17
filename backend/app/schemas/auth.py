@@ -8,3 +8,8 @@ class Token(BaseModel):
 class Login(BaseModel): 
     email: EmailStr
     password: str
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str

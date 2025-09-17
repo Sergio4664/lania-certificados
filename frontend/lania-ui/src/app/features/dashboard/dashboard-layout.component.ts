@@ -90,6 +90,17 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
   ]
 })
 export default class DashboardLayoutComponent {
+
+  menuItems = [
+    { label: 'Resumen', link: '/admin/overview', icon: 'home' },
+    { label: 'Cursos', link: '/admin/courses', icon: 'book-open' },
+    { label: 'Docentes', link: '/admin/docentes', icon: 'users' },
+    { label: 'Participantes', link: '/admin/participantes', icon: 'user-check' },
+    { label: 'Certificados', link: '/admin/certificados', icon: 'file-text' },
+    // --- Añade esta nueva línea ---
+    { label: 'Administradores', link: '/admin/usuarios', icon: 'shield' },
+  ];
+
   private router = inject(Router);
 
   logout() {

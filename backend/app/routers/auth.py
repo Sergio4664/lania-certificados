@@ -35,7 +35,7 @@ def login(payload: Login, db: Session = Depends(get_db)):
         
         # Verificar contraseña
         logger.info(f"Verificando contraseña para: {payload.email}")
-        if not verify_password(payload.password, user.password_hash):
+        if not verify_password(payload.password, user.hashed_password):
             logger.warning(f"Contraseña incorrecta para: {payload.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 

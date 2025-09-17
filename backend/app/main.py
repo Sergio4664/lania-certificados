@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles # Importa StaticFiles
 
-from app.routers import auth, admin_docentes, admin_courses, admin_participants, admin_certificates, public_verify # Importa tus routers
+from app.routers import auth, admin_users, admin_docentes, admin_courses, admin_participants, admin_certificates, public_verify # Importa tus routers
 
 app = FastAPI()
 
@@ -32,6 +32,7 @@ app.include_router(admin_courses.router)
 app.include_router(admin_participants.router)
 app.include_router(admin_certificates.router)
 app.include_router(public_verify.router)
+app.include_router(admin_users.router, tags=["Admin Users"], prefix="")
 
 @app.get("/")
 def read_root():
