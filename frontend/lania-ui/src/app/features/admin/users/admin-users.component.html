@@ -13,18 +13,33 @@
   <div *ngIf="showForm" class="form-card">
     <h3>{{ isEditing ? 'Editar Administrador' : 'Crear Nuevo Administrador' }}</h3>
     <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="form-grid">
+      
       <div class="form-group">
         <label>Nombre Completo *</label>
-        <input type="text" placeholder="Nombre del administrador" formControlName="full_name" class="input">
+        <input type="text" placeholder="Nombre del administrador" formControlName="full_name">
+        <div *ngIf="fullName?.invalid && (fullName?.dirty || fullName?.touched)" class="error-text">
+          <div *ngIf="fullName?.errors?.['required']">El nombre completo es requerido.</div>
+        </div>
       </div>
+      
       <div class="form-group">
         <label>Correo Electrónico *</label>
-        <input type="email" placeholder="correo@ejemplo.com" formControlName="email" class="input">
+        <input type="email" placeholder="correo@ejemplo.com" formControlName="email">
+        <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="error-text">
+          <div *ngIf="email?.errors?.['required']">El correo es requerido.</div>
+          <div *ngIf="email?.errors?.['email']">El formato del correo no es válido.</div>
+          <div *ngIf="email?.errors?.['pattern']">El correo debe ser del dominio lania.edu.mx.</div>
+        </div>
       </div>
+      
       <div class="form-group">
-        <label>Contraseña {{ isEditing ? '(Opcional: solo si se desea cambiar)' : '*' }}</label>
-        <input type="password" placeholder="••••••••" formControlName="password" class="input">
+        <label>Contraseña *</label>
+        <input type="password" placeholder="••••••••" formControlName="password">
+        <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="error-text">
+          <div *ngIf="password?.errors?.['required']">La contraseña es requerida.</div>
+        </div>
       </div>
+
       <div class="form-actions">
         <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
         <button type="submit" class="primary-btn" [disabled]="userForm.invalid">{{ isEditing ? 'Guardar Cambios' : 'Crear' }}</button>
@@ -60,7 +75,7 @@
           </td>
         </tr>
         <tr *ngIf="isLoading">
-          <td colspan="5" class="text-center">Cargando...</td>
+          <td colspan="5" class="no-data">Cargando...</td>
         </tr>
         <tr *ngIf="!isLoading && users.length === 0">
           <td colspan="5" class="no-data">No hay administradores registrados.</td>
