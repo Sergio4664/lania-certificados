@@ -1,4 +1,3 @@
-// src/app/features/dashboard/dashboard-layout.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -32,25 +31,9 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
       </header>
       <main class="dashboard-main">
         <nav class="sidebar">
-          <a class="nav-item" routerLink="/admin/dashboard" routerLinkActive="active">
-            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>
-            Dashboard
-          </a>
-          <a class="nav-item" routerLink="/admin/docentes" routerLinkActive="active">
-            <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"></circle><path d="M5.5 21a7.5 7.5 0 0 1 13 0"></path></svg>
-            Docentes
-          </a>
-          <a class="nav-item" routerLink="/admin/courses" routerLinkActive="active">
-            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-            Productos Educativos
-          </a>
-          <a class="nav-item" routerLink="/admin/participants" routerLinkActive="active">
-            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            Participantes
-          </a>
-          <a class="nav-item" routerLink="/admin/certificates" routerLinkActive="active">
-            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>
-            Constancias
+          <a *ngFor="let item of menuItems" class="nav-item" [routerLink]="item.routerLink" routerLinkActive="active">
+            <div [innerHTML]="item.svgIcon"></div>
+            {{ item.label }}
           </a>
         </nav>
         <div class="content-area">
@@ -82,26 +65,50 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
     .dashboard-main { display: flex; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 80px); }
     .sidebar { width: 240px; background: white; border-right: 1px solid var(--medium-gray); padding: 24px 0; }
     .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; cursor: pointer; color: var(--dark-gray); font-weight: 500; transition: all 0.2s; border-left: 3px solid transparent; text-decoration: none; }
+    .nav-item div { line-height: 0; } /* Para alinear correctamente el SVG */
     .nav-item:hover { background: #f1f5f9; color: #334155; }
     .nav-item.active { background: #eff6ff; color: #2563eb; border-left-color: #2563eb; }
-    .nav-item svg { stroke: currentColor; fill: none; stroke-width: 2; }
+    .nav-item svg { stroke: currentColor; fill: none; stroke-width: 2; width: 20px; height: 20px; }
     .content-area { flex: 1; padding: 24px; }
     `
   ]
 })
 export default class DashboardLayoutComponent {
-
-  menuItems = [
-    { label: 'Resumen', link: '/admin/overview', icon: 'home' },
-    { label: 'Cursos', link: '/admin/courses', icon: 'book-open' },
-    { label: 'Docentes', link: '/admin/docentes', icon: 'users' },
-    { label: 'Participantes', link: '/admin/participantes', icon: 'user-check' },
-    { label: 'Certificados', link: '/admin/certificados', icon: 'file-text' },
-    // --- Añade esta nueva línea ---
-    { label: 'Administradores', link: '/admin/usuarios', icon: 'shield' },
-  ];
-
   private router = inject(Router);
+
+  // Arreglo único y limpio para definir el menú de navegación
+  menuItems = [
+    { 
+      label: 'Dashboard', 
+      routerLink: '/admin/overview', 
+      svgIcon: `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>` 
+    },
+    { 
+      label: 'Docentes', 
+      routerLink: '/admin/docentes', 
+      svgIcon: `<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"></circle><path d="M5.5 21a7.5 7.5 0 0 1 13 0"></path></svg>` 
+    },
+    { 
+      label: 'Productos Educativos', 
+      routerLink: '/admin/courses', 
+      svgIcon: `<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>` 
+    },
+    { 
+      label: 'Participantes', 
+      routerLink: '/admin/participants', 
+      svgIcon: `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>` 
+    },
+    { 
+      label: 'Constancias', 
+      routerLink: '/admin/certificates', 
+      svgIcon: `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>` 
+    },
+    { 
+      label: 'Admins', 
+      routerLink: '/admin/users', 
+      svgIcon: `<svg viewBox="0 0 24 24"><path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3z"></path><path d="M12 12.75c1.63 0 3-1.37 3-3.25S13.63 6.25 12 6.25s-3 1.12-3 3.25 1.37 3.25 3 3.25z"></path></svg>`
+    }
+  ];
 
   logout() {
     localStorage.removeItem('access_token');
