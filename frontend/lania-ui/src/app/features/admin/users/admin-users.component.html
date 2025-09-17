@@ -1,0 +1,71 @@
+<div class="module-content">
+  <div class="module-header">
+    <h2>Gestión de Administradores</h2>
+    <button class="primary-btn" (click)="showForm = !showForm; resetForm()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nuevo Administrador
+    </button>
+  </div>
+
+  <div *ngIf="showForm" class="form-card">
+    <h3>{{ isEditing ? 'Editar Administrador' : 'Crear Nuevo Administrador' }}</h3>
+    <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="form-grid">
+      <div class="form-group">
+        <label>Nombre Completo *</label>
+        <input type="text" placeholder="Nombre del administrador" formControlName="full_name" class="input">
+      </div>
+      <div class="form-group">
+        <label>Correo Electrónico *</label>
+        <input type="email" placeholder="correo@ejemplo.com" formControlName="email" class="input">
+      </div>
+      <div class="form-group">
+        <label>Contraseña {{ isEditing ? '(Opcional: solo si se desea cambiar)' : '*' }}</label>
+        <input type="password" placeholder="••••••••" formControlName="password" class="input">
+      </div>
+      <div class="form-actions">
+        <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
+        <button type="submit" class="primary-btn" [disabled]="userForm.invalid">{{ isEditing ? 'Guardar Cambios' : 'Crear' }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="data-table">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre Completo</th>
+          <th>Email</th>
+          <th>Activo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td><span class="id-tag">{{ user.id }}</span></td>
+          <td>{{ user.full_name }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span class="status" [class]="user.is_active ? 'status-active' : 'status-inactive'">
+              {{ user.is_active ? 'Sí' : 'No' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="icon-btn delete" (click)="deleteUser(user.id)" title="Eliminar Administrador">
+              <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="isLoading">
+          <td colspan="5" class="text-center">Cargando...</td>
+        </tr>
+        <tr *ngIf="!isLoading && users.length === 0">
+          <td colspan="5" class="no-data">No hay administradores registrados.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
