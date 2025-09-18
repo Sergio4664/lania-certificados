@@ -22,13 +22,18 @@ interface RecipientOption {
   <div class="module-content">
     <div class="module-header">
       <h2>Gestión de Constancias</h2>
-      <button class="primary-btn" (click)="showForm = true; resetForm()">
+       <div class="header-actions">
+        <div class="search-container">
+          <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificates()" placeholder="Buscar por serial o participante...">
+        </div>
+        <button class="primary-btn" (click)="showForm = true; resetForm()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
         Emitir Constancia
       </button>
+      </div>
     </div>
 
     <div *ngIf="showForm" class="form-card">
@@ -54,7 +59,6 @@ interface RecipientOption {
         
         <div class="form-group">
           <label>{{ selectedRecipientType === 'participant' ? 'Participante' : 'Docente' }} *</label>
-          <!-- CORRECCIÓN: El *ngFor ahora usa las listas de opciones unificadas -->
           <select [(ngModel)]="newCertificate.participant_id" name="participant_id" required>
             <option [ngValue]="null" disabled>Seleccionar...</option>
             <option *ngFor="let person of (selectedRecipientType === 'participant' ? participantOptions : docenteOptions)" [value]="person.id">
@@ -89,7 +93,7 @@ interface RecipientOption {
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let cert of certificates">
+          <tr *ngFor="let cert of filteredCertificates">
             <td><span class="serial-tag">{{ cert.serial }}</span></td>
             <td>{{ cert.participant_name }}</td>
             <td>{{ cert.course_name }}</td>
@@ -155,6 +159,17 @@ interface RecipientOption {
     .status-listo_para_descargar { background: #dcfce7; color: #16a34a; }
     .status-en_proceso { background: #fef3c7; color: #d97706; }
     .form-control-disabled { background-color: #f3f4f6; cursor: not-allowed; color: #6b7280; }
+    .search-container {
+      position: relative;
+    }
+
+    .search-container input {
+      padding: 10px 10px 10px 35px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      width: 250px;
+      transition: all 0.2s;
+    }
   `]
 })
 export default class AdminCertificatesComponent implements OnInit {
@@ -162,6 +177,7 @@ export default class AdminCertificatesComponent implements OnInit {
 
 
   certificates: CertificateDTO[] = [];
+  filteredCertificates: CertificateDTO[] = [];
   courses: CourseDTO[] = [];
  
   //Listas originales con los DTOs completos
@@ -175,6 +191,7 @@ export default class AdminCertificatesComponent implements OnInit {
   showForm = false;
   newCertificate!: CreateCertificateDTO;
   selectedRecipientType: 'participant' | 'docente' = 'participant';
+  searchTerm: string = '';
 
   constructor() {
     this.resetForm();
@@ -189,7 +206,10 @@ export default class AdminCertificatesComponent implements OnInit {
     const headers = { Authorization: `Bearer ${token}` };
     
     this.http.get<CertificateDTO[]>('http://127.0.0.1:8000/api/admin/certificates', { headers })
-      .subscribe(data => this.certificates = data);
+      .subscribe(data => {
+        this.certificates = data;
+        this.filteredCertificates = data;
+      });
     
     this.http.get<CourseDTO[]>('http://127.0.0.1:8000/api/admin/courses', { headers })
       .subscribe(data => this.courses = data);
@@ -206,6 +226,14 @@ export default class AdminCertificatesComponent implements OnInit {
         this.docentes = data;
         this.docenteOptions = data.map(d => ({ id: d.id, full_name: d.full_name }));
       });
+  }
+
+  filterCertificates(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredCertificates = this.certificates.filter(cert => 
+      cert.serial.toLowerCase().includes(term) || 
+      cert.participant_name.toLowerCase().includes(term)
+    );
   }
 
   resetForm() {

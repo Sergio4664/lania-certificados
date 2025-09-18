@@ -1,16 +1,16 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.staticfiles import StaticFiles # Importa StaticFiles
+from starlette.staticfiles import StaticFiles
 
-from app.routers import auth, admin_users, admin_docentes, admin_courses, admin_participants, admin_certificates, public_verify # Importa tus routers
+from app.routers import auth, admin_users, admin_docentes, admin_courses, admin_participants, admin_certificates, public_verify
 
 app = FastAPI()
 
 # Configuración de CORS
 origins = [
     "http://localhost",
-    "http://localhost:4200", # Tu frontend Angular
+    "http://localhost:4200",
     "http://127.0.0.1:4200",
 ]
 
@@ -22,8 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Monta la carpeta 'static' para servir archivos estáticos
-app.mount("/static", StaticFiles(directory="app/static"), name="static") # Añade esta línea
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Incluye tus routers
 app.include_router(auth.router)
@@ -32,7 +31,8 @@ app.include_router(admin_courses.router)
 app.include_router(admin_participants.router)
 app.include_router(admin_certificates.router)
 app.include_router(public_verify.router)
-app.include_router(admin_users.router, tags=["Admin Users"], prefix="")
+# MODIFICACIÓN: Simplifica esta línea para que sea igual a las demás
+app.include_router(admin_users.router)
 
 @app.get("/")
 def read_root():
