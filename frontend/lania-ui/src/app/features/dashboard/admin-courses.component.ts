@@ -81,7 +81,9 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
                 <div class="checkbox-item" *ngFor="let docente of activeDocentes">
                   <input type="checkbox" [id]="'docente-' + docente.id" [checked]="isDocenteSelected(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
                   <label [for]="'docente-' + docente.id">
-                    {{docente.full_name}} <small>({{docente.email}})</small>
+                    <strong *ngIf="docente.especialidad" style="color: #667eea; display: block; font-size: 0.9em; margin-bottom: 2px;">{{docente.especialidad}}</strong>
+                      {{docente.full_name}}
+                    <small>({{docente.email}})</small>
                   </label>
                 </div>
               </div>
@@ -100,7 +102,11 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
           <div class="courses-grid">
             <div class="course-card" *ngFor="let course of pildoras" (click)="selectCourse(course)">
               <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
-              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
+                <span *ngFor="let docente of course.docentes" class="docente-tag-small">
+                  <strong *ngIf="docente.especialidad">{{ docente.especialidad }}:</strong> {{ docente.full_name }}
+                </span>
+                </div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
               <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
             </div>
           </div>
@@ -408,7 +414,7 @@ export class AdminCoursesComponent implements OnInit {
   filteredCourses: CourseDTO[] = [];
   participants: ParticipantDTO[] = [];
   docentes: DocenteDTO[] = [];
-  
+
   selectedCourse: CourseDTO | null = null;
   courseParticipants: ParticipantDTO[] = [];
   showAddParticipantForm = false;
@@ -422,7 +428,7 @@ export class AdminCoursesComponent implements OnInit {
   showCourseForm = false;
   editingCourse: CourseDTO | null = null;
   selectedDocenteIds: number[] = [];
-  
+
   courseForm!: CreateCourseDTO;
   searchTerm: string = '';
 
@@ -440,7 +446,7 @@ export class AdminCoursesComponent implements OnInit {
   constructor() {
     this.resetCourseForm();
   }
-  
+
   ngOnInit() {
     this.loadInitialData();
   }
@@ -496,7 +502,11 @@ export class AdminCoursesComponent implements OnInit {
     const colors = ['#7ED321', '#4A90E2', '#F5A623', '#F8E71C', '#D0021B', '#9013FE', '#417505', '#BD10E0'];
     return colors[(id + 2) % colors.length];
   }
-  
+
+  getDocente(docenteId: number): DocenteDTO | undefined {
+    return this.docentes.find(d => d.id === docenteId)
+  }
+
   selectCourse(course: CourseDTO) {
     this.selectedCourse = course;
     this.loadParticipantsForCourse(course.id);
@@ -510,20 +520,20 @@ export class AdminCoursesComponent implements OnInit {
     this.competencyRecipients.clear();
     this.docenteCompetencyRecipients.clear();
   }
-  
-  isDocenteSelected(docenteId: number): boolean { 
-      return this.selectedDocenteIds.includes(docenteId); 
+
+  isDocenteSelected(docenteId: number): boolean {
+    return this.selectedDocenteIds.includes(docenteId);
   }
 
   toggleDocenteSelection(docenteId: number, event: Event): void {
-      const isChecked = (event.target as HTMLInputElement).checked;
-      if (isChecked) {
-        if (!this.selectedDocenteIds.includes(docenteId)) {
-          this.selectedDocenteIds.push(docenteId);
-        }
-      } else {
-        this.selectedDocenteIds = this.selectedDocenteIds.filter(id => id !== docenteId);
+    const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked) {
+      if (!this.selectedDocenteIds.includes(docenteId)) {
+        this.selectedDocenteIds.push(docenteId);
       }
+    } else {
+      this.selectedDocenteIds = this.selectedDocenteIds.filter(id => id !== docenteId);
+    }
   }
 
   loadInitialData() {
@@ -558,18 +568,18 @@ export class AdminCoursesComponent implements OnInit {
   }
 
   getInitialCourseForm(): CreateCourseDTO { return { code: '', name: '', start_date: '', end_date: '', hours: 0, created_by: 2, course_type: 'CURSO_EDUCATIVO', docente_ids: [], competencies: '' }; }
-  
-  resetCourseForm() { 
-      this.courseForm = this.getInitialCourseForm(); 
-      this.selectedDocenteIds = []; 
+
+  resetCourseForm() {
+    this.courseForm = this.getInitialCourseForm();
+    this.selectedDocenteIds = [];
   }
 
-  cancelCourseForm() { 
-      this.showCourseForm = false; 
-      this.editingCourse = null; 
-      this.resetCourseForm(); 
-  } 
-  
+  cancelCourseForm() {
+    this.showCourseForm = false;
+    this.editingCourse = null;
+    this.resetCourseForm();
+  }
+
   createCourse() {
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
@@ -619,14 +629,14 @@ export class AdminCoursesComponent implements OnInit {
     const headers = { Authorization: `Bearer ${token}` };
 
     const updateData: UpdateCourseDTO = {
-        name: this.courseForm.name,
-        start_date: this.courseForm.start_date,
-        end_date: this.courseForm.end_date,
-        hours: this.courseForm.hours,
-        competencies: this.courseForm.competencies,
-        course_type: this.courseForm.course_type,
-        modality: this.courseForm.modality,
-        docente_ids: this.selectedDocenteIds
+      name: this.courseForm.name,
+      start_date: this.courseForm.start_date,
+      end_date: this.courseForm.end_date,
+      hours: this.courseForm.hours,
+      competencies: this.courseForm.competencies,
+      course_type: this.courseForm.course_type,
+      modality: this.courseForm.modality,
+      docente_ids: this.selectedDocenteIds
     };
 
     this.http.put(`http://127.0.0.1:8000/api/admin/courses/${this.editingCourse.id}`, updateData, { headers }).subscribe({
@@ -668,7 +678,7 @@ export class AdminCoursesComponent implements OnInit {
   }
 
   enrollParticipant() {
-    if(!this.participantToAdd || !this.selectedCourse) return;
+    if (!this.participantToAdd || !this.selectedCourse) return;
 
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
@@ -684,7 +694,7 @@ export class AdminCoursesComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Error enrolling participant', err);
-          alert(`Error:${err.error?.detail || 'No se pudo inscribir al participante.'}` );
+          alert(`Error:${err.error?.detail || 'No se pudo inscribir al participante.'}`);
         }
       });
   }
@@ -703,15 +713,15 @@ export class AdminCoursesComponent implements OnInit {
           this.loadParticipantsForCourse(this.selectedCourse!.id);
         },
         error: (err: any) => {
-          console.error('Error al eliminar el participante de este producto educativo:', err); 
-          alert(`Error:${err.error?.detail || 'No se pudo desinscribir al participante.'}` );
+          console.error('Error al eliminar el participante de este producto educativo:', err);
+          alert(`Error:${err.error?.detail || 'No se pudo desinscribir al participante.'}`);
         }
       });
   }
 
-   issueCertificate(participantId: number, withCompetencies: boolean) {
+  issueCertificate(participantId: number, withCompetencies: boolean) {
     if (!this.selectedCourse) return;
-    
+
     let kind: CreateCertificateDTO['kind'];
 
     switch (this.selectedCourse.course_type) {
@@ -737,7 +747,7 @@ export class AdminCoursesComponent implements OnInit {
       }
     });
   }
-  
+
   issueDocenteCertificate(docenteId: number, withCompetencies: boolean) {
     if (!this.selectedCourse) return;
 
@@ -746,7 +756,7 @@ export class AdminCoursesComponent implements OnInit {
       alert('No se encontró al docente.');
       return;
     }
-    
+
     let kind: CreateDocenteCertificateDTO['kind'];
     switch (this.selectedCourse.course_type) {
       case 'PILDORA_EDUCATIVA': kind = 'PILDORA_PONENTE'; break;
@@ -816,10 +826,10 @@ export class AdminCoursesComponent implements OnInit {
       });
     }
   }
-  
+
   sendNotificationEmail(participantIds: number[], docenteIds: number[]) {
     if (!this.selectedCourse) return;
-    
+
     const subject = `Constancia disponible del producto educativo "${this.selectedCourse.name}"`;
     const emailBody = `
       <h1>¡Hola!</h1>
@@ -831,18 +841,18 @@ export class AdminCoursesComponent implements OnInit {
     const participantEmails = this.participants
       .filter(p => participantIds.includes(p.id))
       .map(p => p.email);
-      
+
     const docenteEmails = this.docentes
       .filter(d => docenteIds.includes(d.id))
       .map(d => d.email);
-    
+
     const allEmails = [...new Set([...participantEmails, ...docenteEmails])];
 
     if (allEmails.length === 0) {
       alert('No hay destinatarios con correos electrónicos para notificar.');
       return;
     }
-    
+
     const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
     window.open(mailtoLink, '_blank');
   }
@@ -858,7 +868,7 @@ export class AdminCoursesComponent implements OnInit {
     this.showCompetenciesModal = false;
   }
 
-  trackByIndex(index: number, item: any): number{
+  trackByIndex(index: number, item: any): number {
     return index;
   }
 
@@ -870,11 +880,11 @@ export class AdminCoursesComponent implements OnInit {
       this.competencyRecipients.clear();
     }
   }
-  
+
   isRecipientSelected(participantId: number): boolean {
     return this.competencyRecipients.has(participantId);
   }
-  
+
   get areAllCompetencyRecipientsSelected(): boolean {
     if (this.courseParticipants.length === 0) return false;
     return this.competencyRecipients.size === this.courseParticipants.length;
