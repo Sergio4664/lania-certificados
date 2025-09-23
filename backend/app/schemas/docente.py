@@ -8,6 +8,7 @@ class DocenteBase(BaseModel):
     full_name: str
     email: EmailStr
     telefono: Optional[str] = None
+    especialidad: Optional[str] = None
 
 
     @validator('email')
