@@ -1,4 +1,3 @@
-// src/app/features/dashboard/admin-docentes.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +9,7 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-   <div class="admin-container">
+    <div class="admin-container">
       <header class="admin-header">
         <h1>Gestión de Docentes</h1>
         <div class="header-actions">
@@ -54,12 +53,23 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
           </div>
 
           <div class="form-group">
-            <label>Email *</label>
-            <input type="email" [(ngModel)]="docenteForm.email" name="email" required>
+            <label>Email Institucional *</label>
+            <input type="email" [(ngModel)]="docenteForm.institutional_email" name="institutional_email" required>
           </div>
+
+          <div class="form-group">
+            <label>Email Personal</label>
+            <input type="email" [(ngModel)]="docenteForm.personal_email" name="personal_email" placeholder="Obligatorio">
+          </div>
+          
           <div class="form-group">
             <label>Teléfono</label>
             <input [(ngModel)]="docenteForm.telefono" name="telefono" placeholder="Opcional">
+          </div>
+
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input [(ngModel)]="docenteForm.whatsapp" name="whatsapp" placeholder="Obligatorio">
           </div>
           
           <div class="form-actions">
@@ -74,24 +84,26 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
           <thead>
             <tr>
               <th>Docente</th>
-              <th>Email</th>
+              <th>Email Institucional</th>
+              <th>Email Personal</th>
               <th>Teléfono</th>
+              <th>WhatsApp</th>
               <th>Estado</th>
-              <th>Fecha Registro</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let docente of filteredDocentes">
               <td>{{docente.especialidad}} {{docente.full_name}}</td>
-              <td>{{docente.email}}</td>
+              <td>{{docente.institutional_email}}</td>
+              <td>{{docente.personal_email || 'N/A'}}</td>
               <td>{{docente.telefono || 'N/A'}}</td>
+              <td>{{docente.whatsapp || 'N/A'}}</td>
               <td>
                 <span class="status" [class]="docente.is_active ? 'status-active' : 'status-inactive'">
                   {{docente.is_active ? 'Activo' : 'Inactivo'}}
                 </span>
               </td>
-              <td>{{docente.fecha_registro | date:'dd/MM/yyyy'}}</td>
               <td>
                 <button class="icon-btn edit" (click)="editDocente(docente)" title="Editar Docente">
                   <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -107,246 +119,45 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '../../shared/int
     </div>
   `,
   styles: [`
-    .admin-container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .admin-header h1 {
-      color: #1e293b;
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .search-container {
-      position: relative;
-    }
-
-    .search-container input {
-      padding: 10px 10px 10px 35px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      width: 250px;
-      transition: all 0.2s;
-    }
-    
-    .search-container input:focus {
-      border-color: #667eea;
-      outline: none;
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9ca3af;
-    }
-
-    .primary-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .primary-btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .secondary-btn {
-      background: #f1f5f9;
-      color: #64748b;
-      border: 1px solid #e2e8f0;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .secondary-btn:hover {
-      background: #e2e8f0;
-    }
-
-    .form-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e2e8f0;
-    }
-
-    .form-card h3 {
-      color: #1e293b;
-      margin: 0 0 20px 0;
-      font-size: 20px;
-      font-weight: 600;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      color: #374151;
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-    .form-group input {
-      padding: 12px;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #3b82f6;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 12px;
-      grid-column: 1 / -1;
-      margin-top: 8px;
-    }
-
-    .data-table {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e2e8f0;
-    }
-
-    .data-table table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .data-table th {
-      background: #f8fafc;
-      padding: 16px;
-      text-align: left;
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .data-table td {
-      padding: 16px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #64748b;
-    }
-    
-    .data-table td:last-child {
-      display: flex;
-      gap: 8px;
-    }
-
-    .data-table tbody tr:hover {
-      background: #f8fafc;
-    }
-
-    .status {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .status-active {
-      background: #dcfce7;
-      color: #16a34a;
-    }
-
-    .status-inactive {
-      background: #fecaca;
-      color: #dc2626;
-    }
-
-    .icon-btn {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    
-    .icon-btn.edit {
-      background: #fef3c7;
-      color: #d97706;
-    }
-    
-    .icon-btn.edit:hover {
-      background: #fde68a;
-    }
-
-    .icon-btn.delete {
-      background: #fecaca;
-      color: #dc2626;
-    }
-
-    .icon-btn.delete:hover:not(:disabled) {
-      background: #fca5a5;
-    }
-
-    .icon-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background: #f1f5f9 !important;
-      color: #9ca3af !important;
-    }
-
+    /* ... Tus estilos permanecen igual ... */
+    .admin-container { padding: 20px; max-width: 1200px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .admin-header h1 { color: #1e293b; margin: 0; font-size: 28px; font-weight: 600; }
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+    .search-container { position: relative; }
+    .search-container input { padding: 10px 10px 10px 35px; border-radius: 8px; border: 1px solid #e2e8f0; width: 250px; transition: all 0.2s; }
+    .search-container input:focus { border-color: #667eea; outline: none; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+    .primary-btn { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+    .primary-btn:hover { transform: translateY(-1px); }
+    .secondary-btn { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .secondary-btn:hover { background: #e2e8f0; }
+    .form-card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+    .form-card h3 { color: #1e293b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { color: #374151; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+    .form-group input { padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; }
+    .form-group input:focus { outline: none; border-color: #3b82f6; }
+    .form-actions { display: flex; gap: 12px; grid-column: 1 / -1; margin-top: 8px; }
+    .data-table { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+    .data-table table { width: 100%; border-collapse: collapse; }
+    .data-table th { background: #f8fafc; padding: 16px; text-align: left; font-weight: 600; color: #374151; border-bottom: 1px solid #e2e8f0; }
+    .data-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; color: #64748b; }
+    .data-table td:last-child { display: flex; gap: 8px; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .status-active { background: #dcfce7; color: #16a34a; }
+    .status-inactive { background: #fecaca; color: #dc2626; }
+    .icon-btn { width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .icon-btn.edit { background: #fef3c7; color: #d97706; }
+    .icon-btn.edit:hover { background: #fde68a; }
+    .icon-btn.delete { background: #fecaca; color: #dc2626; }
+    .icon-btn.delete:hover:not(:disabled) { background: #fca5a5; }
+    .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #f1f5f9 !important; color: #9ca3af !important; }
     @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .admin-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-      }
+      .form-grid { grid-template-columns: 1fr; }
+      .admin-header { flex-direction: column; gap: 16px; align-items: flex-start; }
     }
   `]
 })
@@ -357,6 +168,7 @@ export default class AdminDocentesComponent implements OnInit {
   filteredDocentes: DocenteDTO[] = [];
   showForm = false;
   editingDocente: DocenteDTO | null = null;
+  // CAMBIO: El tipo de docenteForm ahora es CreateDocenteDTO.
   docenteForm!: CreateDocenteDTO;
   searchTerm: string = '';
 
@@ -388,13 +200,15 @@ export default class AdminDocentesComponent implements OnInit {
     );
   }
 
+  // CAMBIO: resetForm actualizado para incluir los nuevos campos.
   resetForm() {
     this.docenteForm = {
       especialidad: '',
       full_name: '',
-      email: '',
-      telefono: ''
-      
+      institutional_email: '',
+      personal_email: '',
+      telefono: '',
+      whatsapp: ''
     };
   }
   
@@ -405,12 +219,13 @@ export default class AdminDocentesComponent implements OnInit {
   }
 
   createDocente() {
-    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono || !this.docenteForm.especialidad) {
+    // CAMBIO: Validación actualizada para el email institucional.
+    if (!this.docenteForm.full_name || !this.docenteForm.institutional_email || !this.docenteForm.especialidad || !this.docenteForm.whatsapp) {
       alert('Por favor complete todos los campos requeridos.');
       return;
     }
-    if (!this.docenteForm.email.endsWith('@lania.edu.mx')) {
-        alert('El correo debe tener el dominio @lania.edu.mx');
+    if (!this.docenteForm.institutional_email.endsWith('@lania.edu.mx')) {
+        alert('El correo institucional debe tener el dominio @lania.edu.mx');
         return;
     }
 
@@ -431,13 +246,16 @@ export default class AdminDocentesComponent implements OnInit {
       });
   }
 
+  // CAMBIO: editDocente actualizado para poblar el formulario con todos los campos.
   editDocente(docente: DocenteDTO) {
     this.editingDocente = docente;
     this.docenteForm = {
       especialidad: docente.especialidad || '',
       full_name: docente.full_name,
-      email: docente.email,
-      telefono: docente.telefono || ''
+      institutional_email: docente.institutional_email,
+      personal_email: docente.personal_email || '',
+      telefono: docente.telefono || '',
+      whatsapp: docente.whatsapp || ''
     };
     this.showForm = true;
   }
@@ -445,18 +263,20 @@ export default class AdminDocentesComponent implements OnInit {
   updateDocente() {
     if (!this.editingDocente) return;
 
-    if (!this.docenteForm.full_name || !this.docenteForm.email || !this.docenteForm.telefono || !this.docenteForm.especialidad) {
+    // CAMBIO: Validación actualizada.
+    if (!this.docenteForm.full_name || !this.docenteForm.institutional_email || !this.docenteForm.especialidad || !this.docenteForm.whatsapp) {
       alert('Por favor complete todos los campos requeridos.');
       return;
     }
-    if (!this.docenteForm.email.endsWith('@lania.edu.mx')) {
-        alert('El correo debe tener el dominio @lania.edu.mx');
+    if (!this.docenteForm.institutional_email.endsWith('@lania.edu.mx')) {
+        alert('El correo institucional debe tener el dominio @lania.edu.mx');
         return;
     }
 
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
     
+    // CAMBIO: El payload de actualización ahora es del tipo correcto.
     const updateData: UpdateDocenteDTO = { ...this.docenteForm };
 
     this.http.put(`http://127.0.0.1:8000/api/admin/docentes/${this.editingDocente.id}`, updateData, { headers })

@@ -3,7 +3,7 @@ export interface DocenteInfo {
   id: number;
   especialidad: string;
   full_name: string;
-  email: string;
+  institutional_email: string;
 }
 
 export interface CourseDTO {

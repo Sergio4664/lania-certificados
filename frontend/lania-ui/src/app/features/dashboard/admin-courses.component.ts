@@ -83,7 +83,7 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
                   <label [for]="'docente-' + docente.id">
                     <strong *ngIf="docente.especialidad" style="color: #667eea; display: block; font-size: 0.9em; margin-bottom: 2px;">{{docente.especialidad}}</strong>
                       {{docente.full_name}}
-                    <small>({{docente.email}})</small>
+                    <small>({{docente.institutional_email}})</small>
                   </label>
                 </div>
               </div>
@@ -211,7 +211,7 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
                              (change)="toggleDocenteCompetencyRecipient(docente.id, $event)">
                     </td>
                     <td>{{ docente.full_name }}</td>
-                    <td>{{ docente.email }}</td>
+                    <td>{{ docente.institutional_email }}</td>
                     <td>
                       <div class="send-actions">
                         <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id, false)">Normal</button>
@@ -844,7 +844,7 @@ export class AdminCoursesComponent implements OnInit {
 
     const docenteEmails = this.docentes
       .filter(d => docenteIds.includes(d.id))
-      .map(d => d.email);
+      .map(d => d.institutional_email);
 
     const allEmails = [...new Set([...participantEmails, ...docenteEmails])];
 

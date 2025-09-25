@@ -137,7 +137,7 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
                     id=docente.id,
                     especialidad=docente.especialidad,
                     full_name=docente.full_name,
-                    email=docente.email
+                    institutional_email=docente.institutional_email
                 )
                 for docente in db_course.docentes
             ]
@@ -180,7 +180,7 @@ def list_courses(db: Session = Depends(get_db)):
                         "id": docente.id,
                         "especialidad": docente.especialidad,
                         "full_name": docente.full_name,
-                        "email": docente.email
+                        "institutional_email": docente.institutional_email
                     }
                     for docente in course.docentes
                 ]
@@ -214,7 +214,7 @@ def get_course(course_id: int, db: Session = Depends(get_db)):
                     "id": docente.id,
                     "especialidad": docente.especialidad,
                     "full_name": docente.full_name,
-                    "email": docente.email
+                    "institutional_email": docente.institutional_email
                 }
                 for docente in course.docentes
             ]
@@ -270,7 +270,7 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
                     "id": docente.id,
                     "especialidad": docente.especialidad,
                     "full_name": docente.full_name,
-                    "email": docente.email
+                    "institutional_email": docente.institutional_email
                 }
                 for docente in course.docentes
             ]

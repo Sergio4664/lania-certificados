@@ -81,12 +81,12 @@ def issue_for_docente(data: DocenteCertificateIssueRequest, db: Session = Depend
             raise HTTPException(status_code=400, detail="Este curso no tiene competencias definidas.")
 
         # Buscar o crear un participante correspondiente al docente
-        participant = db.query(Participant).filter(Participant.email == docente.email).first()
+        participant = db.query(Participant).filter(Participant.email == docente.institutional_email).first()
         if not participant:
             participant = Participant(
                 full_name=docente.full_name,
-                email=docente.email,
-                phone=docente.telefono
+                institutional_email=docente.institutional_email,
+                telefono=docente.telefono
             )
             db.add(participant)
             db.commit()

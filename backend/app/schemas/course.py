@@ -9,7 +9,7 @@ class DocenteInfo(BaseModel):
     id: int
     especialidad: str
     full_name: str
-    email: str
+    institutional_email: str
 
 class CourseBase(BaseModel):
     code: str

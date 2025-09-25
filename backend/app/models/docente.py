@@ -10,8 +10,10 @@ class Docente(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, nullable=False)
-    email = Column(String(150), unique=True, index=True, nullable=False)
+    institutional_email = Column(String(150), unique=True, index=True, nullable=False)
+    personal_email = Column(String, unique=True)
     telefono = Column(String(20), nullable=True)
+    whatsapp = Column(String)
     especialidad = Column(String(150), nullable=True)
     fecha_registro = Column(DateTime, default=func.now())
     is_active = Column(Boolean, default=True)
