@@ -35,12 +35,20 @@ import { ParticipantDTO, CreateParticipantDTO, UpdateParticipantDTO } from '../.
           <input [(ngModel)]="participantForm.full_name" name="full_name" required>
         </div>
         <div class="form-group">
-          <label>Email *</label>
-          <input type="email" [(ngModel)]="participantForm.email" name="email" required>
+          <label>Email personal *</label>
+          <input type="email" [(ngModel)]="participantForm.personal_email" name="personal_email" required>
+        </div>
+        <div class="form-group">
+          <label>Whatsapp</label>
+          <input [(ngModel)]="participantForm.whatsapp" name="whatsapp" required>
         </div>
         <div class="form-group">
           <label>Teléfono</label>
-          <input [(ngModel)]="participantForm.phone" name="phone" required>
+          <input [(ngModel)]="participantForm.telefono" name="telefono" required>
+        </div>
+        <div class="form-group">
+          <label>Email Institucional</label>
+          <input [(ngModel)]="participantForm.institutional_email" name="institutional_email" required>
         </div>
         <div class="form-actions">
           <button type="button" class="secondary-btn" (click)="cancelForm()">Cancelar</button>
@@ -54,8 +62,10 @@ import { ParticipantDTO, CreateParticipantDTO, UpdateParticipantDTO } from '../.
         <thead>
           <tr>
             <th>Nombre Completo</th>
-            <th>Email</th>
-            <th>Teléfono</th>
+            <th>Email Personal</th>
+            <th>Telefono</th>
+            <th>Whatsapp</th>
+            <th>Email Institucional</th>
             <th>Fecha de Registro</th>
             <th>Acciones</th>
           </tr>
@@ -63,8 +73,10 @@ import { ParticipantDTO, CreateParticipantDTO, UpdateParticipantDTO } from '../.
         <tbody>
           <tr *ngFor="let participant of filteredParticipants">
             <td>{{ participant.full_name }}</td>
-            <td>{{ participant.email }}</td>
-            <td>{{ participant.phone || 'N/A' }}</td>
+            <td>{{ participant.personal_email }}</td>
+            <td>{{ participant.telefono || 'N/A' }}</td>
+            <td>{{ participant.whatsapp || 'N/A' }}</td>
+            <td>{{ participant.institutional_email }}</td>
             <td>{{ participant.created_at | date:'dd/MM/yyyy' }}</td>
             <td>
               <button class="icon-btn edit" (click)="editParticipant(participant)" title="Editar Participante">
@@ -261,15 +273,17 @@ export default class AdminParticipantsComponent implements OnInit {
     const term = this.searchTerm.toLowerCase();
     this.filteredParticipants = this.participants.filter(p =>
       p.full_name.toLowerCase().includes(term) ||
-      (p.phone && p.phone.toLowerCase().includes(term))
+      (p.telefono && p.telefono.toLowerCase().includes(term))
     );
   }
 
   resetForm() {
     this.participantForm = {
       full_name: '',
-      email: '',
-      phone: ''
+      personal_email: '',
+      telefono: '',
+      whatsapp: '',
+      institutional_email: ''
     };
   }
 
@@ -280,13 +294,13 @@ export default class AdminParticipantsComponent implements OnInit {
   }
 
   createParticipant() {
-    if (!this.participantForm.full_name || !this.participantForm.email || !this.participantForm.phone) {
+    if (!this.participantForm.full_name || !this.participantForm.personal_email || !this.participantForm.telefono || !this.participantForm.whatsapp || !this.participantForm.institutional_email) {
       alert('Por favor, complete todos los campos.');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.participantForm.email)) {
+    if (!emailRegex.test(this.participantForm.personal_email)) {
         alert('Por favor, ingrese un correo electrónico con un dominio válido (ej. @gmail.com).');
         return;
     }
@@ -312,8 +326,10 @@ export default class AdminParticipantsComponent implements OnInit {
     this.editingParticipant = participant;
     this.participantForm = {
       full_name: participant.full_name,
-      email: participant.email,
-      phone: participant.phone || ''
+      personal_email: participant.personal_email,
+      telefono: participant.telefono || '',
+      whatsapp: participant.whatsapp || '',
+      institutional_email: participant.institutional_email
     };
     this.showForm = true;
   }
@@ -322,12 +338,12 @@ export default class AdminParticipantsComponent implements OnInit {
     if (!this.editingParticipant) return;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (this.participantForm.email && !emailRegex.test(this.participantForm.email)) {
+    if (this.participantForm.personal_email && !emailRegex.test(this.participantForm.personal_email)) {
         alert('Por favor, ingrese un correo electrónico con un dominio válido (ej. @gmail.com).');
         return;
     }
 
-    if (!this.participantForm.full_name || !this.participantForm.email || !this.participantForm.phone) {
+    if (!this.participantForm.full_name || !this.participantForm.personal_email|| !this.participantForm.telefono || !this.participantForm.whatsapp || !this.participantForm.institutional_email) {
       alert('Por favor, complete todos los campos.');
       return;
     }

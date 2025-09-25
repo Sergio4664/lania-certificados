@@ -138,3 +138,14 @@ def delete_docente(docente_id: int, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Error eliminando docente: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    
+@router.post("/{id}/certificate", summary="Generate a certificate for a docente")
+def generate_docente_certificate(id: int, db: Session = Depends(get_db)):
+    """
+    Generate and save a certificate for a specific docente.
+    """
+    try:
+        certificate_path = create_certificate_for_docente(db, docente_id=id)
+        return {"message": "Certificate created successfully", "path": certificate_path}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

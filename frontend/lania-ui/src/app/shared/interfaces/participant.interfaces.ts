@@ -1,30 +1,29 @@
 export interface ParticipantDTO {
   id: number;
-  email: string;
+  personal_email: string;
+  institutional_email: string;
   full_name: string;
-  phone?: string;
   created_at: string;
-  // Agregar campos faltantes para compatibilidad
-  telefono?: string;
-  documento_identidad?: string;
-  is_active?: boolean;
-  fecha_registro?: string;
+  telefono: string;
+  whatsapp: string;
+  is_active: boolean;
+  fecha_registro: string;
 }
 
 export interface CreateParticipantDTO {
-  email: string;
+  personal_email: string;
   full_name: string;
-  phone?: string;
-  telefono?: string;
-  documento_identidad?: string;
+  telefono: string;
+  institutional_email: string;
+  whatsapp: string;
   password?: string;
 }
 
 export interface UpdateParticipantDTO {
-  email?: string;
+  personal_email?: string;
+  institutional_email?: string;
   full_name?: string;
-  phone?: string;
   telefono?: string;
-  documento_identidad?: string;
+  whatsapp?: string;
   is_active?: boolean;
 }

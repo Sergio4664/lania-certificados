@@ -157,7 +157,7 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
                         <label>Seleccionar Participante</label>
                         <select [(ngModel)]="participantToAdd" name="participant_id" required>
                           <option [ngValue]="null" disabled>-- Elige un participante --</option>
-                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.email}})</option>
+                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.personal_email}})</option>
                         </select>
                       </div>
                       <div class="form-actions">
@@ -249,8 +249,8 @@ import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } fr
                             (change)="toggleCompetencyRecipient(p.id, $event)">
                     </td>
                     <td>{{ p.full_name }}</td>
-                    <td>{{ p.email }}</td>
-                    <td>{{ p.phone || 'N/A' }}</td>
+                    <td>{{ p.personal_email }}</td>
+                    <td>{{ p.whatsapp|| 'N/A' }}</td>
                     <td>
                       <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)" title="Eliminar del curso">
                         <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -840,7 +840,7 @@ export class AdminCoursesComponent implements OnInit {
 
     const participantEmails = this.participants
       .filter(p => participantIds.includes(p.id))
-      .map(p => p.email);
+      .map(p => p.personal_email);
 
     const docenteEmails = this.docentes
       .filter(d => docenteIds.includes(d.id))
