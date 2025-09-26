@@ -8,7 +8,7 @@ import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interf
 import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
 import { CertificateDTO, CreateCertificateDTO } from '@app/shared/interfaces/certificate.interfaces';
-import { CertificateService, BulkIssueResponse, CreateDocenteCertificateDTO } from '../certificates/certificate.service';
+import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '../certificates/certificate.service';
 
 
 @Component({
@@ -733,13 +733,13 @@ export class AdminCoursesComponent implements OnInit {
       default: alert('Tipo de producto educativo no reconocido.'); return;
     }
 
-    const payload: CreateCertificateDTO = {
+    const payload: CertificateIssueRequest = {
       course_id: this.selectedCourse.id,
-      participant_id: participantId,
+      entity_id: participantId,
       kind: kind,
     };
 
-    this.certificateService.issue(payload).subscribe({
+    this.certificateService.issueForParticipant(payload).subscribe({
       next: (res) => { alert(`Constancia emitida para ${res.participant_name}. Serial: ${res.serial}`); },
       error: (err) => {
         console.error('Error issuing certificate:', err);
@@ -757,8 +757,8 @@ export class AdminCoursesComponent implements OnInit {
       return;
     }
 
-    let kind: CreateDocenteCertificateDTO['kind'];
-    switch (this.selectedCourse.course_type) {
+    let kind: string;
+      switch (this.selectedCourse.course_type) {
       case 'PILDORA_EDUCATIVA': kind = 'PILDORA_PONENTE'; break;
       case 'INYECCION_EDUCATIVA': kind = 'INYECCION_PONENTE'; break;
       case 'CURSO_EDUCATIVO':
@@ -767,11 +767,11 @@ export class AdminCoursesComponent implements OnInit {
       default: alert('Tipo de producto educativo no reconocido para constancia de ponente.'); return;
     }
 
-    const payload: CreateDocenteCertificateDTO = {
+    const payload: CertificateIssueRequest = {
       course_id: this.selectedCourse.id,
-      docente_id: docente.id,
+      entity_id: docente.id,
       kind: kind,
-    };
+    }; 
 
     this.certificateService.issueForDocente(payload).subscribe({
       next: (res) => { alert(`Constancia de ponente emitida para ${docente.full_name}. Serial: ${res.serial}`); },

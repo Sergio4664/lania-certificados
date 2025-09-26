@@ -1,11 +1,18 @@
-// src/app/features/certificates/certificate.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
+import { CertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 
-//Interfaz para la respuesta del endpoint masivo
+// --- CAMBIO 1: Interfaz unificada para la solicitud ---
+// Esta interfaz reemplaza a CreateCertificateDTO y CreateDocenteCertificateDTO.
+export interface CertificateIssueRequest {
+  course_id: number;
+  entity_id: number; // ID del participante O del docente
+  kind: string;
+}
+
+// Interfaz para la respuesta del endpoint masivo (sin cambios)
 export interface BulkIssueResponse {
   issued: number;
   skipped: number;
@@ -13,50 +20,47 @@ export interface BulkIssueResponse {
   message: string;
 }
 
-//Interfaz para la solicitud de constancia de docente
-export interface CreateDocenteCertificateDTO {
-  course_id: number | string;
-  docente_id: number | string;
-  kind: 'PILDORA_PONENTE' | 'INYECCION_PONENTE' | 'CURSO_PONENTE' | 'CURSO_COMPETENCIAS_PONENTE';
-}
-
 @Injectable({ providedIn: 'root' })
 export class CertificateService {
   private http = inject(HttpClient);
-  private apiUrl = environment.apiUrl; // Cambiar de apiBase a apiUrl
+  private apiUrl = `${environment.apiUrl}/api/admin/certificates`; // URL base para los certificados
 
   list(): Observable<CertificateDTO[]> {
-    return this.http.get<CertificateDTO[]>(`${this.apiUrl}/api/admin/certificates`);
+    return this.http.get<CertificateDTO[]>(this.apiUrl);
   }
 
-  issue(data: CreateCertificateDTO): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/api/admin/certificates/issue`, data);
+  // --- CAMBIO 2: Función para participantes actualizada ---
+  // Se renombró de 'issue' a 'issueForParticipant' y usa la nueva URL e interfaz.
+  issueForParticipant(data: CertificateIssueRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/issue-for-participant`, data);
   }
 
-  //Método para emitir constancia para un docente
-  issueForDocente(data: CreateDocenteCertificateDTO): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/api/admin/certificates/issue-for-docente`, data);
+  // --- CAMBIO 3: Función para docentes actualizada ---
+  // Ahora usa la nueva interfaz unificada.
+  issueForDocente(data: CertificateIssueRequest): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/issue-for-docente`, data);
   }
 
-  //Método para le emisión masiva
+  // Método para la emisión masiva (sin cambios funcionales)
   issueBulk(courseId: number, participantIds: number[], docenteIds: number[], withCompetencies: boolean): Observable<BulkIssueResponse> {
     const payload = {
       participant_ids: participantIds,
-      with_competencies: withCompetencies
+      with_competencies: withCompetencies,
     };
-    return this.http.post<BulkIssueResponse>(`${this.apiUrl}/api/admin/courses/${courseId}/issue-bulk-certificates`, payload);
+    // Apunta a la URL correcta del curso, no a la de certificados
+    return this.http.post<BulkIssueResponse>(`${environment.apiUrl}/api/admin/courses/${courseId}/issue-bulk-certificates`, payload);
   }
 
   downloadBySerial(serial: string): void {
-    window.open(`${this.apiUrl}/v/serial/${serial}/pdf`, '_blank');
+    window.open(`${environment.apiUrl}/v/serial/${serial}/pdf`, '_blank');
   }
 
   verifyByToken(token: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/v/t/${token}`);
+    return this.http.get<any>(`${environment.apiUrl}/v/t/${token}`);
   }
 
-  // Legacy methods
+  // Legacy methods (sin cambios)
   listByCourse(courseId: number): Observable<CertificateDTO[]> {
-    return this.http.get<CertificateDTO[]>(`${this.apiUrl}/api/admin/courses/${courseId}/certificates`);
+    return this.http.get<CertificateDTO[]>(`${environment.apiUrl}/api/admin/courses/${courseId}/certificates`);
   }
 }
