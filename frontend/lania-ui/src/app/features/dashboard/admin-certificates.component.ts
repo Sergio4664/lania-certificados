@@ -1,4 +1,3 @@
-// frontend/lania-ui/src/app/features/dashboard/admin-certificates.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,9 +5,9 @@ import { HttpClient } from '@angular/common/http';
 import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
 import { CourseDTO } from '../../shared/interfaces/course.interfaces';
 import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
-import { DocenteDTO } from '../../shared/interfaces/docente.interfaces'; // Importar DocenteDTO
+import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
 
-//Interfaz simple para unificar las opciones del menu desplegable
+// Interfaz simple para unificar las opciones del menu desplegable
 interface RecipientOption {
   id: number,
   full_name: string
@@ -22,7 +21,7 @@ interface RecipientOption {
   <div class="module-content">
     <div class="module-header">
       <h2>Gestión de Constancias</h2>
-       <div class="header-actions">
+        <div class="header-actions">
         <div class="search-container">
           <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificates()" placeholder="Buscar por serial o participante...">
         </div>
@@ -123,7 +122,7 @@ interface RecipientOption {
   </div>
   `,
   styles: [`
- .module-content h2 { color: #1e293b; margin: 0 0 24px 0; font-size: 28px; font-weight: 600; }
+  .module-content h2 { color: #1e293b; margin: 0 0 24px 0; font-size: 28px; font-weight: 600; }
     .module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .primary-btn { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
     .primary-btn:hover { transform: translateY(-1px); }
@@ -255,7 +254,7 @@ export default class AdminCertificatesComponent implements OnInit {
     this.updateCertificateKind();
   }
 
-   updateCertificateKind() {
+  updateCertificateKind() {
     if (!this.newCertificate.course_id) return;
     
     const course = this.courses.find(c => c.id == this.newCertificate.course_id);
@@ -301,7 +300,7 @@ export default class AdminCertificatesComponent implements OnInit {
       .subscribe({
         next: (newCert) => {
           alert(`Constancia emitida con estado: ${newCert.status.replace(/_/g, ' ')}.`);
-          this.loadInitialData;
+          this.loadInitialData(); // <-- Pequeño ajuste aquí también
           this.cancelForm();
         },
         error: (err) => {
@@ -325,7 +324,10 @@ export default class AdminCertificatesComponent implements OnInit {
         .subscribe({
           next: () => {
             alert('Constancia eliminada exitosamente.');
+            // --- CAMBIO PRINCIPAL AQUÍ ---
+            // Se actualizan ambas listas para refrescar la vista al instante.
             this.certificates = this.certificates.filter(c => c.id !== id);
+            this.filterCertificates(); // Se llama a filterCertificates para actualizar la lista visible
           },
           error: (err) => {
             console.error('Error al eliminar constancia:', err);

@@ -48,7 +48,9 @@ def _create_and_issue_certificate(
     db: Session,
     course: Course,
     participant: Participant,
-    kind: CertificateKind
+    kind: CertificateKind,
+    # Se añade un parámetro opcional para recibir el objeto docente
+    docente: Optional[Docente] = None
 ) -> Certificate:
     """
     Función interna que encapsula la lógica para crear y emitir un certificado.
@@ -88,9 +90,15 @@ def _create_and_issue_certificate(
 
     # 4. Llamar al servicio que genera el PDF y los datos finales
     try:
+        # Se crea un diccionario para los datos del participante/docente
+        participant_data = {"full_name": participant.full_name}
+        # Si se pasó un objeto 'docente' y tiene especialidad, se añade al diccionario.
+        if docente and docente.especialidad:
+            participant_data["specialty"] = docente.especialidad
+            
         issued_cert = issue_certificate(
             db, cert,
-            participant={"full_name": participant.full_name},
+            participant=participant_data, # Se pasa el nuevo diccionario con los datos
             course={
                 "name": course.name,
                 "hours": course.hours,
@@ -103,7 +111,7 @@ def _create_and_issue_certificate(
     except Exception as e:
         db.rollback()
         logger.error(f"Error al llamar a issue_certificate para participant_id {participant.id}: {e}")
-        raise HTTPException(status_code=500, detail="Error interno al generar el archivo PDF del certificado.")
+        raise HTTPException(status_code=500, detail=f"Error interno al generar el archivo PDF del certificado: {e}")
 
 
 # --- Endpoints Refactorizados ---
@@ -118,12 +126,11 @@ def issue_for_participant(data: CertificateIssueRequest, db: Session = Depends(g
     if not course or not participant:
         raise HTTPException(status_code=404, detail="El curso o el participante no fueron encontrados.")
 
-    # Validar que el participante realmente esté inscrito en el curso
     enrollment = db.query(Enrollment).filter_by(course_id=course.id, participant_id=participant.id).first()
     if not enrollment:
         raise HTTPException(status_code=400, detail="El participante no está inscrito en este curso.")
 
-    # Llama a la función centralizada
+    # Al ser un participante, no se pasa el objeto 'docente'.
     cert = _create_and_issue_certificate(db, course, participant, data.kind)
     
     return IssueResponse(
@@ -137,9 +144,6 @@ def issue_for_participant(data: CertificateIssueRequest, db: Session = Depends(g
 def issue_for_docente(data: CertificateIssueRequest, db: Session = Depends(get_db)):
     """
     Emite una constancia de tipo 'ponente' para un docente.
-    Automáticamente busca o crea un registro de 'participante' asociado al docente
-    para mantener la consistencia en la base de datos, ya que los certificados
-    siempre deben estar ligados a un participante.
     """
     course = db.query(Course).get(data.course_id)
     docente = db.query(Docente).get(data.entity_id)
@@ -149,20 +153,19 @@ def issue_for_docente(data: CertificateIssueRequest, db: Session = Depends(get_d
     if "PONENTE" not in data.kind.value:
         raise HTTPException(status_code=400, detail="El tipo de constancia para un docente debe ser de tipo 'ponente'.")
 
-    # Lógica para encontrar o crear un participante a partir del docente
     participant = db.query(Participant).filter(Participant.personal_email == docente.institutional_email).first()
     if not participant:
         participant = Participant(
             full_name=docente.full_name,
             personal_email=docente.institutional_email,
-            phone=docente.telefono
+            telefono=docente.telefono
         )
         db.add(participant)
         db.commit()
         db.refresh(participant)
 
-    # Llama a la función centralizada
-    cert = _create_and_issue_certificate(db, course, participant, data.kind)
+    # Se pasa el objeto 'docente' a la función centralizada para que pueda usar la especialidad
+    cert = _create_and_issue_certificate(db, course, participant, data.kind, docente=docente)
     
     return IssueResponse(
         id=cert.id, serial=cert.serial, kind=cert.kind.value, status=cert.status.value,
@@ -173,11 +176,8 @@ def issue_for_docente(data: CertificateIssueRequest, db: Session = Depends(get_d
 
 @router.post("/{course_id}/issue-bulk", summary="Emite certificados masivamente para un curso")
 def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Session = Depends(get_db)):
-    # Esta función mantiene su lógica original, pero podría ser refactorizada en el futuro
-    # para utilizar también la función _create_and_issue_certificate dentro del bucle.
-    
-    # ... (Tu código original para la emisión masiva va aquí) ...
-    pass # Reemplaza 'pass' con tu lógica original de 'issue-bulk-certificates'
+    # ... (Tu lógica de emisión masiva aquí) ...
+    pass
 
 
 @router.get("/", response_model=List[dict], summary="Lista todos los certificados emitidos")
@@ -209,7 +209,6 @@ def delete_certificate(certificate_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
     
     try:
-        # Eliminar el archivo PDF físico si existe
         if cert.pdf_path and os.path.exists(cert.pdf_path):
             os.remove(cert.pdf_path)
             

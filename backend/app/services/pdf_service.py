@@ -1,4 +1,3 @@
-# backend/app/services/pdf_service.py
 from io import BytesIO
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
@@ -17,13 +16,10 @@ from typing import Optional, List
 
 # --- REGISTRO DE LA FUENTE PERSONALIZADA ---
 try:
-    # Registramos la fuente cursiva que usaremos para el nombre del participante
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'app/fonts/DancingScript-Bold.ttf'))
 except Exception as e:
     print(f"ADVERTENCIA: No se pudo cargar la fuente 'DancingScript-Bold' (Error: {e}). Se usará Helvetica-Bold como alternativa.")
-    # Si la fuente no se encuentra, usamos una de respaldo para evitar errores.
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'Helvetica-Bold'))
-
 
 # Configura el locale para tener los meses en español
 try:
@@ -34,8 +30,9 @@ except locale.Error:
 def draw_multiline_text(c, text, x, y, max_width, style):
     p = Paragraph(text, style)
     p.wrapOn(c, max_width, 10 * cm)
-    p.drawOn(c, x - (max_width / 2), y - p.height)
-    return p.height
+    p_height = p.height
+    p.drawOn(c, x - (max_width / 2), y - p_height)
+    return p_height
 
 def generate_certificate_pdf(
     participant_name: str,
@@ -48,7 +45,8 @@ def generate_certificate_pdf(
     qr_token: str,
     course_modality: str,
     course_date: str,
-    competencies: Optional[List[str]] = None
+    competencies: Optional[List[str]] = None,
+    docente_specialty: Optional[str] = None
 ) -> bytes:
     """
     Genera un PDF de certificado superponiendo texto y QR en una plantilla existente (vertical).
@@ -58,33 +56,12 @@ def generate_certificate_pdf(
 
     center_x = letter[0] / 2
 
-    # --- Estilos (Definidos de forma independiente para evitar que se mezclen) ---
-    style_normal = ParagraphStyle(
-        name='Normal_Helvetica',
-        fontName='Helvetica',
-        fontSize=12,
-        leading=20,  # Aumentado para más espacio
-        alignment=TA_CENTER
-    )
-
-    style_bold = ParagraphStyle(
-        name='Bold_Helvetica',
-        fontName='Helvetica-Bold',
-        fontSize=26,
-        leading=30,
-        alignment=TA_CENTER
-    )
-
-    style_participant_name = ParagraphStyle(
-        name='Participant_Cursive',
-        fontName='DancingScript-Bold',
-        fontSize=38,
-        leading=42,
-        alignment=TA_CENTER
-    )
+    # --- Estilos ---
+    style_normal = ParagraphStyle(name='Normal_Helvetica', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
+    style_bold = ParagraphStyle(name='Bold_Helvetica', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER)
+    style_participant_name = ParagraphStyle(name='Participant_Cursive', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
 
     # --- Dibujar los elementos del certificado ---
-
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
@@ -98,18 +75,24 @@ def generate_certificate_pdf(
     label = "al:" if "PONENTE" in kind else "a:"
     c.drawCentredString(center_x, 18.8 * cm, label)
 
-    # --- Lógica de espaciado dinámico ---
-    # 1. Dibuja el nombre del participante y captura su altura
-    participant_name_y_start = 18.2 * cm
-    participant_name_height = draw_multiline_text(c, participant_name, center_x, participant_name_y_start, 18 * cm, style_participant_name)
-
-    # 2. Calcula la posición final del nombre
-    participant_name_y_end = participant_name_y_start - participant_name_height
-
-    # 3. Establece la posición del siguiente bloque de texto con un margen fijo
-    y_position = participant_name_y_end - 1.2 * cm
+    # --- Lógica para el nombre del participante/docente y su especialidad ---
+    y_position = 18.2 * cm
     
-    # --- Lógica para el cuerpo del texto ---
+    # --- CAMBIO AQUÍ: Se une la especialidad ANTES del nombre ---
+    display_name = participant_name
+    if docente_specialty:
+        # Se construye el nombre completo con la especialidad al principio
+        display_name = f"{docente_specialty} {participant_name}"
+    # --- Fin del cambio ---
+            
+    # Dibujar el nombre (y especialidad si aplica) con el mismo estilo
+    participant_display_height = draw_multiline_text(c, display_name, center_x, y_position, 18 * cm, style_participant_name)
+    y_position -= participant_display_height
+
+    # Ajuste de la posición para el siguiente bloque de texto
+    y_position -= 1.2 * cm
+    
+    # --- Lógica para el cuerpo del texto (sin cambios) ---
     text_width = 18 * cm
 
     if "COMPETENCIAS" in kind and competencies:
@@ -117,13 +100,7 @@ def generate_certificate_pdf(
         height = draw_multiline_text(c, text, center_x, y_position, text_width, style_normal)
         y_position -= (height + 0.5 * cm)
 
-        style_competency = ParagraphStyle(
-            name='Competency_Style',
-            fontName='Helvetica',
-            fontSize=10,
-            leading=14,
-            leftIndent=20
-        )
+        style_competency = ParagraphStyle(name='Competency_Style', fontName='Helvetica', fontSize=10, leading=14, leftIndent=20)
 
         for comp in competencies:
             p = Paragraph(f"• {comp}", style_competency)
@@ -154,7 +131,7 @@ def generate_certificate_pdf(
             details_text = f"impartida el {course_date}"
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
-    # --- Firma y fecha ---
+    # --- Firma y fecha (sin cambios) ---
     y_firma = 6.0 * cm
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, y_firma, "Dr. Juan Manuel Gutiérrez Méndez")
@@ -165,7 +142,7 @@ def generate_certificate_pdf(
     c.setFont("Helvetica", 9)
     c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
 
-    # --- Folio y QR ---
+    # --- Folio y QR (sin cambios) ---
     qr_png_bytes = generate_qr_png(f"http://127.0.0.1:4200/v/{qr_token}")
     qr_image = ImageReader(BytesIO(qr_png_bytes))
 
