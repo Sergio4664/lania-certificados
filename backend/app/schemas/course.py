@@ -10,6 +10,9 @@ class DocenteInfo(BaseModel):
     especialidad: str
     full_name: str
     institutional_email: str
+    personal_email: str
+    telefono: Optional[str] = None
+    whatsapp: Optional[str] = None
 
 class CourseBase(BaseModel):
     code: str

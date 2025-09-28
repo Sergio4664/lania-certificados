@@ -163,6 +163,11 @@ def issue_for_docente(data: CertificateIssueRequest, db: Session = Depends(get_d
         db.add(participant)
         db.commit()
         db.refresh(participant)
+    else:
+        #Si el particiopante ya existía, actualizamos su nombre y teléfono por si han cambiado
+        participant.full_name = docente.full_name
+        db.commit()
+        db.refresh(participant)
 
     # Se pasa el objeto 'docente' a la función centralizada para que pueda usar la especialidad
     cert = _create_and_issue_certificate(db, course, participant, data.kind, docente=docente)

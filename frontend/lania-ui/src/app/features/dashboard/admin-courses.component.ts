@@ -1,4 +1,3 @@
-// frontend/lania-ui/src/app/features/dashboard/admin-courses.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,290 +16,302 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
   imports: [CommonModule, FormsModule],
   template: `
    <div class="module-content">
-      <div class="module-header">
-        <h2>Gestión de Productos Educativos</h2>
-        <div class="header-actions">
-          <div class="search-container">
-            <input type="text" [(ngModel)]="searchTerm" (input)="filterCourses()" placeholder="Buscar por nombre...">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
-          <button class="primary-btn" (click)="showCourseForm = true; editingCourse = null; resetCourseForm()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Nuevo Producto Educativo
-          </button>
-        </div>
+       <div class="module-header">
+         <h2>Gestión de Productos Educativos</h2>
+         <div class="header-actions">
+           <div class="search-container">
+             <input type="text" [(ngModel)]="searchTerm" (input)="filterCourses()" placeholder="Buscar por nombre...">
+             <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+               <circle cx="11" cy="11" r="8"></circle>
+               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+             </svg>
+           </div>
+           <button class="primary-btn" (click)="showCourseForm = true; editingCourse = null; resetCourseForm()">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+             Nuevo Producto Educativo
+           </button>
+         </div>
+       </div>
+
+       <div *ngIf="showCourseForm" class="form-card">
+         <h3>{{ editingCourse ? 'Editar el Producto Educativo' : 'Crear Nuevo Producto Educativo' }}</h3>
+         <form (ngSubmit)="editingCourse ? updateCourse() : createCourse()" class="form-grid">
+           <div class="form-group">
+             <label>Código del Curso</label>
+             <input [(ngModel)]="courseForm.code" name="code" required [disabled]="!!editingCourse">
+           </div>
+           <div class="form-group">
+             <label>Nombre del Curso</label>
+             <input [(ngModel)]="courseForm.name" name="name" required>
+           </div>
+           <div class="form-group">
+             <label>Fecha de Inicio</label>
+             <input type="date" [(ngModel)]="courseForm.start_date" name="start_date" required>
+           </div>
+           <div class="form-group">
+             <label>Fecha de Fin</label>
+             <input type="date" [(ngModel)]="courseForm.end_date" name="end_date" required>
+           </div>
+           <div class="form-group">
+             <label>Horas</label>
+             <input type="number" [(ngModel)]="courseForm.hours" name="hours" required>
+           </div>
+           <div class="form-group">
+             <label>Tipo de Producto Educativo</label>
+             <select [(ngModel)]="courseForm.course_type" name="course_type" required>
+               <option value="CURSO_EDUCATIVO">Curso Educativo</option>
+               <option value="PILDORA_EDUCATIVA">Píldora Educativa</option>
+               <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
+             </select>
+           </div>
+
+           <div class="form-group full-width" *ngIf="courseForm.course_type === 'CURSO_EDUCATIVO'">
+             <label>Competencias del Curso</label>
+             <button type="button" class="secondary-btn icon-left" (click)="openCompetenciesModal()">
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+               {{ courseForm.competencies && courseForm.competencies.length > 0 ? 'Editar Competencias' : 'Añadir Competencias' }}
+             </button>
+           </div>
+           
+           <div class="form-group full-width">
+             <label>Docentes Asignados</label>
+             <div class="docentes-selection">
+               <div class="docentes-checkboxes">
+                 <div class="checkbox-item" *ngFor="let docente of activeDocentes">
+                   <input type="checkbox" [id]="'docente-' + docente.id" [checked]="isDocenteSelected(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
+                   <label [for]="'docente-' + docente.id">
+                     <strong *ngIf="docente.especialidad" style="color: #667eea; display: block; font-size: 0.9em; margin-bottom: 2px;">{{docente.especialidad}}</strong>
+                       {{docente.full_name}}
+                     <small>({{docente.institutional_email}})</small>
+                   </label>
+                 </div>
+               </div>
+             </div>
+           </div>
+           <div class="form-actions">
+             <button type="button" class="secondary-btn" (click)="cancelCourseForm()">Cancelar</button>
+             <button type="submit" class="primary-btn">{{ editingCourse ? 'Actualizar Producto Educativo' : 'Crear Producto Educativo' }}</button>
+           </div>
+         </form>
+       </div>
+
+      <div *ngIf="searchTerm.length === 0">
+       <div class="category-section">
+         <div class="category-header"><h3>Píldoras Educativas</h3></div>
+         <div class="courses-grid">
+           <div class="course-card" *ngFor="let course of pildoras" (click)="selectCourse(course)">
+             <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+             <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
+               <span *ngFor="let docente of course.docentes" class="docente-tag-small">
+                 <strong *ngIf="docente.especialidad">{{ docente.especialidad }}:</strong> {{ docente.full_name }}
+               </span>
+               </div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+             <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
+           </div>
+         </div>
+       </div>
+       <div class="category-section">
+         <div class="category-header"><h3>Inyecciones Educativas</h3></div>
+         <div class="courses-grid">
+           <div class="course-card" *ngFor="let course of inyecciones" (click)="selectCourse(course)">
+             <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+             <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+             <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
+           </div>
+         </div>
+       </div>
+       <div class="category-section">
+         <div class="category-header"><h3>Cursos Educativos</h3></div>
+         <div class="courses-grid">
+            <div class="course-card" *ngFor="let course of cursos" (click)="selectCourse(course)">
+             <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+             <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+             <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
+           </div>
+         </div>
+       </div>
       </div>
 
-      <div *ngIf="showCourseForm" class="form-card">
-        <h3>{{ editingCourse ? 'Editar el Producto Educativo' : 'Crear Nuevo Producto Educativo' }}</h3>
-        <form (ngSubmit)="editingCourse ? updateCourse() : createCourse()" class="form-grid">
-          <div class="form-group">
-            <label>Código del Curso</label>
-            <input [(ngModel)]="courseForm.code" name="code" required [disabled]="!!editingCourse">
-          </div>
-          <div class="form-group">
-            <label>Nombre del Curso</label>
-            <input [(ngModel)]="courseForm.name" name="name" required>
-          </div>
-          <div class="form-group">
-            <label>Fecha de Inicio</label>
-            <input type="date" [(ngModel)]="courseForm.start_date" name="start_date" required>
-          </div>
-          <div class="form-group">
-            <label>Fecha de Fin</label>
-            <input type="date" [(ngModel)]="courseForm.end_date" name="end_date" required>
-          </div>
-          <div class="form-group">
-            <label>Horas</label>
-            <input type="number" [(ngModel)]="courseForm.hours" name="hours" required>
-          </div>
-          <div class="form-group">
-            <label>Tipo de Producto Educativo</label>
-            <select [(ngModel)]="courseForm.course_type" name="course_type" required>
-              <option value="CURSO_EDUCATIVO">Curso Educativo</option>
-              <option value="PILDORA_EDUCATIVA">Píldora Educativa</option>
-              <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
-            </select>
-          </div>
+       <div *ngIf="searchTerm.length > 0" class="courses-grid">
+         <div class="course-card" *ngFor="let course of filteredCourses" (click)="selectCourse(course)">
+            <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
+            <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
+            <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
+         </div>
+       </div>
+       
+       <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
+         <div class="modal-content" (click)="$event.stopPropagation()">
+           <div class="modal-header"><h2>Contenido del Producto Educativo: {{ selectedCourse.name }}</h2><button class="close-btn" (click)="unselectCourse()"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
+           <div class="modal-body">
+             
+             <div class="modal-actions-grid">
+                 <div class="form-card compact">
+                   <h4>Añadir e Importar Participantes</h4>
+                   <div class="add-participant-section">
+                     <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Manualmente</button>
+                     <div *ngIf="showAddParticipantForm" class="form-card nested-form">
+                       <form (ngSubmit)="enrollParticipant()">
+                         <div class="form-group">
+                           <label>Seleccionar Participante</label>
+                           <select [(ngModel)]="participantToAdd" name="participant_id" required>
+                             <option [ngValue]="null" disabled>-- Elige un participante --</option>
+                             <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.personal_email}})</option>
+                           </select>
+                         </div>
+                         <div class="form-actions">
+                           <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
+                           <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
+                         </div>
+                       </form>
+                     </div>
+                   </div>
+                   <div class="upload-section">
+                     <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
+                     <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
+                     <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+                     <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir</button>
+                   </div>
+                 </div>
 
-          <div class="form-group full-width" *ngIf="courseForm.course_type === 'CURSO_EDUCATIVO'">
-            <label>Competencias del Curso</label>
-            <button type="button" class="secondary-btn icon-left" (click)="openCompetenciesModal()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-              {{ courseForm.competencies && courseForm.competencies.length > 0 ? 'Editar Competencias' : 'Añadir Competencias' }}
-            </button>
-          </div>
-          
-          <div class="form-group full-width">
-            <label>Docentes Asignados</label>
-            <div class="docentes-selection">
-              <div class="docentes-checkboxes">
-                <div class="checkbox-item" *ngFor="let docente of activeDocentes">
-                  <input type="checkbox" [id]="'docente-' + docente.id" [checked]="isDocenteSelected(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
-                  <label [for]="'docente-' + docente.id">
-                    <strong *ngIf="docente.especialidad" style="color: #667eea; display: block; font-size: 0.9em; margin-bottom: 2px;">{{docente.especialidad}}</strong>
-                      {{docente.full_name}}
-                    <small>({{docente.institutional_email}})</small>
-                  </label>
-                </div>
+                 <div class="form-card compact">
+                   <h4>Emisión y Envío Masivo</h4>
+                   <div class="bulk-actions">
+                     <button class="primary-btn" (click)="issueAndNotifyBulk(false)" [disabled]="courseParticipants.length === 0 && (!selectedCourse.docentes || selectedCourse.docentes.length === 0)">Emitir y Notificar a Todos (Normal)</button>
+                     <div *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'">
+                       <p>O seleccione destinatarios para emitir constancias <strong>de competencias.</strong></p>
+                       <button class="secondary-btn" (click)="issueAndNotifyBulk(true)" [disabled]="competencyRecipients.size === 0 && docenteCompetencyRecipients.size === 0">Emitir y Notificar a Seleccionados</button>
+                     </div>
+                   </div>
+                 </div>
+             </div>
+
+            <div class="scrollable-content">
+              <div class="data-table" *ngIf="selectedCourse.docentes && selectedCourse.docentes.length > 0">
+                <h3 class="table-title">Docentes / Ponentes</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                        <input type="checkbox"
+                               [checked]="areAllDocenteRecipientsSelected"
+                               (change)="toggleAllDocenteRecipients($event)"
+                               title="Seleccionar Todos los Docentes">
+                      </th>
+                      <th>Nombre</th>
+                      <th>Email Institutional</th>
+                      <th>Email Personal</th>
+                      <th>Especialidad</th>
+                      <th>Teléfono</th>
+                      <th>Whatsapp</th>
+                      <th>Emitir Constancia de Ponente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let docente of selectedCourse.docentes">
+                      <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                        <input type="checkbox"
+                               [checked]="isDocenteRecipientSelected(docente.id)"
+                               (change)="toggleDocenteCompetencyRecipient(docente.id, $event)">
+                      </td>
+                      <td>{{ docente.full_name }}</td>
+                      <td>{{ docente.institutional_email }}</td>
+                      <td>{{ docente.personal_email || 'N/A' }}</td>
+                      <td>{{ docente.especialidad || 'N/A' }}</td>
+                      <td>{{ docente.telefono || 'N/A' }}</td>
+                      <td>{{ docente.whatsapp || 'N/A' }}</td>
+                      <td>
+                        <div class="send-actions">
+                          <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id, false)">Normal</button>
+                          <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueDocenteCertificate(docente.id, true)">Competencias</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="data-table">
+                <h3 class="table-title">Participantes</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                        <input type="checkbox"
+                               [checked]="areAllCompetencyRecipientsSelected"
+                               (change)="toggleAllCompetencyRecipients($event)"
+                               title="Seleccionar Todos">
+                      </th>
+                      <th>Nombre</th>
+                      <th>Email Personal</th>
+                      <th>Teléfono</th>
+                      <th>WhatsApp</th>
+                      <th>Acciones</th>
+                      <th>Emitir Constancia Individual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of courseParticipants">
+                      <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                        <input type="checkbox"
+                               [checked]="isRecipientSelected(p.id)"
+                               (change)="toggleCompetencyRecipient(p.id, $event)">
+                      </td>
+                      <td>{{ p.full_name }}</td>
+                      <td>{{ p.personal_email }}</td>
+                      <td>{{ p.telefono || 'N/A' }}</td>
+                      <td>{{ p.whatsapp || 'N/A' }}</td>
+                      <td>
+                        <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)" title="Eliminar del curso">
+                          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        </button>
+                      </td>
+                      <td>
+                        <div class="send-actions">
+                          <button class="secondary-btn small-btn" (click)="issueCertificate(p.id, false)">Normal</button>
+                          <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(p.id, true)">Competencias</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="courseParticipants.length === 0">
+                      <td [attr.colspan]="selectedCourse.course_type === 'CURSO_EDUCATIVO' ? 7 : 6" class="no-data">No hay participantes inscritos.</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="secondary-btn" (click)="cancelCourseForm()">Cancelar</button>
-            <button type="submit" class="primary-btn">{{ editingCourse ? 'Actualizar Producto Educativo' : 'Crear Producto Educativo' }}</button>
-          </div>
-        </form>
-      </div>
+           </div>
+         </div>
+       </div>
 
-       <div *ngIf="searchTerm.length === 0">
-        <div class="category-section">
-          <div class="category-header"><h3>Píldoras Educativas</h3></div>
-          <div class="courses-grid">
-            <div class="course-card" *ngFor="let course of pildoras" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
-              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list">
-                <span *ngFor="let docente of course.docentes" class="docente-tag-small">
-                  <strong *ngIf="docente.especialidad">{{ docente.especialidad }}:</strong> {{ docente.full_name }}
-                </span>
-                </div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
-              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
-            </div>
-          </div>
-        </div>
-        <div class="category-section">
-          <div class="category-header"><h3>Inyecciones Educativas</h3></div>
-          <div class="courses-grid">
-            <div class="course-card" *ngFor="let course of inyecciones" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
-              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
-              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
-            </div>
-          </div>
-        </div>
-        <div class="category-section">
-          <div class="category-header"><h3>Cursos Educativos</h3></div>
-          <div class="courses-grid">
-             <div class="course-card" *ngFor="let course of cursos" (click)="selectCourse(course)">
-              <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
-              <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
-              <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
-            </div>
-          </div>
-        </div>
-      </div>
+       <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
+         <div class="modal-content" (click)="$event.stopPropagation()">
+           <div class="modal-header">
+             <h2>Gestionar Competencias del Curso</h2>
+             <button class="close-btn" (click)="showCompetenciesModal = false">
+               <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+             </button>
+           </div>
+           <div class="modal-body">
+             <p class="modal-instructions">Define un máximo de {{ maxCompetencies }} competencias que se evaluarán en este curso.</p>
+             <div class="form-grid-modal">
+               <div class="form-group" *ngFor="let comp of competenciesList; let i = index; trackBy: trackByIndex">
+                 <label>Competencia {{i + 1}}</label>
+                 <input type="text" [(ngModel)]="competenciesList[i]" name="competencia-{{i}}" placeholder="Ej: Interpreta y transforma datos...">
+               </div>
+             </div>
+           </div>
+           <div class="modal-footer">
+             <button type="button" class="secondary-btn" (click)="showCompetenciesModal = false">Cancelar</button>
+             <button type="button" class="primary-btn icon-left" (click)="saveCompetencies()">
+               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+               Guardar Competencias
+             </button>
+           </div>
+         </div>
+       </div>
 
-      <div *ngIf="searchTerm.length > 0" class="courses-grid">
-        <div class="course-card" *ngFor="let course of filteredCourses" (click)="selectCourse(course)">
-           <div class="course-card-header" [style.backgroundColor]="getCourseColor(course.id)"><h3 class="course-name">{{ course.name }}</h3><p class="course-code">{{ course.code }}</p><div class="course-avatar" [style.backgroundColor]="getAvatarColor(course.id)">{{ course.name.charAt(0) }}</div></div>
-           <div class="course-card-body"><div class="detail-item"><strong>Tipo:</strong> {{ course.course_type.replace('_', ' ') }}</div><div class="detail-item"><strong>Fechas:</strong> {{ course.start_date | date:'dd/MM/yy' }} - {{ course.end_date | date:'dd/MM/yy' }}</div><div class="detail-item"><strong>Horas:</strong> {{ course.hours }}h</div><div class="detail-item docentes"><strong>Docente(s):</strong><div *ngIf="course.docentes && course.docentes.length > 0; else noDocentes" class="docentes-list"><span *ngFor="let docente of course.docentes" class="docente-tag-small">{{ docente.full_name }}</span></div><ng-template #noDocentes><span class="no-docentes-small">No asignados</span></ng-template></div></div>
-           <div class="course-card-footer"><button class="icon-btn-card edit" (click)="editCourse(course); $event.stopPropagation()" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button><button class="icon-btn-card delete" (click)="deleteCourse(course.id); $event.stopPropagation()" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>
-        </div>
-      </div>
-      
-      <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header"><h2>Participantes en {{ selectedCourse.name }}</h2><button class="close-btn" (click)="unselectCourse()"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
-          <div class="modal-body">
-            
-            <div class="modal-actions-grid">
-               <div class="form-card compact">
-                <h4>Añadir e Importar Participantes</h4>
-                <div class="add-participant-section">
-                  <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Añadir Manualmente</button>
-                  <div *ngIf="showAddParticipantForm" class="form-card nested-form">
-                    <form (ngSubmit)="enrollParticipant()">
-                      <div class="form-group">
-                        <label>Seleccionar Participante</label>
-                        <select [(ngModel)]="participantToAdd" name="participant_id" required>
-                          <option [ngValue]="null" disabled>-- Elige un participante --</option>
-                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.full_name }} ({{p.personal_email}})</option>
-                        </select>
-                      </div>
-                      <div class="form-actions">
-                        <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
-                        <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-                <div class="upload-section">
-                  <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
-                  <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
-                  <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
-                  <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir</button>
-                </div>
-              </div>
-
-              <div class="form-card compact">
-                <h4>Emisión y Envío Masivo</h4>
-                <div class="bulk-actions">
-                  <button class="primary-btn" (click)="issueAndNotifyBulk(false)" [disabled]="courseParticipants.length === 0 && (!selectedCourse.docentes || selectedCourse.docentes.length === 0)">Emitir y Notificar a Todos (Normal)</button>
-                  <div *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'">
-                    <p>O seleccione destinatarios para emitir constancias <strong>de competencias.</strong></p>
-                    <button class="secondary-btn" (click)="issueAndNotifyBulk(true)" [disabled]="competencyRecipients.size === 0 && docenteCompetencyRecipients.size === 0">Emitir y Notificar a Seleccionados</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="data-table" *ngIf="selectedCourse.docentes && selectedCourse.docentes.length > 0">
-              <h3 class="table-title">Docentes / Ponentes</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
-                      <input type="checkbox"
-                            [checked]="areAllDocenteRecipientsSelected"
-                            (change)="toggleAllDocenteRecipients($event)"
-                            title="Seleccionar Todos los Docentes">
-                    </th>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Emitir Constancia de Ponente</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let docente of selectedCourse.docentes">
-                    <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
-                      <input type="checkbox"
-                             [checked]="isDocenteRecipientSelected(docente.id)"
-                             (change)="toggleDocenteCompetencyRecipient(docente.id, $event)">
-                    </td>
-                    <td>{{ docente.full_name }}</td>
-                    <td>{{ docente.institutional_email }}</td>
-                    <td>
-                      <div class="send-actions">
-                        <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id, false)">Normal</button>
-                        <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueDocenteCertificate(docente.id, true)">Competencias</button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="data-table">
-              <h3 class="table-title">Participantes</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
-                      <input type="checkbox"
-                            [checked]="areAllCompetencyRecipientsSelected"
-                            (change)="toggleAllCompetencyRecipients($event)"
-                            title="Seleccionar Todos">
-                    </th>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Acciones</th>
-                    <th>Emitir Constancia Individual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let p of courseParticipants">
-                    <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
-                      <input type="checkbox"
-                            [checked]="isRecipientSelected(p.id)"
-                            (change)="toggleCompetencyRecipient(p.id, $event)">
-                    </td>
-                    <td>{{ p.full_name }}</td>
-                    <td>{{ p.personal_email }}</td>
-                    <td>{{ p.whatsapp|| 'N/A' }}</td>
-                    <td>
-                      <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)" title="Eliminar del curso">
-                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                      </button>
-                    </td>
-                    <td>
-                      <div class="send-actions">
-                        <button class="secondary-btn small-btn" (click)="issueCertificate(p.id, false)">Normal</button>
-                        <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(p.id, true)">Competencias</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr *ngIf="courseParticipants.length === 0">
-                    <td [attr.colspan]="selectedCourse.course_type === 'CURSO_EDUCATIVO' ? 6 : 5" class="no-data">No hay participantes inscritos.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h2>Gestionar Competencias del Curso</h2>
-            <button class="close-btn" (click)="showCompetenciesModal = false">
-              <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </button>
-          </div>
-          <div class="modal-body">
-            <p class="modal-instructions">Define un máximo de {{ maxCompetencies }} competencias que se evaluarán en este curso.</p>
-            <div class="form-grid-modal">
-              <div class="form-group" *ngFor="let comp of competenciesList; let i = index; trackBy: trackByIndex">
-                <label>Competencia {{i + 1}}</label>
-                <input type="text" [(ngModel)]="competenciesList[i]" name="competencia-{{i}}" placeholder="Ej: Interpreta y transforma datos...">
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="secondary-btn" (click)="showCompetenciesModal = false">Cancelar</button>
-            <button type="button" class="primary-btn icon-left" (click)="saveCompetencies()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-              Guardar Competencias
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </div>
+     </div>
   `,
   styles: [`
     /* General Styles & Layout */
@@ -404,6 +415,12 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
     .modal-instructions { margin-bottom: 24px; color: #64748b; font-size: 15px; background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
     .form-grid-modal { display: grid; grid-template-columns: 1fr; gap: 16px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+    
+    .scrollable-content {
+      max-height: 55vh;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
   `]
 })
 export class AdminCoursesComponent implements OnInit {

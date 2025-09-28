@@ -4,6 +4,10 @@ export interface DocenteInfo {
   especialidad: string;
   full_name: string;
   institutional_email: string;
+  telefono: string;
+  whatsapp: string;
+  personal_email: string;
+  
 }
 
 export interface CourseDTO {
