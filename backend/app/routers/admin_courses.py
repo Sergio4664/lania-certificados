@@ -1,6 +1,5 @@
-# backend/app/routers/admin_courses.py
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.course import Course
@@ -38,7 +37,6 @@ async def upload_participants(course_id: int, file: UploadFile = File(...), db: 
         else:
             raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use CSV o Excel.")
 
-        # Normalizar nombres de columnas (minúsculas y sin espacios)
         df.columns = [col.strip().lower() for col in df.columns]
 
         if 'email' not in df.columns or 'full_name' not in df.columns:
@@ -48,7 +46,6 @@ async def upload_participants(course_id: int, file: UploadFile = File(...), db: 
         for index, row in df.iterrows():
             participant_email = row.get('email')
             participant_name = row.get('full_name')
-            # Buscar por 'phone' o 'telefono'
             participant_phone = row.get('phone', row.get('telefono'))
 
             if not isinstance(participant_email, str) or not isinstance(participant_name, str):
@@ -60,7 +57,6 @@ async def upload_participants(course_id: int, file: UploadFile = File(...), db: 
                     "email": participant_email,
                     "full_name": participant_name
                 }
-                # Añadir teléfono solo si existe y no está vacío
                 if participant_phone and pd.notna(participant_phone):
                     new_participant_data["phone"] = str(participant_phone)
 
@@ -84,7 +80,6 @@ async def upload_participants(course_id: int, file: UploadFile = File(...), db: 
         logger.error(f"Error al procesar el archivo: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
 
-
 @router.post("/", response_model=CourseOut)
 def create_course(course: CourseCreate, db: Session = Depends(get_db)):
     try:
@@ -97,7 +92,7 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
         ).first()
         
         if not creator:
-            raise HTTPException(400, "El usuario creador no existe o no está activo")
+            raise HTTPException(status_code=400, detail="El usuario creador no existe o no está activo")
         
         db_course = Course(**course_data)
         db.add(db_course)
@@ -113,7 +108,7 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
                 db.rollback()
                 found_ids = [d.id for d in docentes]
                 missing_ids = [did for did in docente_ids if did not in found_ids]
-                raise HTTPException(400, f"Docentes no encontrados o inactivos: {missing_ids}")
+                raise HTTPException(status_code=400, detail=f"Docentes no encontrados o inactivos: {missing_ids}")
             
             for docente in docentes:
                 db_course.docentes.append(docente)
@@ -121,116 +116,54 @@ def create_course(course: CourseCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_course)
         
-        result = CourseOut(
-            id=db_course.id,
-            code=db_course.code,
-            name=db_course.name,
-            start_date=db_course.start_date,
-            end_date=db_course.end_date,
-            hours=db_course.hours,
-            competencies=db_course.competencies,
-            created_by=db_course.created_by,
-            course_type=db_course.course_type,
-            modality=db_course.modality,
-            docentes=[
-                DocenteInfo(
-                    id=docente.id,
-                    especialidad=docente.especialidad,
-                    full_name=docente.full_name,
-                    institutional_email=docente.institutional_email
-                )
-                for docente in db_course.docentes
-            ]
-        )
-        return result
+        return db_course
         
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Error de integridad al crear curso: {str(e)}")
         if "duplicate key value violates unique constraint" in str(e):
-            raise HTTPException(400, "Ya existe un curso con ese código")
-        raise HTTPException(500, f"Error de integridad en la base de datos: {str(e)}")
+            raise HTTPException(status_code=400, detail="Ya existe un curso con ese código")
+        raise HTTPException(status_code=500, detail=f"Error de integridad en la base de datos: {str(e)}")
     except HTTPException:
         db.rollback()
         raise
     except Exception as e:
         db.rollback()
         logger.error(f"Error inesperado al crear curso: {str(e)}")
-        raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
-@router.get("/")
+@router.get("/", response_model=List[CourseOut])
 def list_courses(db: Session = Depends(get_db)):
     try:
-        courses = db.query(Course).all()
-        result = []
-        for course in courses:
-            course_dict = {
-                "id": course.id,
-                "code": course.code,
-                "name": course.name,
-                "start_date": course.start_date.isoformat() if course.start_date else None,
-                "end_date": course.end_date.isoformat() if course.end_date else None,
-                "hours": course.hours,
-                "competencies": course.competencies,
-                "created_by": course.created_by,
-                "course_type": course.course_type,
-                "modality": course.modality,
-                "docentes": [
-                    {
-                        "id": docente.id,
-                        "especialidad": docente.especialidad,
-                        "full_name": docente.full_name,
-                        "institutional_email": docente.institutional_email
-                    }
-                    for docente in course.docentes
-                ]
-            }
-            result.append(course_dict)
-        return result
+        courses = db.query(Course).options(joinedload(Course.docentes)).all()
+        return courses
     except Exception as e:
         logger.error(f"Error al listar cursos: {str(e)}")
-        raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
-@router.get("/{course_id}")
+@router.get("/{course_id}", response_model=CourseOut)
 def get_course(course_id: int, db: Session = Depends(get_db)):
     try:
-        course = db.query(Course).get(course_id)
+        course = db.query(Course).options(
+            joinedload(Course.docentes)
+        ).filter(Course.id == course_id).first()
+
         if not course:
-            raise HTTPException(404, "Curso no encontrado")
+            raise HTTPException(status_code=404, detail="Curso no encontrado")
         
-        return {
-            "id": course.id,
-            "code": course.code,
-            "name": course.name,
-            "start_date": course.start_date.isoformat(),
-            "end_date": course.end_date.isoformat(),
-            "hours": course.hours,
-            "competencies": course.competencies,
-            "created_by": course.created_by,
-            "course_type": course.course_type,
-            "modality": course.modality,
-            "docentes": [
-                {
-                    "id": docente.id,
-                    "especialidad": docente.especialidad,
-                    "full_name": docente.full_name,
-                    "institutional_email": docente.institutional_email
-                }
-                for docente in course.docentes
-            ]
-        }
+        return course
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error al obtener curso {course_id}: {str(e)}")
-        raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
-@router.put("/{course_id}")
+@router.put("/{course_id}", response_model=CourseOut)
 def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_db)):
     try:
         course = db.query(Course).get(course_id)
         if not course:
-            raise HTTPException(404, "Curso no encontrado")
+            raise HTTPException(status_code=404, detail="Curso no encontrado")
         
         update_data = data.dict(exclude_unset=True, exclude={'docente_ids'})
         for field, value in update_data.items():
@@ -245,7 +178,7 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
             if len(docentes) != len(data.docente_ids):
                 found_ids = [d.id for d in docentes]
                 missing_ids = [did for did in data.docente_ids if did not in found_ids]
-                raise HTTPException(400, f"Docentes no encontrados o inactivos: {missing_ids}")
+                raise HTTPException(status_code=400, detail=f"Docentes no encontrados o inactivos: {missing_ids}")
             
             course.docentes.clear()
             for docente in docentes:
@@ -254,41 +187,26 @@ def update_course(course_id: int, data: CourseUpdate, db: Session = Depends(get_
         db.commit()
         db.refresh(course)
         
-        return {
-            "id": course.id,
-            "code": course.code,
-            "name": course.name,
-            "start_date": course.start_date.isoformat(),
-            "end_date": course.end_date.isoformat(),
-            "hours": course.hours,
-            "competencies": course.competencies,
-            "created_by": course.created_by,
-            "course_type": course.course_type,
-            "modality": course.modality,
-            "docentes": [
-                {
-                    "id": docente.id,
-                    "especialidad": docente.especialidad,
-                    "full_name": docente.full_name,
-                    "institutional_email": docente.institutional_email
-                }
-                for docente in course.docentes
-            ]
-        }
+        updated_course = db.query(Course).options(
+            joinedload(Course.docentes)
+        ).filter(Course.id == course_id).first()
+
+        return updated_course
+
     except HTTPException:
         db.rollback()
         raise
     except Exception as e:
         db.rollback()
         logger.error(f"Error al actualizar curso {course_id}: {str(e)}")
-        raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @router.delete("/{course_id}")
 def delete_course(course_id: int, db: Session = Depends(get_db)):
     try:
         course = db.query(Course).get(course_id)
         if not course:
-            raise HTTPException(404, "Curso no encontrado")
+            raise HTTPException(status_code=404, detail="Curso no encontrado")
         
         db.delete(course)
         db.commit()
@@ -299,7 +217,7 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         logger.error(f"Error al eliminar curso {course_id}: {str(e)}")
-        raise HTTPException(500, f"Error interno del servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
     
 @router.get("/{course_id}/participants", response_model=List[ParticipantOut])
 def get_course_participants(course_id: int, db: Session = Depends(get_db)):
