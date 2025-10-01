@@ -198,10 +198,10 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
                                (change)="toggleAllDocenteRecipients($event)"
                                title="Seleccionar Todos los Docentes">
                       </th>
+                      <th>Especialidad</th>
                       <th>Nombre</th>
                       <th>Email Institutional</th>
                       <th>Email Personal</th>
-                      <th>Especialidad</th>
                       <th>Teléfono</th>
                       <th>Whatsapp</th>
                       <th>Emitir Constancia de Ponente</th>
@@ -214,10 +214,10 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
                                [checked]="isDocenteRecipientSelected(docente.id)"
                                (change)="toggleDocenteCompetencyRecipient(docente.id, $event)">
                       </td>
+                      <td>{{ docente.especialidad || 'N/A' }}</td>
                       <td>{{ docente.full_name }}</td>
                       <td>{{ docente.institutional_email }}</td>
-                      <td>{{ docente.personal_email || 'N/A' }}</td>
-                      <td>{{ docente.especialidad || 'N/A' }}</td>
+                      <td>{{ docente.personal_email }}</td>
                       <td>{{ docente.telefono || 'N/A' }}</td>
                       <td>{{ docente.whatsapp || 'N/A' }}</td>
                       <td>
@@ -244,6 +244,7 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
                       </th>
                       <th>Nombre</th>
                       <th>Email Personal</th>
+                      <th>Email Institucional</th>
                       <th>Teléfono</th>
                       <th>WhatsApp</th>
                       <th>Acciones</th>
@@ -259,6 +260,7 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
                       </td>
                       <td>{{ p.full_name }}</td>
                       <td>{{ p.personal_email }}</td>
+                      <td>{{ p.institutional_email }}</td>
                       <td>{{ p.telefono || 'N/A' }}</td>
                       <td>{{ p.whatsapp || 'N/A' }}</td>
                       <td>

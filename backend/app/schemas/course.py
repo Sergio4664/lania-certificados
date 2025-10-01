@@ -1,18 +1,30 @@
-# backend/app/schemas/course.py
+# Ruta del archivo: backend/app/schemas/course.py
+
 from pydantic import BaseModel, validator
 from datetime import date
 from typing import Optional, List
 from app.models.enums import CourseType, CourseModality
 
+# Se elimina la importación 'from .docente import Docente' que no era necesaria.
+
 class DocenteInfo(BaseModel):
-    """Información básica del docente para mostrar en los cursos"""
+    """
+    Información básica del docente.
+    Este esquema SÍ necesita la Config para leer desde el modelo de la BD.
+    """
     id: int
     especialidad: str
     full_name: str
     institutional_email: str
-    personal_email: str
+    personal_email: Optional[str] = None
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
+
+    # --- CORRECCIÓN #2: ESTA ES LA CLAVE QUE FALTABA ---
+    # La clase Config permite a Pydantic leer los atributos directamente
+    # desde el objeto de la base de datos (SQLAlchemy).
+    class Config:
+        from_attributes = True
 
 class CourseBase(BaseModel):
     code: str
@@ -40,7 +52,7 @@ class CourseBase(BaseModel):
     def code_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError('El código del curso no puede estar vacío')
-        return v.strip().upper()  # Normalizar a mayúsculas
+        return v.strip().upper()
     
     @validator('name')
     def name_must_not_be_empty(cls, v):
@@ -50,7 +62,7 @@ class CourseBase(BaseModel):
 
 class CourseCreate(CourseBase):
     created_by: int
-    docente_ids: Optional[List[int]] = []  # Lista de IDs de docentes asignados
+    docente_ids: Optional[List[int]] = []
 
 class CourseUpdate(BaseModel):
     name: Optional[str] = None
@@ -78,7 +90,8 @@ class CourseUpdate(BaseModel):
 class CourseOut(CourseBase):
     id: int
     created_by: int
-    docentes: Optional[List[DocenteInfo]] = []  # Lista de docentes asignados
+    # Esta lista usará el esquema DocenteInfo corregido de arriba.
+    docentes: Optional[List[DocenteInfo]] = []
 
     class Config:
         from_attributes = True
