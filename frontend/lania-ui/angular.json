@@ -65,8 +65,12 @@
               "buildTarget": "lania-ui:build:development"
             }
           },
-          "defaultConfiguration": "development"
-        },
+          "defaultConfiguration": "development",
+    "options": {
+      "buildTarget": "lania-ui:build",
+      "proxyConfig": "proxy.conf.json" 
+    }
+  },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"
         },
