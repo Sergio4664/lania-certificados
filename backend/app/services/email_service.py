@@ -1,5 +1,3 @@
-# backend/app/services/email_service.py
-
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -58,12 +56,16 @@ def send_certificate_email(
 
     # 4. Enviar el correo a través del servidor SMTP
     try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP(settings.smtp_server, settings.smtp_port) as server:
-            server.starttls(context=context)
-            server.login(settings.smtp_login, settings.smtp_password)
-            server.send_message(msg)
-            logger.info(f"Correo de constancia enviado a {recipient_email} vía SMTP.")
+        # --- INICIO DE LA CORRECCIÓN ---
+        # Se establece la conexión y luego se asegura con starttls() de forma separada.
+        # Esto es más compatible y suele resolver los errores de certificado SSL.
+        server = smtplib.SMTP(settings.smtp_server, settings.smtp_port)
+        server.starttls()  # Asegura la conexión
+        server.login(settings.smtp_login, settings.smtp_password)
+        server.send_message(msg)
+        server.quit()      # Cierra la conexión
+        # --- FIN DE LA CORRECCIÓN ---
+        logger.info(f"Correo de constancia enviado a {recipient_email} vía SMTP.")
     except Exception as e:
         logger.error(f"Error al enviar correo a {recipient_email} vía SMTP: {e}")
         raise

@@ -27,12 +27,12 @@ class Settings(BaseModel):
     brevo_sender_email: str = os.getenv("sergiocervantes742@gmail.com")
     brevo_sender_name: str = os.getenv("LANIA Certificados")
 
-    smtp_server: str = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
-    smtp_port: int = int(os.getenv("SMTP_PORT", 587))
-    smtp_login: str = os.getenv("SMTP_LOGIN")
-    smtp_password: str = os.getenv("SMTP_PASSWORD")
-    smtp_sender_email: str = os.getenv("SMTP_SENDER_EMAIL")
-    smtp_sender_name: str = os.getenv("SMTP_SENDER_NAME", "LANIA Certificados")
+    smtp_server: str = "smtp-relay.brevo.com"
+    smtp_port: int = 587
+    smtp_login: str = "98de08001@smtp-brevo.com"
+    smtp_password: str = "JI085vrZMUydafFp"
+    smtp_sender_email: str = "sergiocervantes742@gmail.com"
+    smtp_sender_name: str = "LANIA Certificados"
 
     class Config:
         env_file = ".env"
