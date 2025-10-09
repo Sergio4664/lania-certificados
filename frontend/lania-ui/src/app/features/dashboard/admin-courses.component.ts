@@ -773,29 +773,19 @@ export class AdminCoursesComponent implements OnInit {
       });
   }
 
-  issueCertificate(participantId: number, withCompetencies: boolean) {
+   issueCertificate(participantId: number, withCompetencies: boolean) {
     if (!this.selectedCourse) return;
 
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Se usan los nombres exactos del Enum del backend
-    const kindMap: { [key: string]: { normal: string, competencies: string } } = {
-      'PILDORA_EDUCATIVA': { normal: 'PILDORA_PARTICIPANTE', competencies: '' },
-      'INYECCION_EDUCATIVA': { normal: 'INYECCION_PARTICIPANTE', competencies: '' },
-      'CURSO_EDUCATIVO': { normal: 'CURSO_PARTICIPANTE', competencies: 'CURSO_COMPETENCIAS_PARTICIPANTE' }
-    };
-
-    const type = this.selectedCourse.course_type;
-    const kind = withCompetencies ? kindMap[type]?.competencies : kindMap[type]?.normal;
-
-    if (!kind) {
-      this.notificationService.showError('Tipo de constancia no aplicable para este producto.');
-      return;
+    // Construye el 'kind' dinámicamente: TIPO_PRODUCTO + ROL + (opcional)_COMPETENCIAS
+    const baseKind = this.selectedCourse.course_type.replace('_EDUCATIVO', '');
+    let finalKind = `${baseKind}_PARTICIPANTE`;
+    if (withCompetencies) {
+      finalKind = `${baseKind}_COMPETENCIAS_PARTICIPANTE`;
     }
-
     const payload: CertificateIssueRequest = {
       course_id: this.selectedCourse.id,
       entity_id: participantId,
-      kind: kind,
+      kind: finalKind,
     };
 
     this.certificateService.issueForParticipant(payload).subscribe({
@@ -816,24 +806,16 @@ export class AdminCoursesComponent implements OnInit {
       return;
     }
 
-    const kindMap: { [key: string]: { normal: string, competencies: string } } = {
-      'PILDORA_EDUCATIVA': { normal: 'PILDORA_PONENTE', competencies: '' },
-      'INYECCION_EDUCATIVA': { normal: 'INYECCION_PONENTE', competencies: '' },
-      'CURSO_EDUCATIVO': { normal: 'PONENTE', competencies: 'PONENTE_COMPETENCIAS' }
-    };
-
-    const type = this.selectedCourse.course_type;
-    const kind = withCompetencies ? kindMap[type]?.competencies : kindMap[type]?.normal;
-
-    if (!kind) {
-      this.notificationService.showError('Tipo de constancia no aplicable para este producto.');
-      return;
+    const baseKind = this.selectedCourse.course_type.replace('_EDUCATIVO', '');
+    let finalKind = `${baseKind}_PONENTE`;
+    if (withCompetencies) {
+      finalKind = `${baseKind}_COMPETENCIAS_PONENTE`;
     }
 
     const payload: CertificateIssueRequest = {
       course_id: this.selectedCourse.id,
       entity_id: docente.id,
-      kind: kind,
+      kind: finalKind,
     };
 
     this.certificateService.issueForDocente(payload).subscribe({

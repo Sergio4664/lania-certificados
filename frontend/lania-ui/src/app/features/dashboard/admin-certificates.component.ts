@@ -2,10 +2,13 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { CertificateDTO, CreateCertificateDTO } from '../../shared/interfaces/certificate.interfaces';
-import { CourseDTO } from '../../shared/interfaces/course.interfaces';
-import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
-import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
+import { CertificateDTO, CreateCertificateDTO } from '@shared/interfaces/certificate.interfaces';
+import { CourseDTO } from '@shared/interfaces/course.interfaces';
+import { ParticipantDTO } from '@shared/interfaces/participant.interfaces';
+import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
+
+import { CertificateService, CertificateIssueRequest } from '../certificates/certificate.service';
+import { NotificationService } from '@app/shared/services/notification.service';
 
 // Interfaz simple para unificar las opciones del menu desplegable
 interface RecipientOption {
@@ -13,6 +16,11 @@ interface RecipientOption {
   full_name: string
 }
 
+interface CertificateForm {
+  course_id: number | null;
+  entity_id: number | null; // Puede ser participant_id o docente_id
+  kind: string;
+}
 @Component({
   selector: 'app-admin-certificates',
   standalone: true,
@@ -58,7 +66,7 @@ interface RecipientOption {
         
         <div class="form-group">
           <label>{{ selectedRecipientType === 'participant' ? 'Participante' : 'Docente' }} *</label>
-          <select [(ngModel)]="newCertificate.participant_id" name="participant_id" required>
+          <select [(ngModel)]="newCertificate.entity_id" name="entity_id" required>
             <option [ngValue]="null" disabled>Seleccionar...</option>
             <option *ngFor="let person of (selectedRecipientType === 'participant' ? participantOptions : docenteOptions)" [value]="person.id">
               {{ person.full_name }}
@@ -173,22 +181,19 @@ interface RecipientOption {
 })
 export default class AdminCertificatesComponent implements OnInit {
   private http = inject(HttpClient);
-
+  // --- INYECCIÓN DE SERVICIOS ---
+  private certificateService = inject(CertificateService);
+  private notificationService = inject(NotificationService);
 
   certificates: CertificateDTO[] = [];
   filteredCertificates: CertificateDTO[] = [];
   courses: CourseDTO[] = [];
- 
-  //Listas originales con los DTOs completos
-  private participants: ParticipantDTO[] = [];
-  private docentes: DocenteDTO[] = []; 
-
-  //Correción: Listas simplificadas solo para el formulario
+  
   participantOptions: RecipientOption[] = [];
   docenteOptions: RecipientOption[] = [];
   
   showForm = false;
-  newCertificate!: CreateCertificateDTO;
+  newCertificate!: CertificateForm; // Usamos la nueva interfaz
   selectedRecipientType: 'participant' | 'docente' = 'participant';
   searchTerm: string = '';
 
@@ -201,28 +206,23 @@ export default class AdminCertificatesComponent implements OnInit {
   }
 
   loadInitialData() {
+    // Usamos el servicio para listar certificados
+    this.certificateService.list().subscribe(data => {
+      this.certificates = data;
+      this.filteredCertificates = data;
+    });
+    
+    // El resto de las cargas se mantienen igual
     const token = localStorage.getItem('access_token');
     const headers = { Authorization: `Bearer ${token}` };
-    
-    this.http.get<CertificateDTO[]>('http://127.0.0.1:8000/api/admin/certificates', { headers })
-      .subscribe(data => {
-        this.certificates = data;
-        this.filteredCertificates = data;
-      });
-    
     this.http.get<CourseDTO[]>('http://127.0.0.1:8000/api/admin/courses', { headers })
       .subscribe(data => this.courses = data);
-
-    //Mapear los datos a las listas de opciones simplificadas
     this.http.get<ParticipantDTO[]>('http://127.0.0.1:8000/api/admin/participants', { headers })
       .subscribe(data => {
-        this.participants = data;
         this.participantOptions = data.map(p => ({ id: p.id, full_name: p.full_name }));
       });
-    
     this.http.get<DocenteDTO[]>('http://127.0.0.1:8000/api/admin/docentes', { headers })
       .subscribe(data => {
-        this.docentes = data;
         this.docenteOptions = data.map(d => ({ id: d.id, full_name: d.full_name }));
       });
   }
@@ -237,9 +237,9 @@ export default class AdminCertificatesComponent implements OnInit {
 
   resetForm() {
     this.newCertificate = {
-      course_id: '',
-      participant_id: '',
-      kind: 'PILDORA_PARTICIPANTE'
+      course_id: null,
+      entity_id: null, // Corregido
+      kind: ''
     };
     this.selectedRecipientType = 'participant';
   }
@@ -250,88 +250,79 @@ export default class AdminCertificatesComponent implements OnInit {
   }
 
   onRecipientTypeChange() {
-    this.newCertificate.participant_id = '';
+    this.newCertificate.entity_id = null; // Corregido
     this.updateCertificateKind();
   }
 
   updateCertificateKind() {
-    if (!this.newCertificate.course_id) return;
+    if (!this.newCertificate.course_id) {
+      this.newCertificate.kind = '';
+      return;
+    }
     
     const course = this.courses.find(c => c.id == this.newCertificate.course_id);
     if (!course) return;
 
     const isParticipant = this.selectedRecipientType === 'participant';
-
-    switch (course.course_type) {
-      case 'PILDORA_EDUCATIVA':
-        this.newCertificate.kind = isParticipant ? 'PILDORA_PARTICIPANTE' : 'PILDORA_PONENTE';
-        break;
-      case 'INYECCION_EDUCATIVA':
-        this.newCertificate.kind = isParticipant ? 'INYECCION_PARTICIPANTE' : 'INYECCION_PONENTE';
-        break;
-      case 'CURSO_EDUCATIVO':
-        this.newCertificate.kind = isParticipant ? 'CURSO_PARTICIPANTE' : 'CURSO_PONENTE'; // Ejemplo de lógica para cursos
-        break;
-    }
+    const baseKind = course.course_type.replace('_EDUCATIVA', '');
+    const role = isParticipant ? 'PARTICIPANTE' : 'PONENTE';
+    
+    this.newCertificate.kind = `${baseKind}_${role}`;
   }
 
   getKindDisplayName(kind: string): string {
-    const names: { [key: string]: string } = {
-      'PILDORA_PARTICIPANTE': 'Píldora (Participante)',
-      'PILDORA_PONENTE': 'Píldora (Ponente)',
-      'INYECCION_PARTICIPANTE': 'Inyección (Participante)',
-      'INYECCION_PONENTE': 'Inyección (Ponente)',
-      'CURSO_PARTICIPANTE': 'Curso (Participante)',
-      'CURSO_PONENTE': 'Curso (Ponente)',
-    };
-    return names[kind] || 'Seleccione opciones';
+    if (!kind) return 'Seleccione opciones...';
+    return kind.replace(/_/g, ' ').toLowerCase();
   }
 
+  // --- FUNCIÓN DE EMISIÓN TOTALMENTE CORREGIDA ---
   issueCertificate() {
-    if (!this.newCertificate.course_id || !this.newCertificate.participant_id) {
-      alert('Por favor, seleccione un curso y un participante.');
+    if (!this.newCertificate.course_id || !this.newCertificate.entity_id || !this.newCertificate.kind) {
+      this.notificationService.showError('Por favor, complete todos los campos.');
       return;
     }
 
-    const token = localStorage.getItem('access_token');
-    const headers = { Authorization: `Bearer ${token}` };
+    const payload: CertificateIssueRequest = {
+      course_id: this.newCertificate.course_id,
+      entity_id: this.newCertificate.entity_id,
+      kind: this.newCertificate.kind,
+    };
 
-    this.http.post<CertificateDTO>('http://127.0.0.1:8000/api/admin/certificates/issue', this.newCertificate, { headers })
-      .subscribe({
-        next: (newCert) => {
-          alert(`Constancia emitida con estado: ${newCert.status.replace(/_/g, ' ')}.`);
-          this.loadInitialData(); // <-- Pequeño ajuste aquí también
-          this.cancelForm();
-        },
-        error: (err) => {
-          console.error('Error al emitir la constancia:', err);
-          alert(`Error: ${err.error?.detail || 'No se pudo emitir la constancia.'}`);
-        }
-      });
+    const apiCall = this.selectedRecipientType === 'participant'
+      ? this.certificateService.issueForParticipant(payload)
+      : this.certificateService.issueForDocente(payload);
+
+    apiCall.subscribe({
+      next: (newCert) => {
+        this.notificationService.showSuccess(`Constancia emitida. Serial: ${newCert.serial}`);
+        this.loadInitialData(); // Recarga los datos de la tabla
+        this.cancelForm();
+      },
+      error: (err) => {
+        console.error('Error al emitir la constancia:', err);
+        this.notificationService.showError(`Error: ${err.error?.detail || 'No se pudo emitir la constancia.'}`);
+      }
+    });
   }
 
   downloadCertificate(serial: string) {
     if (!serial) return;
-    window.open(`http://127.0.0.1:8000/v/serial/${serial}/pdf`, '_blank');
+    this.certificateService.downloadBySerial(serial);
   }
   
   deleteCertificate(id: number) {
     if (confirm('¿Está seguro que desea eliminar esta constancia? Esta acción no se puede deshacer.')) {
       const token = localStorage.getItem('access_token');
       const headers = { Authorization: `Bearer ${token}` };
-
       this.http.delete(`http://127.0.0.1:8000/api/admin/certificates/${id}`, { headers })
         .subscribe({
           next: () => {
-            alert('Constancia eliminada exitosamente.');
-            // --- CAMBIO PRINCIPAL AQUÍ ---
-            // Se actualizan ambas listas para refrescar la vista al instante.
-            this.certificates = this.certificates.filter(c => c.id !== id);
-            this.filterCertificates(); // Se llama a filterCertificates para actualizar la lista visible
+            this.notificationService.showSuccess('Constancia eliminada exitosamente.');
+            this.loadInitialData();
           },
           error: (err) => {
             console.error('Error al eliminar constancia:', err);
-            alert(`Error: ${err.error?.detail || 'No se pudo eliminar la constancia.'}`);
+            this.notificationService.showError(`Error: ${err.error?.detail || 'No se pudo eliminar la constancia.'}`);
           }
         });
     }

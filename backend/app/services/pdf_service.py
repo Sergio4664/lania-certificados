@@ -14,14 +14,12 @@ import locale
 from app.services.qr_service import generate_qr_png
 from typing import Optional, List
 
-# --- REGISTRO DE LA FUENTE (sin cambios) ---
 try:
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'app/fonts/DancingScript-Bold.ttf'))
 except Exception as e:
     print(f"ADVERTENCIA: No se pudo cargar la fuente 'DancingScript-Bold' (Error: {e}). Se usará Helvetica-Bold como alternativa.")
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'Helvetica-Bold'))
 
-# Configura el locale para tener los meses en español
 try:
     locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 except locale.Error:
@@ -44,25 +42,19 @@ def generate_certificate_pdf(
     serial: str,
     qr_token: str,
     course_modality: str,
-    course_type_str: str, # <-- Usaremos este nuevo parámetro
+    course_type_str: str, # Se usará este parámetro
     course_date: str,
     competencies: Optional[List[str]] = None,
     docente_specialty: Optional[str] = None
 ) -> bytes:
-    """
-    Genera un PDF de certificado superponiendo texto y QR en una plantilla existente.
-    """
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
-
     center_x = letter[0] / 2
 
-    # --- Estilos (sin cambios) ---
     style_normal = ParagraphStyle(name='Normal_Helvetica', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
     style_bold = ParagraphStyle(name='Bold_Helvetica', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER)
     style_participant_name = ParagraphStyle(name='Participant_Cursive', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
 
-    # --- Dibujar elementos estáticos (sin cambios) ---
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
@@ -74,32 +66,33 @@ def generate_certificate_pdf(
     label = "al:" if "PONENTE" in kind else "a:"
     c.drawCentredString(center_x, 18.8 * cm, label)
 
-    # --- Nombre del participante/docente (sin cambios) ---
     y_position = 18.2 * cm
     display_name = f"{docente_specialty} {participant_name}" if docente_specialty else participant_name
     participant_display_height = draw_multiline_text(c, display_name, center_x, y_position, 18 * cm, style_participant_name)
     y_position -= (participant_display_height + 1.2 * cm)
     
-    # --- INICIO DE LA CORRECCIÓN: Lógica para el cuerpo del texto dinámico ---
     text_width = 18 * cm
 
     if "COMPETENCIAS" in kind and competencies:
-        # Lógica para competencias (sin cambios)
         text = f'Por haber acreditado en el curso <b>"{course_name}"</b> ({hours} horas de trabajo), la evaluación de las competencias:'
-        # ... (resto del bloque de competencias)
+        height = draw_multiline_text(c, text, center_x, y_position, text_width, style_normal)
+        y_position -= (height + 0.5 * cm)
+        style_competency = ParagraphStyle(name='Competency_Style', fontName='Helvetica', fontSize=10, leading=14, leftIndent=20)
+        for comp in competencies:
+            p = Paragraph(f"• {comp}", style_competency)
+            p.wrapOn(c, text_width - 1*cm, 10 * cm)
+            p_height = p.height
+            p.drawOn(c, 2.5 * cm, y_position - p_height)
+            y_position -= (p_height + 0.1 * cm)
     else:
-        # Lógica para constancias normales (CORREGIDA)
-        
-        # 1. Determina el artículo correcto ("el" o "la")
+        # --- CAMBIO AQUÍ ---
         articulo = "la" if course_type_str.lower().startswith(('píldora', 'inyección')) else "el"
         
-        # 2. Determina la razón (participante o ponente)
         if "PONENTE" in kind:
             reason_intro = f"Por su participación como ponente en {articulo}"
         else:
             reason_intro = f"Por su asistencia a {articulo}"
 
-        # 3. Construye y dibuja las líneas de texto
         line1 = f"{reason_intro} <b>{course_type_str}</b>"
         height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
         y_position -= (height1 + 0.2 * cm)
@@ -113,9 +106,7 @@ def generate_certificate_pdf(
             details_text = f"con duración de {hours} horas, modalidad {course_modality.lower()}"
         
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
-    # --- FIN DE LA CORRECCIÓN ---
 
-    # --- Firma, fecha, QR y folio (sin cambios) ---
     y_firma = 6.0 * cm
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, y_firma, "Dr. Juan Manuel Gutiérrez Méndez")
@@ -135,7 +126,6 @@ def generate_certificate_pdf(
     c.save()
     packet.seek(0)
 
-    # --- Combinar con la plantilla (sin cambios) ---
     new_pdf = PdfReader(packet)
     with open(template_path, "rb") as f:
         existing_pdf = PdfReader(f)
