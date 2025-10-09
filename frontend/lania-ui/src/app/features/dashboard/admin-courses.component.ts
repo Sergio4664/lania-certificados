@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
-import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '../../shared/interfaces/course.interfaces';
-import { DocenteDTO } from '../../shared/interfaces/docente.interfaces';
-import { ParticipantDTO } from '../../shared/interfaces/participant.interfaces';
-import { CertificateDTO, CreateCertificateDTO } from '@app/shared/interfaces/certificate.interfaces';
-import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '../certificates/certificate.service';
-
+import { CourseDTO, CreateCourseDTO, UpdateCourseDTO } from '@shared/interfaces/course.interfaces';
+import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
+import { ParticipantDTO } from '@shared/interfaces/participant.interfaces';
+import { CertificateDTO } from '@shared/interfaces/certificate.interfaces';
+import { CertificateService, BulkIssueResponse, CertificateIssueRequest, BulkIssuePayload } from '@features/certificates/certificate.service';
+import { NotificationService } from '@shared/services/notification.service';
 
 @Component({
   selector: 'app-admin-courses',
@@ -186,12 +186,13 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
                    <div class="form-card compact">
                      <h4>Emisión y Envío Masivo</h4>
                      <div class="bulk-actions">
-                       <button class="primary-btn" (click)="issueAndNotifyBulk(false)" [disabled]="courseParticipants.length === 0 && (!selectedCourse.docentes || selectedCourse.docentes.length === 0)">Emitir y Notificar a Todos (Normal)</button>
-                       <div *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'">
-                         <p>O seleccione destinatarios para emitir constancias <strong>de competencias.</strong></p>
-                         <button class="secondary-btn" (click)="issueAndNotifyBulk(true)" [disabled]="competencyRecipients.size === 0 && docenteCompetencyRecipients.size === 0">Emitir y Notificar a Seleccionados</button>
-                       </div>
-                     </div>
+    <button class="primary-btn" (click)="issueBulkCertificates(false)" [disabled]="courseParticipants.length === 0">Emitir y Notificar a Todos (Normal)</button>
+    
+    <div *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'">
+        <p>O seleccione destinatarios para emitir constancias <strong>de competencias.</strong></p>
+        <button class="secondary-btn" (click)="issueBulkCertificates(true)" [disabled]="competencyRecipients.size === 0">Emitir y Notificar a Seleccionados</button>
+    </div>
+</div>
                    </div>
              </div>
 
@@ -464,6 +465,7 @@ import { CertificateService, BulkIssueResponse, CertificateIssueRequest } from '
 export class AdminCoursesComponent implements OnInit {
   private http = inject(HttpClient);
   private certificateService = inject(CertificateService);
+  private notificationService = inject(NotificationService);
 
   courses: CourseDTO[] = [];
   filteredCourses: CourseDTO[] = [];
@@ -511,7 +513,7 @@ export class AdminCoursesComponent implements OnInit {
 
   uploadParticipants(): void {
     if (!this.selectedFile || !this.selectedCourse) {
-      alert('Por favor, seleccione un archivo y un producto educativo.');
+      this.notificationService.showError('Por favor, seleccione un archivo y un producto educativo.');
       return;
     }
 
@@ -519,20 +521,18 @@ export class AdminCoursesComponent implements OnInit {
     formData.append('file', this.selectedFile, this.selectedFile.name);
 
     const token = localStorage.getItem('access_token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
+    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
 
     this.http.post<ParticipantDTO[]>(`http://127.0.0.1:8000/api/admin/courses/${this.selectedCourse.id}/upload-participants/`, formData, { headers })
       .subscribe({
         next: (newlyEnrolled) => {
-          alert(`${newlyEnrolled.length} participantes han sido inscritos exitosamente.`);
+          this.notificationService.showSuccess(`${newlyEnrolled.length} participantes han sido inscritos exitosamente.`);
           this.loadParticipantsForCourse(this.selectedCourse!.id);
           this.selectedFile = null;
         },
         error: (err) => {
           console.error('Error al subir el archivo:', err);
-          alert(`Error al subir el archivo: ${err.error?.detail || 'Error desconocido'}`);
+          this.notificationService.showError(`Error al subir el archivo: ${err.error?.detail || 'Error desconocido'}`);
         }
       });
   }
@@ -641,7 +641,7 @@ export class AdminCoursesComponent implements OnInit {
 
     this.http.post('http://127.0.0.1:8000/api/admin/courses', courseData, { headers }).subscribe({
       next: () => {
-        alert('Producto educativo creado exitosamente');
+        this.notificationService.showSuccess('Producto educativo creado exitosamente');
         this.loadInitialData();
         this.cancelCourseForm();
       },
@@ -650,9 +650,9 @@ export class AdminCoursesComponent implements OnInit {
         const errorDetail = err.error?.detail;
         if (Array.isArray(errorDetail)) {
           const formattedError = errorDetail.map(e => `Campo: ${e.loc[1]}, Mensaje: ${e.msg}`).join('\n');
-          alert(`Error de validación:\n${formattedError}`);
+          this.notificationService.showError(`Error de validación:\n${formattedError}`);
         } else {
-          alert(`Error al crear el producto educativo: ${errorDetail || 'Error desconocido'}`);
+          this.notificationService.showError(`Error al crear el producto educativo: ${errorDetail || 'Error desconocido'}`);
         }
       }
     });
@@ -695,7 +695,7 @@ export class AdminCoursesComponent implements OnInit {
 
     this.http.put(`http://127.0.0.1:8000/api/admin/courses/${this.editingCourse.id}`, updateData, { headers }).subscribe({
       next: () => {
-        alert('Producto educativo actualizado exitosamente');
+        this.notificationService.showSuccess('Producto educativo actualizado exitosamente');
         this.loadInitialData();
         this.cancelCourseForm();
       },
@@ -704,9 +704,9 @@ export class AdminCoursesComponent implements OnInit {
         const errorDetail = err.error?.detail;
         if (Array.isArray(errorDetail)) {
           const formattedError = errorDetail.map(e => `Campo: ${e.loc[1]}, Mensaje: ${e.msg}`).join('\n');
-          alert(`Error de validación:\n${formattedError}`);
+          this.notificationService.showError(`Error de validación:\n${formattedError}`);
         } else {
-          alert(`Error al actualizar el producto educativo: ${errorDetail || 'Error desconocido'}`);
+          this.notificationService.showError(`Error al actualizar el producto educativo: ${errorDetail || 'Error desconocido'}`);
         }
       }
     });
@@ -720,12 +720,12 @@ export class AdminCoursesComponent implements OnInit {
 
       this.http.delete(`http://127.0.0.1:8000/api/admin/courses/${courseId}`, { headers }).subscribe({
         next: () => {
-          alert('Producto educativo eliminado exitosamente');
+          this.notificationService.showSuccess('Producto educativo eliminado exitosamente');
           this.loadInitialData();
         },
         error: (err) => {
           console.error('Error deleting course:', err);
-          alert(`Error al eliminar este producto educativo: ${err.error?.detail || 'Error desconocido'}`);
+          this.notificationService.showError(`Error al eliminar este producto educativo: ${err.error?.detail || 'Error desconocido'}`);
         }
       });
     }
@@ -741,14 +741,14 @@ export class AdminCoursesComponent implements OnInit {
     this.http.post(`http://127.0.0.1:8000/api/admin/courses/${this.selectedCourse.id}/enroll`, body, { headers })
       .subscribe({
         next: () => {
-          alert('Participante inscrito exitosamente');
+          this.notificationService.showSuccess('Participante inscrito exitosamente');
           this.loadParticipantsForCourse(this.selectedCourse!.id);
           this.showAddParticipantForm = false;
           this.participantToAdd = null;
         },
         error: (err: any) => {
           console.error('Error enrolling participant', err);
-          alert(`Error:${err.error?.detail || 'No se pudo inscribir al participante.'}`);
+          this.notificationService.showError(`Error:${err.error?.detail || 'No se pudo inscribir al participante.'}`);
         }
       });
   }
@@ -763,12 +763,12 @@ export class AdminCoursesComponent implements OnInit {
     this.http.delete(`http://127.0.0.1:8000/api/admin/courses/${this.selectedCourse.id}/enroll/${participantId}`, { headers })
       .subscribe({
         next: () => {
-          alert('El participante ha sido eliminado exitosamente de este producto educativo.');
+          this.notificationService.showSuccess('El participante ha sido eliminado exitosamente de este producto educativo.');
           this.loadParticipantsForCourse(this.selectedCourse!.id);
         },
         error: (err: any) => {
           console.error('Error al eliminar el participante de este producto educativo:', err);
-          alert(`Error:${err.error?.detail || 'No se pudo desinscribir al participante.'}`);
+          this.notificationService.showError(`Error:${err.error?.detail || 'No se pudo desinscribir al participante.'}`);
         }
       });
   }
@@ -776,15 +776,20 @@ export class AdminCoursesComponent implements OnInit {
   issueCertificate(participantId: number, withCompetencies: boolean) {
     if (!this.selectedCourse) return;
 
-    let kind: CreateCertificateDTO['kind'];
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Se usan los nombres exactos del Enum del backend
+    const kindMap: { [key: string]: { normal: string, competencies: string } } = {
+      'PILDORA_EDUCATIVA': { normal: 'PILDORA_PARTICIPANTE', competencies: '' },
+      'INYECCION_EDUCATIVA': { normal: 'INYECCION_PARTICIPANTE', competencies: '' },
+      'CURSO_EDUCATIVO': { normal: 'CURSO_PARTICIPANTE', competencies: 'CURSO_COMPETENCIAS_PARTICIPANTE' }
+    };
 
-    switch (this.selectedCourse.course_type) {
-      case 'PILDORA_EDUCATIVA': kind = 'PILDORA_PARTICIPANTE'; break;
-      case 'INYECCION_EDUCATIVA': kind = 'INYECCION_PARTICIPANTE'; break;
-      case 'CURSO_EDUCATIVO':
-        kind = withCompetencies ? 'CURSO_COMPETENCIAS_PARTICIPANTE' : 'CURSO_PARTICIPANTE';
-        break;
-      default: alert('Tipo de producto educativo no reconocido.'); return;
+    const type = this.selectedCourse.course_type;
+    const kind = withCompetencies ? kindMap[type]?.competencies : kindMap[type]?.normal;
+
+    if (!kind) {
+      this.notificationService.showError('Tipo de constancia no aplicable para este producto.');
+      return;
     }
 
     const payload: CertificateIssueRequest = {
@@ -794,10 +799,10 @@ export class AdminCoursesComponent implements OnInit {
     };
 
     this.certificateService.issueForParticipant(payload).subscribe({
-      next: (res) => { alert(`Constancia emitida para ${res.participant_name}. Serial: ${res.serial}`); },
+      next: (res) => { this.notificationService.showSuccess(`Constancia emitida para ${res.participant_name}. Serial: ${res.serial}`); },
       error: (err) => {
         console.error('Error issuing certificate:', err);
-        alert(`Error al emitir la constancia: ${err.error?.detail || 'Error desconocido'}`);
+        this.notificationService.showError(`Error al emitir la constancia: ${err.error?.detail || 'Error desconocido'}`);
       }
     });
   }
@@ -807,115 +812,91 @@ export class AdminCoursesComponent implements OnInit {
 
     const docente = this.selectedCourse.docentes?.find(d => d.id === docenteId);
     if (!docente) {
-      alert('No se encontró al docente.');
+      this.notificationService.showError('No se encontró al docente.');
       return;
     }
 
-    let kind: string;
-      switch (this.selectedCourse.course_type) {
-      case 'PILDORA_EDUCATIVA': kind = 'PILDORA_PONENTE'; break;
-      case 'INYECCION_EDUCATIVA': kind = 'INYECCION_PONENTE'; break;
-      case 'CURSO_EDUCATIVO':
-        kind = withCompetencies ? 'CURSO_COMPETENCIAS_PONENTE' : 'CURSO_PONENTE';
-        break;
-      default: alert('Tipo de producto educativo no reconocido para constancia de ponente.'); return;
+    const kindMap: { [key: string]: { normal: string, competencies: string } } = {
+      'PILDORA_EDUCATIVA': { normal: 'PILDORA_PONENTE', competencies: '' },
+      'INYECCION_EDUCATIVA': { normal: 'INYECCION_PONENTE', competencies: '' },
+      'CURSO_EDUCATIVO': { normal: 'PONENTE', competencies: 'PONENTE_COMPETENCIAS' }
+    };
+
+    const type = this.selectedCourse.course_type;
+    const kind = withCompetencies ? kindMap[type]?.competencies : kindMap[type]?.normal;
+
+    if (!kind) {
+      this.notificationService.showError('Tipo de constancia no aplicable para este producto.');
+      return;
     }
 
     const payload: CertificateIssueRequest = {
       course_id: this.selectedCourse.id,
       entity_id: docente.id,
       kind: kind,
-    }; 
+    };
 
     this.certificateService.issueForDocente(payload).subscribe({
-      next: (res) => { alert(`Constancia de ponente emitida para ${docente.full_name}. Serial: ${res.serial}`); },
+      next: (res) => { this.notificationService.showSuccess(`Constancia de ponente emitida para ${docente.full_name}. Serial: ${res.serial}`); },
       error: (err) => {
         console.error('Error al emitir constancia de ponente:', err);
-        alert(`Error: ${err.error?.detail || 'No se pudo emitir la constancia.'}`);
+        this.notificationService.showError(`Error: ${err.error?.detail || 'No se pudo emitir la constancia.'}`);
       }
     });
   }
 
-  issueAndNotifyBulk(withCompetencies: boolean): void {
+  issueBulkCertificates(withCompetencies: boolean): void {
     if (!this.selectedCourse) return;
 
     let participantIds: number[] = [];
-    let docenteIds: number[] = [];
-    let confirmationMessage: string = '';
+    let confirmationMessage = '';
 
     if (withCompetencies) {
-      if (this.competencyRecipients.size === 0 && this.docenteCompetencyRecipients.size === 0) {
-        alert('Por favor, seleccione al menos un participante o docente.');
+      if (this.competencyRecipients.size === 0) {
+        this.notificationService.showError('Por favor, seleccione al menos un participante para emitir constancias de competencias.');
         return;
       }
       participantIds = Array.from(this.competencyRecipients);
-      docenteIds = Array.from(this.docenteCompetencyRecipients);
-      confirmationMessage = `Se emitirán constancias DE COMPETENCIAS para ${participantIds.length} participante(s) y ${docenteIds.length} docente(s) seleccionados. ¿Desea continuar?`;
+      confirmationMessage = `Se emitirán constancias DE COMPETENCIAS para los ${participantIds.length} participante(s) seleccionados. ¿Desea continuar?`;
     } else {
-      if (this.courseParticipants.length === 0 && (!this.selectedCourse.docentes || this.selectedCourse.docentes.length === 0)) {
-        alert('No hay participantes o docentes en este curso para emitir constancias.');
+      if (this.courseParticipants.length === 0) {
+        this.notificationService.showError('No hay participantes en este curso para emitir constancias.');
         return;
       }
       participantIds = this.courseParticipants.map(p => p.id);
-      docenteIds = this.selectedCourse.docentes?.map(d => d.id) || [];
-      confirmationMessage = `Se emitirán constancias NORMALES para todos los ${participantIds.length} participante(s) y ${docenteIds.length} docente(s) de este curso. ¿Desea continuar?`;
+      confirmationMessage = `Se emitirán constancias NORMALES para todos los ${participantIds.length} participante(s) de este curso. Los correos se enviarán automáticamente. ¿Desea continuar?`;
     }
 
     if (confirm(confirmationMessage)) {
-      this.certificateService.issueBulk(this.selectedCourse.id, participantIds, docenteIds, withCompetencies).subscribe({
+      const payload: BulkIssuePayload = {
+        participant_ids: participantIds,
+        with_competencies: withCompetencies,
+      };
+
+      this.certificateService.issueBulkCertificates(this.selectedCourse.id, payload).subscribe({
         next: (response: BulkIssueResponse) => {
-          alert(response.message);
-          if (response.errors && response.errors.length > 0) {
-            console.error('Errores durante la emisión masiva:', response.errors);
-          }
-          // Si no hubo errores fatales, preparamos el correo
-          if (response.issued > 0) {
-            this.sendNotificationEmail(participantIds, docenteIds);
+          const successCount = response.success.length;
+          const errorCount = response.errors.length;
+
+          this.notificationService.showSuccess(`Proceso finalizado: ${successCount} constancias emitidas, ${errorCount} errores.`);
+
+          if (errorCount > 0) {
+            console.error('Errores detallados durante la emisión masiva:', response.errors);
+            // Opcional: podrías mostrar estos errores en un modal o log
           }
         },
         error: (err: any) => {
-          console.error('Error en la emisión masiva:', err);
-          alert(`Error al procesar la solicitud: ${err.error?.detail || 'Error desconocido'}`);
+          console.error('Error fatal en la emisión masiva:', err);
+          this.notificationService.showError(`Error al procesar la solicitud: ${err.error?.detail || 'Error desconocido'}`);
         }
       });
     }
   }
 
-  sendNotificationEmail(participantIds: number[], docenteIds: number[]) {
-    if (!this.selectedCourse) return;
-
-    const subject = `Constancia disponible del producto educativo "${this.selectedCourse.name}"`;
-    const emailBody = `
-      <h1>¡Hola!</h1>
-      <p>Te informamos que tu constancia para el producto educativo "${this.selectedCourse.name}" ha sido generada.</p>
-      <p>Puedes verificarla y descargarla utilizando el código QR que se te proporcionará o a través del portal de validación de LANIA.</p>
-      <p>Atentamente,<br>El equipo de LANIA</p>
-    `;
-
-    const participantEmails = this.participants
-      .filter(p => participantIds.includes(p.id))
-      .map(p => p.personal_email);
-
-    const docenteEmails = this.docentes
-      .filter(d => docenteIds.includes(d.id))
-      .map(d => d.institutional_email);
-
-    const allEmails = [...new Set([...participantEmails, ...docenteEmails])];
-
-    if (allEmails.length === 0) {
-      alert('No hay destinatarios con correos electrónicos para notificar.');
-      return;
-    }
-
-    const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-    window.open(mailtoLink, '_blank');
-  }
-
   openCompetenciesModal() {
-    // Ahora simplemente carga las competencias existentes, sin límite
     this.competenciesList = this.courseForm.competencies?.split('\n').filter(c => c.trim()) || [''];
     if (this.competenciesList.length === 0) {
-      this.competenciesList.push(''); // Asegura que siempre haya al menos un campo
+      this.competenciesList.push('');
     }
     this.showCompetenciesModal = true;
   }
@@ -924,13 +905,12 @@ export class AdminCoursesComponent implements OnInit {
     this.courseForm.competencies = this.competenciesList.filter(c => c && c.trim()).join('\n');
     this.showCompetenciesModal = false;
   }
-  
+
   addCompetency(): void {
     this.competenciesList.push('');
   }
 
   removeCompetency(index: number): void {
-    // No permitir eliminar el último campo
     if (this.competenciesList.length > 1) {
       this.competenciesList.splice(index, 1);
     }

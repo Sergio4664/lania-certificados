@@ -5,10 +5,11 @@ from sqlalchemy.orm import Session
 from app.models.certificate import Certificate
 from app.models.enums import CertificateStatus
 from app.services.pdf_service import generate_certificate_pdf
+from app.services.email_service import send_certificate_email # <-- 1. IMPORTAR SERVICIO DE CORREO
 import os
 import logging
 
-# Se importan los modelos necesarios que antes estaban en una función separada
+# Se importan los modelos necesarios
 from app.models.docente import Docente
 from app.models.course import Course
 
@@ -16,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 def issue_certificate(db: Session, certificate: Certificate, participant: dict, course: dict) -> Certificate:
     """
-    Procesa un certificado: genera serial, QR token, PDF y actualiza estado.
-    Ahora también maneja la especialidad del docente si se provee.
+    Procesa un certificado: genera serial, QR token, PDF, lo envía por correo y actualiza estado.
     """
     try:
         certificate.serial = f"LANIA-{datetime.now().strftime('%Y')}-{secrets.token_hex(4).upper()}"
@@ -27,8 +27,6 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
             template_pdf_path = "app/static/Formato constancias.pdf"
             competencies_list = course.get("competencies", "").split('\n') if course.get("competencies") else []
 
-            # --- CAMBIO: Se obtiene la especialidad del diccionario 'participant' ---
-            # .get() es seguro, devolverá None si la clave "specialty" no existe.
             docente_specialty = participant.get("specialty")
             
             pdf_bytes = generate_certificate_pdf(
@@ -43,7 +41,7 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
                 course_modality=course["modality"].value,
                 course_date=course["start_date"].strftime("%d/%m/%Y"),
                 competencies=competencies_list,
-                docente_specialty=docente_specialty # <--- Se pasa el nuevo dato a la función del PDF
+                docente_specialty=docente_specialty
             )
             certificate.pdf_content = pdf_bytes
             
@@ -54,12 +52,31 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
                 f.write(pdf_bytes)
             certificate.pdf_path = pdf_filename
             
+            # --- 2. INICIO: Bloque para enviar correo electrónico ---
+            # Se verifica si el diccionario del participante contiene un email.
+            if participant.get("email"):
+                try:
+                    send_certificate_email(
+                        recipient_email=participant["email"],
+                        recipient_name=participant["full_name"],
+                        course_name=course["name"],
+                        pdf_content=pdf_bytes,
+                        serial=certificate.serial
+                    )
+                    logger.info(f"Correo del certificado {certificate.serial} enviado exitosamente a {participant['email']}.")
+                except Exception as e:
+                    # Si el envío falla, se registra el error pero el proceso no se detiene.
+                    logger.error(f"FALLO EL ENVÍO DE CORREO para el certificado {certificate.serial}: {e}")
+            else:
+                logger.warning(f"No se encontró email para el participante {participant.get('full_name', 'N/A')}. No se envió correo.")
+            # --- FIN: Bloque para enviar correo electrónico ---
+
             certificate.issued_at = datetime.now(timezone.utc)
             certificate.updated_at = datetime.now(timezone.utc)
             certificate.status = CertificateStatus.LISTO_PARA_DESCARGAR
             
         except Exception as e:
-            logger.error(f"Error generando PDF: {e}")
+            logger.error(f"Error generando PDF o enviando correo: {e}")
             certificate.status = CertificateStatus.EN_PROCESO
     
         db.commit()
@@ -67,6 +84,6 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
         
         return certificate
     except Exception as e:
-        logger.error(f"Error procesando certificado: {e}")
+        logger.error(f"Error crítico procesando certificado {certificate.id}: {e}")
         db.rollback()
         raise
