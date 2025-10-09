@@ -849,6 +849,7 @@ export class AdminCoursesComponent implements OnInit {
     if (!this.selectedCourse) return;
 
     let participantIds: number[] = [];
+    let docenteIds: number[] = [];
     let confirmationMessage = '';
 
     if (withCompetencies) {
@@ -857,19 +858,22 @@ export class AdminCoursesComponent implements OnInit {
         return;
       }
       participantIds = Array.from(this.competencyRecipients);
-      confirmationMessage = `Se emitirán constancias DE COMPETENCIAS para los ${participantIds.length} participante(s) seleccionados. ¿Desea continuar?`;
+      docenteIds = Array.from(this.docenteCompetencyRecipients);
+      confirmationMessage = `Se emitirán constancias DE COMPETENCIAS para los ${participantIds.length} participante(s) y ${docenteIds.length} docente(s) seleccionados. ¿Desea continuar?`;
     } else {
       if (this.courseParticipants.length === 0) {
         this.notificationService.showError('No hay participantes en este curso para emitir constancias.');
         return;
       }
       participantIds = this.courseParticipants.map(p => p.id);
-      confirmationMessage = `Se emitirán constancias NORMALES para todos los ${participantIds.length} participante(s) de este curso. Los correos se enviarán automáticamente. ¿Desea continuar?`;
+      docenteIds = this.selectedCourse.docentes?.map(d => d.id) || [];
+      confirmationMessage = `Se emitirán constancias NORMALES para todos los ${participantIds.length} participante(s) y ${docenteIds.length} de este curso. Los correos se enviarán automáticamente. ¿Desea continuar?`;
     }
 
     if (confirm(confirmationMessage)) {
       const payload: BulkIssuePayload = {
         participant_ids: participantIds,
+        docente_ids: docenteIds,
         with_competencies: withCompetencies,
       };
 

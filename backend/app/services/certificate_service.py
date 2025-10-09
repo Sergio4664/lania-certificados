@@ -28,9 +28,12 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
             competencies_list = course.get("competencies", "").split('\n') if course.get("competencies") else []
 
             docente_specialty = participant.get("specialty")
+
+            course_type_str = course.get("course_type_str", "Curso")
             
             pdf_bytes = generate_certificate_pdf(
                 participant_name=participant["full_name"],
+                course_type_str=course_type_str,
                 course_name=course["name"],
                 hours=course["hours"],
                 issue_date=datetime.now().date(),
@@ -60,6 +63,7 @@ def issue_certificate(db: Session, certificate: Certificate, participant: dict, 
                         recipient_email=participant["email"],
                         recipient_name=participant["full_name"],
                         course_name=course["name"],
+                        course_type_str=course_type_str,
                         pdf_content=pdf_bytes,
                         serial=certificate.serial
                     )

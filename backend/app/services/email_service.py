@@ -14,6 +14,7 @@ def send_certificate_email(
     recipient_email: str,
     recipient_name: str,
     course_name: str,
+    course_type_str: str,
     pdf_content: bytes,
     serial: str
 ):
@@ -28,14 +29,14 @@ def send_certificate_email(
     msg = MIMEMultipart()
     msg['From'] = f"{settings.smtp_sender_name} <{settings.smtp_sender_email}>"
     msg['To'] = recipient_email
-    msg['Subject'] = f"Tu constancia del curso: {course_name}"
+    msg['Subject'] = f"Tu constancia de la {course_type_str}: {course_name}"
 
     # 2. Añadir el cuerpo del correo en formato HTML
     html_body = f"""
     <html>
         <body>
             <h1>¡Felicidades, {recipient_name}!</h1>
-            <p>Has completado exitosamente el curso: <strong>{course_name}</strong>.</p>
+            <p>Has completado exitosamente <strong>{course_type_str}</strong>: "{course_name}".</p>
             <p>Adjunto encontrarás tu constancia en formato PDF.</p>
             <br>
             <p>Saludos cordiales,<br>El equipo de LANIA</p>

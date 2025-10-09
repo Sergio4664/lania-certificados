@@ -25,6 +25,7 @@ class CertificateIssueRequest(BaseModel):
 
 class BulkIssueRequest(BaseModel):
     participant_ids: List[int]
+    docente_ids: Optional[List[int]] = []  # Nuevos IDs para docentes
     with_competencies: bool = False
 
 class IssueResponse(BaseModel):
@@ -90,6 +91,8 @@ def _create_and_issue_certificate(
 
         if docente and docente.especialidad:
             participant_data["specialty"] = docente.especialidad
+
+        course_type_str = course.course_type.value.replace("_", " ").title()
             
         issued_cert = issue_certificate(
             db, cert,
@@ -99,7 +102,8 @@ def _create_and_issue_certificate(
                 "hours": course.hours,
                 "start_date": course.start_date,
                 "modality": course.modality,
-                "competencies": course.competencies
+                "competencies": course.competencies,
+                "course_type": course_type_str
             }
         )
         return issued_cert
@@ -170,6 +174,8 @@ def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Sessi
     course = db.query(Course).get(course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Curso no encontrado.")
+    
+    results = {"success": [], "errors": []}
 
     # --- INICIO DE LA CORRECCIÓN ---
     # Se usan los nombres correctos del Enum definidos en enums.py
@@ -198,6 +204,34 @@ def issue_bulk_certificates(course_id: int, request: BulkIssueRequest, db: Sessi
         except Exception as e:
             results["errors"].append({"name": participant.full_name, "error": f"Error inesperado: {str(e)}"})
     
+    # --- 2. INICIO: Nueva lógica para Docentes ---
+    docente_kind = CertificateKind.CURSO_COMPETENCIAS_PONENTE if request.with_competencies else CertificateKind.CURSO_PONENTE
+    if request.docente_ids:
+        for docente_id in request.docente_ids:
+            docente = db.query(Docente).get(docente_id)
+            if not docente:
+                results["errors"].append({"id": docente_id, "error": "Docente no encontrado."})
+                continue
+            
+            try:
+                # Se busca o crea un 'participante' asociado al email del docente
+                participant = db.query(Participant).filter(Participant.personal_email == docente.institutional_email).first()
+                if not participant:
+                    participant = Participant(
+                        full_name=docente.full_name,
+                        personal_email=docente.institutional_email,
+                        telefono=docente.telefono
+                    )
+                    db.add(participant)
+                    db.commit()
+                    db.refresh(participant)
+                
+                # Se emite la constancia
+                cert = _create_and_issue_certificate(db, course, participant, docente_kind, docente=docente)
+                results["success"].append({"name": docente.full_name, "serial": cert.serial})
+            except Exception as e:
+                results["errors"].append({"name": docente.full_name, "error": str(e)})
+    # --- 2. FIN: Nueva lógica para Docentes ---
     return results
 
 

@@ -15,6 +15,7 @@ export interface CertificateIssueRequest {
 // Define claramente qué datos se envían al backend.
 export interface BulkIssuePayload {
   participant_ids: number[];
+  docente_ids?: number[]; // Nuevos IDs para docentes
   with_competencies: boolean;
 }
 
