@@ -4,7 +4,7 @@ from typing import List
 
 from app import models, schemas
 from app.database import get_db
-from app.dependencies import get_current_admin_user
+from app.routers.dependencies import get_current_admin_user
 
 router = APIRouter(
     prefix="/api/admin/participantes",

@@ -4,7 +4,7 @@ from typing import List
 
 from app import models, schemas
 from app.database import get_db
-from app.dependencies import get_current_admin_user
+from app.routers.dependencies import get_current_admin_user
 # NOTA: La lógica de generación de PDF se moverá a un 'service' más adelante
 # from app.services.certificate_service import generate_certificate_pdf 
 
