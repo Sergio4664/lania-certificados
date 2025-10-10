@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.certificate import Certificate
+from backend.app.models.certificado import Certificate
 from app.models.enums import CertificateStatus
 import logging
 

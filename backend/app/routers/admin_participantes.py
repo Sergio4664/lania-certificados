@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.participant import Participant
+from backend.app.models.participante import Participant
 from app.schemas.participant import ParticipantCreate, ParticipantUpdate, ParticipantOut
 from typing import List
 import logging

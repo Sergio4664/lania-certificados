@@ -1,27 +1,21 @@
-# backend/app/models/docente.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import CITEXT
 from app.database import Base
-
 
 class Docente(Base):
     __tablename__ = "docentes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String, nullable=False)
-    institutional_email = Column(String(150), unique=True, index=True, nullable=False)
-    personal_email = Column(String, unique=True)
+    id = Column(Integer, primary_key=True)
+    nombre_completo = Column(String(255), nullable=False)
+    email_institucional = Column(CITEXT, unique=True, nullable=False)
+    email_personal = Column(CITEXT, nullable=True)
     telefono = Column(String(20), nullable=True)
-    whatsapp = Column(String)
-    especialidad = Column(String(150), nullable=True)
-    fecha_registro = Column(DateTime, default=func.now())
-    is_active = Column(Boolean, default=True)
-    user_id = Column(Integer, nullable=True)
-    
-    # Relación many-to-many con Course
-    courses = relationship(
-        "Course",
-        secondary="course_docentes",
+    whatsapp = Column(String(20), nullable=True)
+
+    # Relación con la tabla de asociación
+    productos_educativos = relationship(
+        "ProductoEducativo",
+        secondary="productos_educativos_docentes",
         back_populates="docentes"
     )

@@ -1,13 +1,14 @@
+# backend/app/routers/admin_certificates.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from pydantic import BaseModel
-from app.models.certificate import Certificate
-from app.models.course import Course
-from app.models.participant import Participant
+from backend.app.models.certificado import Certificate
+from backend.app.models.producto_educativo import Course
+from backend.app.models.participante import Participant
 from app.models.enums import CertificateStatus, CertificateKind
 from app.models.docente import Docente
-from app.models.enrollment import Enrollment
+from backend.app.models.inscripciones import Enrollment
 from app.services.certificate_service import issue_certificate
 import logging
 import os

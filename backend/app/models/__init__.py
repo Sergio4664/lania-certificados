@@ -1,20 +1,21 @@
 # backend/app/models/__init__.py
-# Importar todas las tablas en orden correcto para evitar problemas de dependencias
-from .user import User
-from .docente import Docente
-from .association_tables import course_docente_association
-from .course import Course
-from .participant import Participant
-from .enrollment import Enrollment
-from .certificate import Certificate
+# Este archivo importa todos los modelos para que SQLAlchemy los reconozca.
 
-# Asegurar que todas las relaciones se configuren correctamente
+from .administradores import Administrador
+from .docente import Docente
+from .participante import Participante
+from .producto_educativo import ProductoEducativo
+from .inscripciones import Inscripcion
+from .certificado import Certificado
+from .association_tables import productos_educativos_docentes
+
+# Opcional: __all__ para definir qué se exporta del módulo
 __all__ = [
-    "User", 
-    "Docente", 
-    "Course", 
-    "Participant", 
-    "Enrollment",
-    "Certificate",
-    "course_docente_association"
+    "Administrador",
+    "Docente",
+    "Participante",
+    "ProductoEducativo",
+    "Inscripcion",
+    "Certificado",
+    "productos_educativos_docentes",
 ]

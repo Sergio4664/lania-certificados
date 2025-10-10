@@ -2,7 +2,7 @@ import uuid
 import secrets
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from app.models.certificate import Certificate
+from backend.app.models.certificado import Certificate
 from app.models.enums import CertificateStatus
 from app.services.pdf_service import generate_certificate_pdf
 from app.services.email_service import send_certificate_email
@@ -10,7 +10,7 @@ import os
 import logging
 
 from app.models.docente import Docente
-from app.models.course import Course
+from backend.app.models.producto_educativo import Course
 
 logger = logging.getLogger(__name__)
 
