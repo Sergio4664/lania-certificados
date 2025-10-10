@@ -1,4 +1,3 @@
-# backend/app/routers/auth.py
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -7,7 +6,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
-from app.models.user import User  # Asegúrate que el modelo se llame User en user.py
+from app.models.user import User
 from app.schemas.auth import Token, Login
 from app.core.security import verify_password, create_access_token, get_password_hash
 from app.services.email_service import send_password_reset_email
@@ -16,61 +15,40 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# --- Modelos Pydantic para las nuevas rutas ---
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 class ResetPasswordRequest(BaseModel):
     password: str
-# -------------------------------------------
 
 @router.post("/login", response_model=Token)
 def login(payload: Login, db: Session = Depends(get_db)):
     try:
-        # Buscar usuario por email
         logger.info(f"Intentando login para: {payload.email}")
         user = db.query(User).filter(User.email == payload.email).first()
         
-        if not user:
-            logger.warning(f"Usuario no encontrado: {payload.email}")
+        if not user or not user.is_active or not verify_password(payload.password, user.hashed_password):
+            logger.warning(f"Intento de login fallido para: {payload.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Credenciales inválidas"
+                detail="Correo o contraseña incorrectos"
             )
         
-        # Verificar si el usuario está activo
-        if not user.is_active:
-            logger.warning(f"Usuario inactivo: {payload.email}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Usuario inactivo"
-            )
-        
-        # Verificar contraseña
-        logger.info(f"Verificando contraseña para: {payload.email}")
-        if not verify_password(payload.password, user.hashed_password):
-            logger.warning(f"Contraseña incorrecta para: {payload.email}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Credenciales inválidas"
-            )
-        
-        # Crear token usando el user.id como en tu security.py
         access_token = create_access_token(str(user.id))
         logger.info(f"Login exitoso para: {payload.email}")
         
-        return Token(access_token=access_token)
+        return Token(access_token=access_token, token_type="bearer")
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error en login: {str(e)}")
+        logger.error(f"Error inesperado en login: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
 
-# --- NUEVOS ENDPOINTS PARA RESTABLECER CONTRASEÑA ---
+# --- ENDPOINTS PARA RESTABLECER CONTRASEÑA ---
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
@@ -80,31 +58,27 @@ def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db
     """
     try:
         logger.info(f"Solicitud de restablecimiento de contraseña para: {request.email}")
-        user = db.query(User).filter(User.email == request.email).first()
+        user = db.query(User).filter(User.email == request.email, User.is_active == True).first()
         
-        # Por seguridad, no revelamos si el correo existe o no.
-        # Siempre devolvemos el mismo mensaje.
         if user:
-            # Generar token seguro
             token = secrets.token_urlsafe(32)
-            expiration = datetime.utcnow() + timedelta(hours=1) # Token válido por 1 hora
+            expiration = datetime.utcnow() + timedelta(hours=1)
 
             user.reset_password_token = token
             user.reset_token_expires_at = expiration
             db.commit()
 
-            # Enviar correo (asegúrate de que la URL del frontend sea la correcta)
+            # Asegúrate de que la URL del frontend sea la correcta
             reset_link = f"http://localhost:4200/reset-password/{token}" 
             send_password_reset_email(user.email, user.full_name, reset_link)
             logger.info(f"Correo de restablecimiento enviado a: {user.email}")
 
-        return {"message": "Si tu correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."}
-
     except Exception as e:
-        logger.error(f"Error en forgot_password: {str(e)}")
-        # No lanzar un error HTTP 500 para no revelar información del sistema.
-        # Simplemente registramos el error y devolvemos el mensaje genérico.
-        return {"message": "Si tu correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."}
+        logger.error(f"Error en forgot_password al procesar para {request.email}: {str(e)}")
+        # No se lanza una excepción para no revelar si un correo existe o no.
+    
+    # Siempre se devuelve el mismo mensaje por seguridad
+    return {"message": "Si tu correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña."}
 
 
 @router.post("/reset-password/{token}", status_code=status.HTTP_200_OK)
@@ -130,7 +104,6 @@ def reset_password(token: str, request: ResetPasswordRequest, db: Session = Depe
                 detail="El token es inválido o ha expirado."
             )
 
-        # Actualizar contraseña y limpiar el token de reseteo
         user.hashed_password = get_password_hash(new_password)
         user.reset_password_token = None
         user.reset_token_expires_at = None

@@ -1,3 +1,4 @@
+//ruta: frontend/lania-ui/src/app/features/auth/login/login.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';

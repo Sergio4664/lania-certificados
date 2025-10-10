@@ -1,5 +1,4 @@
 import smtplib
-import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -10,6 +9,23 @@ import logging
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+def _send_email(msg: MIMEMultipart):
+    """Función auxiliar para enviar correos y manejar la conexión SMTP."""
+    if not all([settings.smtp_server, settings.smtp_port, settings.smtp_login, settings.smtp_password, settings.smtp_sender_email]):
+        logger.error("Faltan credenciales SMTP en la configuración. No se puede enviar el correo.")
+        return False
+
+    try:
+        with smtplib.SMTP(settings.smtp_server, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_login, settings.smtp_password)
+            server.send_message(msg)
+            logger.info(f"Correo enviado exitosamente a {msg['To']}.")
+        return True
+    except Exception as e:
+        logger.error(f"Error al enviar correo a {msg['To']} vía SMTP: {e}")
+        return False
+
 def send_certificate_email(
     recipient_email: str,
     recipient_name: str,
@@ -18,10 +34,6 @@ def send_certificate_email(
     pdf_content: bytes,
     serial: str
 ):
-    if not all([settings.smtp_server, settings.smtp_port, settings.smtp_login, settings.smtp_password, settings.smtp_sender_email]):
-        logger.error("Faltan credenciales SMTP en la configuración. No se puede enviar el correo.")
-        return
-
     msg = MIMEMultipart()
     msg['From'] = f"{settings.smtp_sender_name} <{settings.smtp_sender_email}>"
     msg['To'] = recipient_email
@@ -46,42 +58,24 @@ def send_certificate_email(
     part.add_header('Content-Disposition', f'attachment; filename="constancia-{serial}.pdf"')
     msg.attach(part)
 
-    try:
-        server = smtplib.SMTP(settings.smtp_server, settings.smtp_port)
-        server.starttls()
-        server.login(settings.smtp_login, settings.smtp_password)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"Correo de constancia enviado a {recipient_email} vía SMTP.")
-    except Exception as e:
-        logger.error(f"Error al enviar correo a {recipient_email} vía SMTP: {e}")
-        raise
+    if not _send_email(msg):
+        raise Exception("No se pudo enviar el correo de la constancia.")
 
-# --- NUEVA FUNCIÓN PARA RESTABLECER CONTRASEÑA ---
 
 def send_password_reset_email(recipient_email: str, user_name: str, reset_link: str):
     """
     Envía un correo electrónico para restablecer la contraseña.
     """
-    if not all([settings.smtp_server, settings.smtp_port, settings.smtp_login, settings.smtp_password, settings.smtp_sender_email]):
-        logger.error("Faltan credenciales SMTP en la configuración. No se puede enviar el correo.")
-        # En este caso, no relanzamos la excepción para no exponer fallos del servidor.
-        return
-
     msg = MIMEMultipart("alternative")
     msg['From'] = f"{settings.smtp_sender_name} <{settings.smtp_sender_email}>"
     msg['To'] = recipient_email
     msg['Subject'] = "Restablecimiento de Contraseña - Sistema de Constancias LANIA"
 
-    # Cuerpo del correo en texto plano y HTML
     text = f"""
     Hola {user_name},
-
     Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para continuar:
     {reset_link}
-
     Este enlace expirará en 1 hora.
-
     Si no solicitaste esto, por favor ignora este correo.
     """
     html = f"""
@@ -96,20 +90,7 @@ def send_password_reset_email(recipient_email: str, user_name: str, reset_link: 
     </body>
     </html>
     """
-
-    part1 = MIMEText(text, "plain")
-    part2 = MIMEText(html, "html")
-    msg.attach(part1)
-    msg.attach(part2)
-
-    try:
-        server = smtplib.SMTP(settings.smtp_server, settings.smtp_port)
-        server.starttls()
-        server.login(settings.smtp_login, settings.smtp_password)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"Correo de restablecimiento de contraseña enviado a {recipient_email} vía SMTP.")
-    except Exception as e:
-        logger.error(f"Error al enviar correo de restablecimiento a {recipient_email} vía SMTP: {e}")
-        # No relanzamos el error para no dar pistas a un posible atacante.
-        # El error ya quedó registrado en los logs del servidor.
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+    
+    # No se relanza la excepción aquí para no exponer información del sistema  _send_email(msg)
