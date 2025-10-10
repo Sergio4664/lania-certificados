@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
-from app.routers import auth, admin_users, admin_docentes, admin_courses, admin_participants, admin_certificates, public_verify
+from app.routers import auth, admin_users, admin_docentes, admin_courses, public_verify
+from backend.app.routers import admin_certificados, admin_participantes
 
 app = FastAPI()
 
@@ -28,8 +29,8 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth.router)
 app.include_router(admin_docentes.router)
 app.include_router(admin_courses.router)
-app.include_router(admin_participants.router)
-app.include_router(admin_certificates.router)
+app.include_router(admin_participantes.router)
+app.include_router(admin_certificados.router)
 app.include_router(public_verify.router)
 # MODIFICACIÓN: Simplifica esta línea para que sea igual a las demás
 app.include_router(admin_users.router)
