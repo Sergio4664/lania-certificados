@@ -1,101 +1,79 @@
-// src/app/features/auth/login/login.component.ts
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../core/auth-token.interceptor';
-import { LoginDTO } from '../../../shared/interfaces/auth.interface';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '@core/auth-token.interceptor';
+import { LoginDTO } from '@shared/interfaces/auth.interface';
+
+
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule, // Cambiado de FormsModule a ReactiveFormsModule
+    RouterLink,
+  
+  ],
   template: `
     <div class="login-container">
       <div class="login-card">
         <div class="header-section">
           <div class="logo-container">
-            <div class="logo">
-            </div>
+             <!-- Puedes poner un <img> aquí si tienes un logo -->
             <h1>LANIA</h1>
             <p>Laboratorio Nacional de Informática Avanzada</p>
           </div>
-          <h2>Sistema de Certificaciones</h2>
+          <h2>Sistema de Constancias</h2>
         </div>
 
-        <form (ngSubmit)="onSubmit()" class="login-form">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
           <div class="form-group">
-            <label for="email">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              Usuario
-            </label>
-            <input 
-              id="email"
-              type="email"
-              [(ngModel)]="credentials.email" 
-              name="email" 
-              (focus)="onEmailFocus()"
-              (blur)="onEmailBlur()"
-              [class.placeholder-text]="isEmailPlaceholder"
-              [class.error]="error"
-              placeholder="Ingrese su correo institucional"
-              required 
-            />
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Correo Institucional</mat-label>
+              <input matInput formControlName="email" type="email" placeholder="usuario@lania.edu.mx">
+              <mat-icon matSuffix>email</mat-icon>
+              <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+                El correo es requerido.
+              </mat-error>
+              <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+                Por favor ingrese un correo válido.
+              </mat-error>
+            </mat-form-field>
           </div>
           
           <div class="form-group">
-            <label for="password">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <circle cx="12" cy="16" r="1"></circle>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              Contraseña
-            </label>
-            <input 
-              id="password"
-              type="password"
-              [(ngModel)]="credentials.password" 
-              name="password" 
-              (focus)="onPasswordFocus()"
-              (blur)="onPasswordBlur()"
-              [class.placeholder-text]="isPasswordPlaceholder"
-              [class.error]="error"
-              placeholder="Ingrese su contraseña"
-              required 
-            />
+            <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Contraseña</mat-label>
+                <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'">
+                <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+                    <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+                </button>
+                <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+                    La contraseña es requerida.
+                </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div *ngIf="error" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ error }}</span>
           </div>
           
-          <button 
-            type="submit" 
-            [disabled]="loading"
-            class="login-btn"
-          >
-            <span *ngIf="!loading">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 3h6v6M21 3l-7 7M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path>
-              </svg>
-              Iniciar Sesión
-            </span>
-            <span *ngIf="loading">
-              <div class="spinner"></div>
-              Iniciando sesión...
-            </span>
+          <button mat-raised-button color="primary" type="submit" class="login-btn" [disabled]="loginForm.invalid || isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="24" class="mr-2"></mat-spinner>
+            <span *ngIf="!isLoading">Iniciar Sesión</span>
+            <span *ngIf="isLoading">Iniciando...</span>
           </button>
+
+          <div class="text-center mt-6">
+            <a routerLink="/forgot-password" class="text-sm text-blue-600 hover:underline">
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
         </form>
         
-        <div *ngIf="error" class="error-message">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-          {{ error }}
-        </div>
-
         <div class="footer">
           <p>&copy; 2025 LANIA. Todos los derechos reservados.</p>
         </div>
@@ -103,165 +81,98 @@ import { LoginDTO } from '../../../shared/interfaces/auth.interface';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      height: 100vh;
+      overflow: auto;
+    }
     .login-container {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #f0f2f5;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       padding: 20px;
     }
 
     .login-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
+      background: white;
+      border-radius: 16px;
       padding: 40px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
       width: 100%;
       max-width: 420px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid #e0e0e0;
     }
 
     .header-section {
       text-align: center;
       margin-bottom: 30px;
     }
-
-    .logo-container {
-      margin-bottom: 20px;
-    }
-
-    .logo {
-      margin-bottom: 15px;
-    }
-
+    
     .header-section h1 {
       color: #221C53;
       margin: 10px 0 5px 0;
       font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 2px;
+      font-weight: 700;
     }
 
     .header-section p {
-      color: #666;
+      color: #555;
       font-size: 13px;
       margin: 0 0 20px 0;
-      font-weight: 500;
     }
 
     .header-section h2 {
       color: #333;
       margin: 0;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
     }
 
     .login-form {
-      margin-bottom: 20px;
+      width: 100%;
     }
 
     .form-group {
-      margin-bottom: 25px;
+      margin-bottom: 1rem;
     }
 
-    .form-group label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #333;
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-    .form-group input {
+    .w-full {
       width: 100%;
-      padding: 15px;
-      border: 2px solid #e1e8ed;
-      border-radius: 12px;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.9);
-      box-sizing: border-box;
     }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      background: white;
-    }
-
-    .form-group input.error {
-      border-color: #e74c3c;
-      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-    }
-
-    .form-group input.placeholder-text {
-      color: #999 !important;
-      font-style: italic;
-    }
-
-    .form-group input:not(.placeholder-text) {
-      color: #333;
-      font-style: normal;
+    
+    .mr-2 {
+        margin-right: 8px;
     }
 
     .login-btn {
       width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
+      padding: 12px 0;
       font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
     }
-
-    .login-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    .login-btn:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    
+    .login-btn mat-spinner {
+        display: inline-block;
+        vertical-align: middle;
     }
 
     .error-message {
-      background: rgba(231, 76, 60, 0.1);
-      border: 1px solid rgba(231, 76, 60, 0.3);
-      color: #c0392b;
-      padding: 12px 16px;
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 12px;
       border-radius: 8px;
       font-size: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 20px;
+      border: 1px solid #f5c6cb;
     }
 
     .footer {
@@ -276,92 +187,46 @@ import { LoginDTO } from '../../../shared/interfaces/auth.interface';
       font-size: 12px;
       margin: 0;
     }
-
-    @media (max-width: 480px) {
-      .login-container {
-        padding: 10px;
-      }
-      
-      .login-card {
-        padding: 30px 25px;
-      }
-      
-      .header-section h1 {
-        font-size: 28px;
-      }
-      
-      .header-section h2 {
-        font-size: 20px;
-      }
-    }
   `]
 })
-export default class LoginComponent {
+export default class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private fb = inject(FormBuilder);
   
-  credentials: LoginDTO = {
-    email: '',
-    password: ''
-  };
-  
-  loading = false;
+  loginForm!: FormGroup;
+  isLoading = false;
   error = '';
+  hidePassword = true;
 
-  // Getters para verificar si son placeholders
-  get isEmailPlaceholder(): boolean {
-    return this.credentials.email === '';
-  }
-
-  get isPasswordPlaceholder(): boolean {
-    return this.credentials.password === '';
-  }
-
-  // Eventos para los campos
-  onEmailFocus() {
-    this.error = '';
-  }
-
-  onEmailBlur() {
-    // No hacer nada específico en blur
-  }
-
-  onPasswordFocus() {
-    this.error = '';
-  }
-
-  onPasswordBlur() {
-    // No hacer nada específico en blur
+  ngOnInit(): void {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]]
+    });
   }
 
   onSubmit() {
-    // Validar campos
-    if (!this.credentials.email.trim() || !this.credentials.password.trim()) {
-      this.error = 'Por favor complete todos los campos.';
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
       return;
     }
 
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.credentials.email)) {
-      this.error = 'Por favor ingrese un email válido.';
-      return;
-    }
-
-    this.loading = true;
+    this.isLoading = true;
     this.error = '';
     
-    this.authService.login(this.credentials).subscribe({
+    const credentials: LoginDTO = this.loginForm.value;
+    
+    this.authService.login(credentials).subscribe({
       next: (response) => {
         console.log('Login successful:', response);
         this.router.navigate(['/admin/dashboard']);
-        this.loading = false;
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Login error:', err);
         
-        // Manejar diferentes tipos de errores
-        if (err.status === 401) {
+        if (err.status === 401 || err.status === 400) {
           this.error = 'Credenciales inválidas. Verifica tu usuario y contraseña.';
         } else if (err.status === 0) {
           this.error = 'No se puede conectar con el servidor. Verifique su conexión.';
@@ -369,7 +234,7 @@ export default class LoginComponent {
           this.error = 'Error del servidor. Inténtelo de nuevo más tarde.';
         }
         
-        this.loading = false;
+        this.isLoading = false;
       }
     });
   }

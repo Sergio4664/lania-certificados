@@ -25,7 +25,7 @@ export class NotificationService {
    * Puedes reemplazar el alert() con tu librería de notificaciones preferida.
    * @param message El mensaje a mostrar.
    */
-  showSuccess(message: string): void {
+  showSuccess(message: string, p0: string): void {
     // Ejemplo simple con alert. ¡Puedes mejorarlo!
     alert(`Éxito: ${message}`);
   }
