@@ -15,6 +15,7 @@ class User(Base):
     hashed_password = Column(Text, nullable=False) 
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.DOCENTE)
 
     reset_password_token = Column(String, nullable=True)
     reset_password_expires_at = Column(DateTime, nullable=True)

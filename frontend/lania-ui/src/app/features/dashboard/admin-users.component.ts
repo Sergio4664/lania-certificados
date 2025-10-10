@@ -1,10 +1,12 @@
-//Ruta: frontend/lania-ui/src/app/features/dashboard/admin-users.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+// 👇 1. CORRECCIÓN: Importa el verdadero AuthService, no el interceptor.
+import { AuthService } from '@core/auth-token.interceptor';
+import { NotificationService } from '../../shared/services/notification.service';
 
-// Interfaces para los usuarios (puedes moverlas a un archivo de interfaces si lo prefieres)
+// Interfaces para los usuarios
 export interface UserDTO {
   id: number;
   full_name: string;
@@ -15,7 +17,7 @@ export interface UserDTO {
 export interface CreateUserDTO {
   full_name: string;
   email: string;
-  password?: string; // Hacemos el password opcional para la edición
+  password?: string;
 }
 
 @Component({
@@ -82,17 +84,16 @@ export interface CreateUserDTO {
               </span>
             </td>
             <td class="actions-cell">
-  <button class="icon-btn edit" (click)="editUser(user)" title="Editar Administrador">
-    <svg width="16" height="16" viewBox="0 0 24 24">...</svg>
-  </button>
-  <button class="icon-btn delete" (click)="deleteUser(user.id)" title="Eliminar Administrador">
-    <svg width="16" height="16" viewBox="0 0 24 24">...</svg>
-  </button>
-  
-  <button class="icon-btn reset" (click)="resetPassword(user.email)" title="Restablecer Contraseña">
-    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4a8 8 0 0 0-8 8h3a5 5 0 0 1 5-5v3l4-4l-4-4zm0 16a8 8 0 0 0 8-8h-3a5 5 0 0 1-5 5v-3l-4 4l4 4z"/></svg>
-  </button>
-</td>
+              <button class="icon-btn edit" (click)="editUser(user)" title="Editar Administrador">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83l3.75 3.75l1.83-1.83z"/></svg>
+              </button>
+              <button class="icon-btn delete" (click)="deleteUser(user.id)" title="Eliminar Administrador">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+              <button class="icon-btn reset" (click)="resetPassword(user.email)" title="Restablecer Contraseña">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4a8 8 0 0 0-8 8h3a5 5 0 0 1 5-5v3l4-4l-4-4zm0 16a8 8 0 0 0 8-8h-3a5 5 0 0 1-5 5v-3l-4 4l4 4z"/></svg>
+              </button>
+            </td>
           </tr>
           <tr *ngIf="users.length === 0">
             <td colspan="5" class="no-data">No hay administradores registrados.</td>
@@ -128,6 +129,8 @@ export interface CreateUserDTO {
     .icon-btn.edit:hover { background: #dbeafe; }
     .icon-btn.delete { color: #ef4444; }
     .icon-btn.delete:hover { background: #fee2e2; }
+    .icon-btn.reset { color: #f59e0b; }
+    .icon-btn.reset:hover { background: #fef3c7; }
     .no-data { text-align: center; padding: 32px; color: #9ca3af; }
     .id-tag { background: #eef2ff; color: #4338ca; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 12px; }
     .status { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
@@ -136,8 +139,14 @@ export interface CreateUserDTO {
   `]
 })
 export default class AdminUsersComponent implements OnInit {
-  private http = inject(HttpClient);
-  private apiUrl = 'http://127.0.0.1:8000/api/admin/users'; // URL base de la API para usuarios
+  // 👇 2. CORRECCIÓN: Inyección de dependencias en el constructor.
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+    private notificationService: NotificationService
+  ) {}
+
+  private apiUrl = '/api/admin/users'; // Usar ruta relativa para proxy
 
   users: UserDTO[] = [];
   showForm = false;
@@ -153,16 +162,12 @@ export default class AdminUsersComponent implements OnInit {
     this.loadUsers();
   }
 
-  getTokenHeaders() {
-    const token = localStorage.getItem('access_token');
-    return { Authorization: `Bearer ${token}` };
-  }
+  // Se elimina getTokenHeaders() porque el interceptor ya hace este trabajo.
 
   loadUsers() {
-    this.http.get<UserDTO[]>(this.apiUrl, { headers: this.getTokenHeaders() })
-      .subscribe(data => {
-        this.users = data;
-      });
+    this.http.get<UserDTO[]>(this.apiUrl).subscribe(data => {
+      this.users = data;
+    });
   }
 
   resetForm() {
@@ -173,6 +178,21 @@ export default class AdminUsersComponent implements OnInit {
       email: '',
       password: ''
     };
+  }
+
+  resetPassword(email: string) {
+    if (confirm(`¿Está seguro de que desea enviar un correo para restablecer la contraseña a ${email}?`)) {
+      this.authService.resetPassword(email).subscribe({
+        next: () => {
+          // 👇 3. CORRECCIÓN: Usar NotificationService en lugar de alert().
+          this.notificationService.showSuccess('Se ha enviado el correo de restablecimiento exitosamente.');
+        },
+        error: (err) => {
+          console.error('Error al enviar correo de restablecimiento', err);
+          this.notificationService.showError(err.error?.detail || 'No se pudo enviar el correo de restablecimiento.');
+        }
+      });
+    }
   }
 
   cancelForm() {
@@ -186,7 +206,7 @@ export default class AdminUsersComponent implements OnInit {
     this.currentUser = {
       full_name: user.full_name,
       email: user.email,
-      password: '' // El password se deja en blanco en el formulario de edición
+      password: ''
     };
     this.showForm = true;
   }
@@ -201,23 +221,21 @@ export default class AdminUsersComponent implements OnInit {
 
   createUser() {
     if (!this.currentUser.full_name || !this.currentUser.email || !this.currentUser.password) {
-      alert('Por favor, complete todos los campos requeridos.');
+      this.notificationService.showError('Por favor, complete todos los campos requeridos.');
       return;
     }
-    this.http.post<UserDTO>(this.apiUrl, this.currentUser, { headers: this.getTokenHeaders() })
-      .subscribe({
-        next: (newUser) => {
-          alert('Administrador creado exitosamente.');
-          this.users.push(newUser);
-          this.cancelForm();
-        },
-        error: (err) => alert(`Error: ${err.error?.detail || 'No se pudo crear el administrador.'}`)
-      });
+    this.http.post<UserDTO>(this.apiUrl, this.currentUser).subscribe({
+      next: (newUser) => {
+        this.notificationService.showSuccess('Administrador creado exitosamente.');
+        this.users.push(newUser);
+        this.cancelForm();
+      },
+      error: (err) => this.notificationService.showError(err.error?.detail || 'No se pudo crear el administrador.')
+    });
   }
 
   updateUser() {
     if (!this.currentUserId) return;
-    // Creamos un DTO para la actualización, omitiendo el password si está vacío
     const userToUpdate: Partial<CreateUserDTO> = {
       full_name: this.currentUser.full_name,
       email: this.currentUser.email,
@@ -226,30 +244,28 @@ export default class AdminUsersComponent implements OnInit {
       userToUpdate.password = this.currentUser.password;
     }
 
-    this.http.put<UserDTO>(`${this.apiUrl}/${this.currentUserId}`, userToUpdate, { headers: this.getTokenHeaders() })
-      .subscribe({
-        next: (updatedUser) => {
-          alert('Administrador actualizado exitosamente.');
-          const index = this.users.findIndex(u => u.id === this.currentUserId);
-          if (index !== -1) {
-            this.users[index] = updatedUser;
-          }
-          this.cancelForm();
-        },
-        error: (err) => alert(`Error: ${err.error?.detail || 'No se pudo actualizar el administrador.'}`)
-      });
+    this.http.put<UserDTO>(`${this.apiUrl}/${this.currentUserId}`, userToUpdate).subscribe({
+      next: (updatedUser) => {
+        this.notificationService.showSuccess('Administrador actualizado exitosamente.');
+        const index = this.users.findIndex(u => u.id === this.currentUserId);
+        if (index !== -1) {
+          this.users[index] = updatedUser;
+        }
+        this.cancelForm();
+      },
+      error: (err) => this.notificationService.showError(err.error?.detail || 'No se pudo actualizar el administrador.')
+    });
   }
 
   deleteUser(id: number) {
     if (confirm('¿Está seguro que desea eliminar este administrador?')) {
-      this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getTokenHeaders() })
-        .subscribe({
-          next: () => {
-            alert('Administrador eliminado exitosamente.');
-            this.users = this.users.filter(u => u.id !== id);
-          },
-          error: (err) => alert(`Error: ${err.error?.detail || 'No se pudo eliminar el administrador.'}`)
-        });
+      this.http.delete(`${this.apiUrl}/${id}`).subscribe({
+        next: () => {
+          this.notificationService.showSuccess('Administrador eliminado exitosamente.');
+          this.users = this.users.filter(u => u.id !== id);
+        },
+        error: (err) => this.notificationService.showError(err.error?.detail || 'No se pudo eliminar el administrador.')
+      });
     }
   }
 }
