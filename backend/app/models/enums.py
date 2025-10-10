@@ -2,6 +2,10 @@
 from enum import Enum as PyEnum
 
 
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    DOCENTE = "docente"
+
 class CertificateStatus(str, PyEnum):
     EN_PROCESO = "EN_PROCESO"
     FALTA_TAREAS = "FALTA_TAREAS"
