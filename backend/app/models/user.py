@@ -16,5 +16,7 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    reset_password_token = Column(String, nullable=True)
+    reset_password_expires_at = Column(DateTime, nullable=True)
     # relaciones
     courses = relationship("Course", back_populates="creator")
