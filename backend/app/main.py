@@ -6,6 +6,7 @@ from starlette.staticfiles import StaticFiles
 # Se importan todos los routers nuevos y se eliminan los antiguos.
 from app.routers import (
     auth,
+    dependencies,
     public_verify,
     admin_administradores,
     admin_docentes,
@@ -40,6 +41,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # --- REGISTRO DE ROUTERS ACTUALIZADO ---
 # Se incluyen todos los routers nuevos con sus prefijos correctos.
 app.include_router(auth.router)
+app.include_router(dependencies.router)
 app.include_router(public_verify.router)
 app.include_router(admin_administradores.router)
 app.include_router(admin_docentes.router)
