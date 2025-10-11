@@ -3,13 +3,17 @@ from typing import Any, Union
 from jose import jwt
 from passlib.context import CryptContext
 
-# La importación debe ser de la instancia 'settings' en minúscula
-from app.core.config import settings
+# Importa la función get_settings
+from app.core.config import get_settings
+
+# Llama a la función para obtener la instancia de configuración
+settings = get_settings()
+
 
 # Contexto para el hasheo de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Usar la instancia 'settings' (minúscula) para leer los valores
+# Lee los valores de la instancia 'settings'
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -23,7 +27,6 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
     to_encode = subject.copy()
     to_encode.update({"exp": expire})
     
-    # Usar la instancia 'settings' (minúscula) para obtener la clave secreta
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

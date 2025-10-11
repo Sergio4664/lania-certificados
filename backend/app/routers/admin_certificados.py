@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+from app.schemas.certificado import Certificado, CertificadoCreate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 # NOTA: La lógica de generación de PDF se moverá a un 'service' más adelante
@@ -14,8 +16,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=schemas.Certificado, status_code=201)
-def create_certificado(certificado: schemas.CertificadoCreate, db: Session = Depends(get_db)):
+# Se usan las clases importadas directamente
+@router.post("/", response_model=Certificado, status_code=201)
+def create_certificado(certificado: CertificadoCreate, db: Session = Depends(get_db)):
     db_inscripcion = db.query(models.Inscripcion).filter(models.Inscripcion.id == certificado.inscripcion_id).first()
     if not db_inscripcion:
         raise HTTPException(status_code=404, detail="La inscripción asociada no existe.")
@@ -41,12 +44,12 @@ def create_certificado(certificado: schemas.CertificadoCreate, db: Session = Dep
     db.refresh(db_certificado)
     return db_certificado
 
-@router.get("/", response_model=List[schemas.Certificado])
+@router.get("/", response_model=List[Certificado])
 def read_certificados(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     certificados = db.query(models.Certificado).order_by(models.Certificado.id.desc()).offset(skip).limit(limit).all()
     return certificados
 
-@router.get("/{certificado_id}", response_model=schemas.Certificado)
+@router.get("/{certificado_id}", response_model=Certificado)
 def read_certificado(certificado_id: int, db: Session = Depends(get_db)):
     db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
     if db_certificado is None:

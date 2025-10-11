@@ -4,7 +4,9 @@ from typing import List
 import pandas as pd
 import io
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+from app.schemas.inscripcion import Inscripcion, InscripcionCreate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
@@ -14,9 +16,8 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=schemas.Inscripcion, status_code=201)
-def create_inscripcion(inscripcion: schemas.InscripcionCreate, db: Session = Depends(get_db)):
-    # Verificar que el producto y participante existen
+@router.post("/", response_model=Inscripcion, status_code=201)
+def create_inscripcion(inscripcion: InscripcionCreate, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == inscripcion.producto_educativo_id).first()
     if not db_producto:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
@@ -25,7 +26,6 @@ def create_inscripcion(inscripcion: schemas.InscripcionCreate, db: Session = Dep
     if not db_participante:
         raise HTTPException(status_code=404, detail="Participante no encontrado")
 
-    # Verificar que no exista ya la inscripción
     db_inscripcion = db.query(models.Inscripcion).filter_by(
         producto_educativo_id=inscripcion.producto_educativo_id,
         participante_id=inscripcion.participante_id
@@ -40,7 +40,7 @@ def create_inscripcion(inscripcion: schemas.InscripcionCreate, db: Session = Dep
     return new_inscripcion
 
 
-@router.get("/producto/{producto_id}", response_model=List[schemas.Inscripcion])
+@router.get("/producto/{producto_id}", response_model=List[Inscripcion])
 def get_inscripciones_por_producto(producto_id: int, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
@@ -104,7 +104,8 @@ async def upload_participantes_e_inscribir(
                     setattr(participante, key, value)
                 reporte["participantes_actualizados"] += 1
             
-            db.commit()
+            # Es importante hacer commit aquí para obtener el ID del participante si es nuevo
+            db.commit() 
             db.refresh(participante)
 
             # Inscribir

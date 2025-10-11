@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+# Se importan las clases específicas desde su archivo en schemas.
+from app.schemas.administrador import Administrador, AdministradorCreate, AdministradorUpdate
 from app.database import get_db
 from app.core.security import get_password_hash
 from app.routers.dependencies import get_current_admin_user
@@ -13,8 +16,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=schemas.Administrador, status_code=201)
-def create_administrador(admin: schemas.AdministradorCreate, db: Session = Depends(get_db)):
+# Se usan las clases importadas directamente
+@router.post("/", response_model=Administrador, status_code=201)
+def create_administrador(admin: AdministradorCreate, db: Session = Depends(get_db)):
     db_admin = db.query(models.Administrador).filter(models.Administrador.email_institucional == admin.email_institucional).first()
     if db_admin:
         raise HTTPException(status_code=400, detail="Email ya registrado")
@@ -33,20 +37,20 @@ def create_administrador(admin: schemas.AdministradorCreate, db: Session = Depen
     db.refresh(db_admin)
     return db_admin
 
-@router.get("/", response_model=List[schemas.Administrador])
+@router.get("/", response_model=List[Administrador])
 def read_administradores(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     admins = db.query(models.Administrador).order_by(models.Administrador.id).offset(skip).limit(limit).all()
     return admins
 
-@router.get("/{admin_id}", response_model=schemas.Administrador)
+@router.get("/{admin_id}", response_model=Administrador)
 def read_administrador(admin_id: int, db: Session = Depends(get_db)):
     db_admin = db.query(models.Administrador).filter(models.Administrador.id == admin_id).first()
     if db_admin is None:
         raise HTTPException(status_code=404, detail="Administrador no encontrado")
     return db_admin
 
-@router.put("/{admin_id}", response_model=schemas.Administrador)
-def update_administrador(admin_id: int, admin: schemas.AdministradorUpdate, db: Session = Depends(get_db)):
+@router.put("/{admin_id}", response_model=Administrador)
+def update_administrador(admin_id: int, admin: AdministradorUpdate, db: Session = Depends(get_db)):
     db_admin = db.query(models.Administrador).filter(models.Administrador.id == admin_id).first()
     if db_admin is None:
         raise HTTPException(status_code=404, detail="Administrador no encontrado")

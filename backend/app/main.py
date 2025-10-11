@@ -2,11 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
-# --- IMPORTACIONES ACTUALIZADAS ---
-# Se importan todos los routers nuevos y se eliminan los antiguos.
+# --- CORRECCIÓN EN IMPORTACIONES ---
+# Se elimina 'dependencies' de esta lista. No es un router.
 from app.routers import (
     auth,
-    dependencies,
     public_verify,
     admin_administradores,
     admin_docentes,
@@ -34,14 +33,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Monta una ruta para servir archivos estáticos (como la plantilla del PDF) si es necesario
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-# --- REGISTRO DE ROUTERS ACTUALIZADO ---
-# Se incluyen todos los routers nuevos con sus prefijos correctos.
+# --- REGISTRO DE ROUTERS ---
 app.include_router(auth.router)
-app.include_router(dependencies.router)
 app.include_router(public_verify.router)
 app.include_router(admin_administradores.router)
 app.include_router(admin_docentes.router)
@@ -49,6 +45,8 @@ app.include_router(admin_participantes.router)
 app.include_router(admin_productos_educativos.router)
 app.include_router(admin_inscripciones.router)
 app.include_router(admin_certificados.router)
+# --- LÍNEA ELIMINADA ---
+# Se quita la línea 'app.include_router(dependencies.router)'
 
 
 @app.get("/")

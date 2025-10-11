@@ -2,8 +2,9 @@ from pydantic import BaseModel, field_validator
 from datetime import date
 from typing import List, Optional
 
-# Importamos el schema de Docente para poder anidarlo en la respuesta de la API
-from .docente import Docente
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+# Se importa 'DocenteOut' que es el nombre correcto del schema de salida para anidar.
+from .docente import DocenteOut
 
 # Propiedades compartidas que tendrán todos los schemas de ProductoEducativo
 class ProductoEducativoBase(BaseModel):
@@ -12,8 +13,7 @@ class ProductoEducativoBase(BaseModel):
     fecha_inicio: date
     fecha_fin: date
 
-    # --- VALIDACIONES CONSERVADAS Y ACTUALIZADAS ---
-
+    # --- VALIDACIONES (SIN CAMBIOS, YA ESTABAN BIEN) ---
     @field_validator('nombre')
     @classmethod
     def nombre_no_debe_estar_vacio(cls, v: str) -> str:
@@ -31,14 +31,12 @@ class ProductoEducativoBase(BaseModel):
     @field_validator('fecha_fin')
     @classmethod
     def fecha_fin_posterior_a_inicio(cls, v: date, info) -> date:
-        # 'info.data' contiene los otros campos del modelo que se están validando
         if 'fecha_inicio' in info.data and v < info.data['fecha_inicio']:
             raise ValueError('La fecha de fin debe ser posterior o igual a la fecha de inicio')
         return v
 
 # Schema para la creación de un nuevo producto educativo
 class ProductoEducativoCreate(ProductoEducativoBase):
-    # Al crear, se puede pasar una lista de IDs de los docentes que impartirán el producto
     docentes_ids: List[int] = []
 
 # Schema para la actualización (todos los campos son opcionales)
@@ -52,9 +50,9 @@ class ProductoEducativoUpdate(BaseModel):
 # Schema para la respuesta de la API (lo que se devuelve al cliente)
 class ProductoEducativo(ProductoEducativoBase):
     id: int
-    # En la respuesta, se incluye la lista completa de objetos Docente, no solo sus IDs
-    docentes: List[Docente] = []
+    # --- CORRECCIÓN EN EL TIPO DE DATO ---
+    # Se usa 'DocenteOut' en la lista de docentes.
+    docentes: List[DocenteOut] = []
 
     class Config:
-        # Permite que Pydantic cree el schema a partir de un objeto de SQLAlchemy
         from_attributes = True

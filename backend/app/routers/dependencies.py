@@ -5,7 +5,12 @@ from jose import JWTError, jwt
 
 from app import models, schemas
 from app.database import get_db
-from app.core.config import settings
+# --- CORRECCIÓN AQUÍ ---
+# Se importa la función 'get_settings'
+from app.core.config import get_settings
+
+# Se llama a la función para obtener la instancia de la configuración
+settings = get_settings()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -16,6 +21,7 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # Esta función ahora usará correctamente la 'settings' que obtuvimos arriba
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         role: str = payload.get("rol")
@@ -25,7 +31,6 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
 
-    # Verificar que el rol en el token sea 'administrador'
     if token_data.rol != schemas.UserRole.ADMINISTRADOR:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

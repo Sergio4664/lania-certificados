@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+from app.schemas.producto_educativo import ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
@@ -12,8 +14,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=schemas.ProductoEducativo, status_code=201)
-def create_producto_educativo(producto: schemas.ProductoEducativoCreate, db: Session = Depends(get_db)):
+# Se usan las clases importadas directamente
+@router.post("/", response_model=ProductoEducativo, status_code=201)
+def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = Depends(get_db)):
     docentes = []
     if producto.docentes_ids:
         docentes = db.query(models.Docente).filter(models.Docente.id.in_(producto.docentes_ids)).all()
@@ -32,20 +35,20 @@ def create_producto_educativo(producto: schemas.ProductoEducativoCreate, db: Ses
     db.refresh(db_producto)
     return db_producto
 
-@router.get("/", response_model=List[schemas.ProductoEducativo])
+@router.get("/", response_model=List[ProductoEducativo])
 def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     productos = db.query(models.ProductoEducativo).order_by(models.ProductoEducativo.id).offset(skip).limit(limit).all()
     return productos
 
-@router.get("/{producto_id}", response_model=schemas.ProductoEducativo)
+@router.get("/{producto_id}", response_model=ProductoEducativo)
 def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
     return db_producto
 
-@router.put("/{producto_id}", response_model=schemas.ProductoEducativo)
-def update_producto_educativo(producto_id: int, producto: schemas.ProductoEducativoUpdate, db: Session = Depends(get_db)):
+@router.put("/{producto_id}", response_model=ProductoEducativo)
+def update_producto_educativo(producto_id: int, producto: ProductoEducativoUpdate, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
@@ -59,7 +62,7 @@ def update_producto_educativo(producto_id: int, producto: schemas.ProductoEducat
             if len(docentes) != len(docentes_ids):
                 raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
             db_producto.docentes = docentes
-        else: # Si se envía una lista vacía, se eliminan las asociaciones
+        else:
             db_producto.docentes = []
         del update_data["docentes_ids"]
 

@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+# Se importa la clase específica 'CertificadoPublic' desde su archivo.
+from app.schemas.certificado import CertificadoPublic
 from app.database import get_db
 
 router = APIRouter(
@@ -9,7 +12,8 @@ router = APIRouter(
     tags=["Public"]
 )
 
-@router.get("/verificar/{folio}", response_model=schemas.CertificadoPublic)
+# Ahora se usa 'CertificadoPublic' directamente, sin el prefijo 'schemas.'
+@router.get("/verificar/{folio}", response_model=CertificadoPublic)
 def verify_certificate_by_folio(folio: str, db: Session = Depends(get_db)):
     certificado = db.query(models.Certificado).options(
         joinedload(models.Certificado.inscripcion)
@@ -26,10 +30,10 @@ def verify_certificate_by_folio(folio: str, db: Session = Depends(get_db)):
     participante = inscripcion.participante
     producto = inscripcion.producto_educativo
     
-    # Concatenamos los nombres de todos los docentes
+    # Concatenamos los nombres de todos los docentes para mostrarlos
     nombres_docentes = ", ".join([d.nombre_completo for d in producto.docentes]) if producto.docentes else "N/A"
 
-    return schemas.CertificadoPublic(
+    return CertificadoPublic(
         folio=certificado.folio,
         fecha_emision=certificado.fecha_emision,
         nombre_participante=participante.nombre_completo,

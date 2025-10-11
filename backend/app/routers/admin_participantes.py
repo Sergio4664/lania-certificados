@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from app import models, schemas
+from app import models
+# --- CORRECCIÓN DE IMPORTACIÓN ---
+from app.schemas.participante import Participante, ParticipanteCreate, ParticipanteUpdate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
@@ -12,8 +14,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=schemas.Participante, status_code=201)
-def create_participante(participante: schemas.ParticipanteCreate, db: Session = Depends(get_db)):
+# Se usan las clases importadas directamente
+@router.post("/", response_model=Participante, status_code=201)
+def create_participante(participante: ParticipanteCreate, db: Session = Depends(get_db)):
     db_participante = db.query(models.Participante).filter(models.Participante.email_personal == participante.email_personal).first()
     if db_participante:
         raise HTTPException(status_code=400, detail="Email personal ya registrado")
@@ -24,20 +27,20 @@ def create_participante(participante: schemas.ParticipanteCreate, db: Session = 
     db.refresh(db_participante)
     return db_participante
 
-@router.get("/", response_model=List[schemas.Participante])
+@router.get("/", response_model=List[Participante])
 def read_participantes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     participantes = db.query(models.Participante).order_by(models.Participante.id).offset(skip).limit(limit).all()
     return participantes
 
-@router.get("/{participante_id}", response_model=schemas.Participante)
+@router.get("/{participante_id}", response_model=Participante)
 def read_participante(participante_id: int, db: Session = Depends(get_db)):
     db_participante = db.query(models.Participante).filter(models.Participante.id == participante_id).first()
     if db_participante is None:
         raise HTTPException(status_code=404, detail="Participante no encontrado")
     return db_participante
 
-@router.put("/{participante_id}", response_model=schemas.Participante)
-def update_participante(participante_id: int, participante: schemas.ParticipanteUpdate, db: Session = Depends(get_db)):
+@router.put("/{participante_id}", response_model=Participante)
+def update_participante(participante_id: int, participante: ParticipanteUpdate, db: Session = Depends(get_db)):
     db_participante = db.query(models.Participante).filter(models.Participante.id == participante_id).first()
     if db_participante is None:
         raise HTTPException(status_code=404, detail="Participante no encontrado")
