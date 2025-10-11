@@ -1,22 +1,25 @@
-# backend/app/schemas/auth.py
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel
+from typing import Optional
+import enum
 
-class Token(BaseModel): 
+# El único rol con acceso al sistema es ADMINISTRADOR
+class UserRole(str, enum.Enum):
+    ADMINISTRADOR = "administrador"
+
+# Define la estructura del usuario que se devuelve tras el login
+class UserAuth(BaseModel):
+    id: int
+    nombre_completo: str
+    email_institucional: str
+    rol: UserRole
+
+# El token que se devuelve al cliente
+class Token(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str
+    user: UserAuth
 
-class Login(BaseModel): 
-    email: EmailStr
-    password: str
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    full_name: str
-
-    @validator('email')
-    def validate_email_domain(cls, v):
-        """Valida que el correo electrónico pertenezca al dominio @lania.edu.mx."""
-        if not v.endswith('@lania.edu.mx'):
-            raise ValueError('El correo debe tener el dominio @lania.edu.mx')
-        return v
+# Los datos que se guardan dentro del JWT para su posterior validación
+class TokenData(BaseModel):
+    email: Optional[str] = None
+    rol: Optional[UserRole] = None

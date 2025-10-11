@@ -1,10 +1,7 @@
-# backend/app/schemas/docente.py
 from pydantic import BaseModel, EmailStr, field_validator
-from datetime import datetime
 from typing import Optional
 
-# --- Esquema Base ---
-# Contiene los campos comunes para todos los demás esquemas.
+# Propiedades compartidas
 class DocenteBase(BaseModel):
     nombre_completo: str
     email_institucional: EmailStr
@@ -12,13 +9,11 @@ class DocenteBase(BaseModel):
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
 
-# --- Esquema para la Creación ---
-# Hereda de DocenteBase. No necesita cambios.
+# Propiedades para la creación
 class DocenteCreate(DocenteBase):
-    pass # telefono es opcional en la base, por lo que no es necesario re-declararlo aquí.
+    pass
 
-# --- Esquema para la Actualización ---
-# Todos los campos son opcionales para permitir actualizaciones parciales.
+# Propiedades para la actualización
 class DocenteUpdate(BaseModel):
     nombre_completo: Optional[str] = None
     email_institucional: Optional[EmailStr] = None
