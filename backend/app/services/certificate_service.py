@@ -1,83 +1,68 @@
-import uuid
-import secrets
-from datetime import datetime, timezone
+# backend/app/services/certificate_service.py
+import logging
+import os
 from sqlalchemy.orm import Session
-from backend.app.models.certificado import Certificate
-from app.models.enums import CertificateStatus
+from fastapi import HTTPException
+
+# Importamos los modelos y los otros servicios
+from app import models
 from app.services.pdf_service import generate_certificate_pdf
 from app.services.email_service import send_certificate_email
-import os
-import logging
-
-from app.models.docente import Docente
-from backend.app.models.producto_educativo import Course
 
 logger = logging.getLogger(__name__)
 
-def issue_certificate(db: Session, certificate: Certificate, participant: dict, course: dict) -> Certificate:
-    try:
-        certificate.serial = f"LANIA-{datetime.now().strftime('%Y')}-{secrets.token_hex(4).upper()}"
-        certificate.qr_token = str(uuid.uuid4())
-        
-        try:
-            template_pdf_path = "app/static/Formato constancias.pdf"
-            competencies_list = course.get("competencies", "").split('\n') if course.get("competencies") else []
-            docente_specialty = participant.get("specialty")
-            
-            # --- CAMBIO AQUÍ ---
-            # Obtenemos el tipo de curso legible que pasamos desde el router
-            course_type_str = course.get("course_type_str", "Curso") 
-            
-            pdf_bytes = generate_certificate_pdf(
-                participant_name=participant["full_name"],
-                course_name=course["name"],
-                course_type_str=course_type_str, # Se pasa al generador de PDF
-                hours=course["hours"],
-                issue_date=datetime.now().date(),
-                template_path=template_pdf_path,
-                kind=certificate.kind.value,
-                serial=certificate.serial,
-                qr_token=certificate.qr_token,
-                course_modality=course["modality"].value,
-                course_date=course["start_date"].strftime("%d/%m/%Y"),
-                competencies=competencies_list,
-                docente_specialty=docente_specialty
-            )
-            certificate.pdf_content = pdf_bytes
-            
-            os.makedirs("certificates", exist_ok=True)
-            
-            pdf_filename = f"certificates/{certificate.serial}.pdf"
-            with open(pdf_filename, "wb") as f:
-                f.write(pdf_bytes)
-            certificate.pdf_path = pdf_filename
-            
-            if participant.get("email"):
-                try:
-                    send_certificate_email(
-                        recipient_email=participant["email"],
-                        recipient_name=participant["full_name"],
-                        course_name=course["name"],
-                        course_type_str=course_type_str, # Se pasa al servicio de correo
-                        pdf_content=pdf_bytes,
-                        serial=certificate.serial
-                    )
-                except Exception as e:
-                    logger.error(f"FALLO EL ENVÍO DE CORREO para el certificado {certificate.serial}: {e}")
 
-            certificate.issued_at = datetime.now(timezone.utc)
-            certificate.updated_at = datetime.now(timezone.utc)
-            certificate.status = CertificateStatus.LISTO_PARA_DESCARGAR
-            
-        except Exception as e:
-            logger.error(f"Error generando PDF o enviando correo: {e}")
-            certificate.status = CertificateStatus.EN_PROCESO
-    
-        db.commit()
-        db.refresh(certificate)
+def emitir_certificado_completo(db: Session, certificado: models.Certificado):
+    """
+    Orquesta todo el proceso: genera el PDF, lo guarda y envía el correo.
+    """
+    try:
+        # 1. Extraer toda la información necesaria de las relaciones del objeto
+        inscripcion = certificado.inscripcion
+        if not inscripcion:
+            raise ValueError("El certificado no está asociado a ninguna inscripción.")
         
-        return certificate
+        participante = inscripcion.participante
+        producto = inscripcion.producto_educativo
+
+        nombres_docentes = ", ".join([d.nombre_completo for d in producto.docentes]) or "N/A"
+        fechas_producto_str = f"del {producto.fecha_inicio.strftime('%d de %B de %Y')} al {producto.fecha_fin.strftime('%d de %B de %Y')}"
+
+        # 2. Generar el contenido del PDF llamando a pdf_service
+        pdf_bytes = generate_certificate_pdf(
+            participant_name=participante.nombre_completo,
+            course_name=producto.nombre,
+            hours=producto.horas,
+            issue_date=certificado.fecha_emision,
+            serial=certificado.folio,
+            qr_token=certificado.folio,
+            course_dates_str=fechas_producto_str,
+            docente_names_str=nombres_docentes
+        )
+
+        # 3. Guardar el archivo PDF en el servidor
+        os.makedirs("certificates", exist_ok=True)
+        pdf_filename = f"certificates/{certificado.folio}.pdf"
+        with open(pdf_filename, "wb") as f:
+            f.write(pdf_bytes)
+
+        # 4. Enviar el correo electrónico al participante (si tiene email)
+        if participante.email_personal:
+            try:
+                send_certificate_email(
+                    recipient_email=participante.email_personal,
+                    recipient_name=participante.nombre_completo,
+                    course_name=producto.nombre,
+                    pdf_content=pdf_bytes,
+                    serial=certificado.folio
+                )
+            except Exception as e:
+                # Si falla el correo, solo se registra, no se detiene el proceso
+                logger.error(f"FALLO EL ENVÍO DE CORREO para el certificado {certificado.folio}: {e}")
+        
+        logger.info(f"Certificado {certificado.folio} emitido y procesado correctamente.")
+
     except Exception as e:
-        logger.error(f"Error crítico procesando certificado {certificate.id}: {e}")
-        db.rollback()
-        raise
+        logger.error(f"Error crítico en el proceso de emisión del certificado {certificado.id}: {e}")
+        # Es importante relanzar la excepción para que el router sepa que algo salió mal
+        raise HTTPException(status_code=500, detail=f"No se pudo generar el PDF o procesar el certificado: {e}")

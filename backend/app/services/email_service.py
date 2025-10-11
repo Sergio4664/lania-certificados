@@ -1,3 +1,4 @@
+# backend/app/services/email_service.py
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,7 +15,6 @@ def _send_email(msg: MIMEMultipart):
     if not all([settings.smtp_server, settings.smtp_port, settings.smtp_login, settings.smtp_password, settings.smtp_sender_email]):
         logger.error("Faltan credenciales SMTP en la configuración. No se puede enviar el correo.")
         return False
-
     try:
         with smtplib.SMTP(settings.smtp_server, settings.smtp_port) as server:
             server.starttls()
@@ -30,20 +30,20 @@ def send_certificate_email(
     recipient_email: str,
     recipient_name: str,
     course_name: str,
-    course_type_str: str,
     pdf_content: bytes,
     serial: str
 ):
+    """Envía el correo con el certificado adjunto (versión simplificada)."""
     msg = MIMEMultipart()
     msg['From'] = f"{settings.smtp_sender_name} <{settings.smtp_sender_email}>"
     msg['To'] = recipient_email
-    msg['Subject'] = f"Tu constancia de la {course_type_str}: {course_name}"
+    msg['Subject'] = f"Tu constancia de: {course_name}"
 
     html_body = f"""
     <html>
         <body>
             <h1>¡Felicidades, {recipient_name}!</h1>
-            <p>Has completado exitosamente la <strong>{course_type_str}</strong>: "{course_name}".</p>
+            <p>Has completado exitosamente el producto educativo: "<strong>{course_name}</strong>".</p>
             <p>Adjunto encontrarás tu constancia en formato PDF.</p>
             <br>
             <p>Saludos cordiales,<br>El equipo de LANIA</p>
@@ -63,9 +63,7 @@ def send_certificate_email(
 
 
 def send_password_reset_email(recipient_email: str, user_name: str, reset_link: str):
-    """
-    Envía un correo electrónico para restablecer la contraseña.
-    """
+    """Envía un correo para restablecer la contraseña (sin cambios)."""
     msg = MIMEMultipart("alternative")
     msg['From'] = f"{settings.smtp_sender_name} <{settings.smtp_sender_email}>"
     msg['To'] = recipient_email
@@ -86,11 +84,10 @@ def send_password_reset_email(recipient_email: str, user_name: str, reset_link: 
         <p>Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para crear una nueva. Este enlace es válido por 1 hora.</p>
         <a href="{reset_link}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Restablecer Contraseña</a>
         <p>Si no solicitaste un restablecimiento de contraseña, puedes ignorar este correo de forma segura.</p>
-        <p>Gracias,<br>El equipo de LANIA</p>
     </body>
     </html>
     """
     msg.attach(MIMEText(text, "plain"))
     msg.attach(MIMEText(html, "html"))
     
-    # No se relanza la excepción aquí para no exponer información del sistema  _send_email(msg)
+    _send_email(msg)

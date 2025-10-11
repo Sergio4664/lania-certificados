@@ -1,14 +1,24 @@
-# backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
-from app.routers import auth, admin_users, admin_docentes, admin_courses, public_verify
-from backend.app.routers import admin_certificados, admin_participantes
+# --- IMPORTACIONES ACTUALIZADAS ---
+# Se importan todos los routers nuevos y se eliminan los antiguos.
+from app.routers import (
+    auth,
+    public_verify,
+    admin_administradores,
+    admin_docentes,
+    admin_participantes,
+    admin_productos_educativos,
+    admin_inscripciones,
+    admin_certificados,
+)
 
-app = FastAPI()
+app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-# Configuración de CORS
+
+# --- CONFIGURACIÓN DE CORS (SIN CAMBIOS) ---
 origins = [
     "http://localhost",
     "http://localhost:4200",
@@ -23,18 +33,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Monta una ruta para servir archivos estáticos (como la plantilla del PDF) si es necesario
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Incluye tus routers
+
+# --- REGISTRO DE ROUTERS ACTUALIZADO ---
+# Se incluyen todos los routers nuevos con sus prefijos correctos.
 app.include_router(auth.router)
-app.include_router(admin_docentes.router)
-app.include_router(admin_courses.router)
-app.include_router(admin_participantes.router)
-app.include_router(admin_certificados.router)
 app.include_router(public_verify.router)
-# MODIFICACIÓN: Simplifica esta línea para que sea igual a las demás
-app.include_router(admin_users.router)
+app.include_router(admin_administradores.router)
+app.include_router(admin_docentes.router)
+app.include_router(admin_participantes.router)
+app.include_router(admin_productos_educativos.router)
+app.include_router(admin_inscripciones.router)
+app.include_router(admin_certificados.router)
+
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to LANIA API"}
+    return {"message": "Bienvenido a la API del Sistema de Constancias LANIA"}
