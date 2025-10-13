@@ -1,19 +1,18 @@
 from pydantic import BaseModel, field_validator
 from datetime import date
 from typing import List, Optional
+from app.models.enums import TipoProductoEnum, ModalidadEnum
+from .docente import Docente
 
-# --- CORRECCIÓN DE IMPORTACIÓN ---
-# Se importa 'DocenteOut' que es el nombre correcto del schema de salida para anidar.
-from .docente import DocenteOut
-
-# Propiedades compartidas que tendrán todos los schemas de ProductoEducativo
 class ProductoEducativoBase(BaseModel):
     nombre: str
     horas: int
     fecha_inicio: date
     fecha_fin: date
-
-    # --- VALIDACIONES (SIN CAMBIOS, YA ESTABAN BIEN) ---
+    tipo_producto: Optional[TipoProductoEnum] = None
+    modalidad: Optional[ModalidadEnum] = None
+    competencias: Optional[str] = None
+    
     @field_validator('nombre')
     @classmethod
     def nombre_no_debe_estar_vacio(cls, v: str) -> str:
@@ -35,24 +34,23 @@ class ProductoEducativoBase(BaseModel):
             raise ValueError('La fecha de fin debe ser posterior o igual a la fecha de inicio')
         return v
 
-# Schema para la creación de un nuevo producto educativo
 class ProductoEducativoCreate(ProductoEducativoBase):
     docentes_ids: List[int] = []
 
-# Schema para la actualización (todos los campos son opcionales)
 class ProductoEducativoUpdate(BaseModel):
     nombre: Optional[str] = None
     horas: Optional[int] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
     docentes_ids: Optional[List[int]] = None
+    # --- CAMPOS AÑADIDOS ---
+    tipo_producto: Optional[TipoProductoEnum] = None
+    modalidad: Optional[ModalidadEnum] = None
+    competencias: Optional[str] = None
 
-# Schema para la respuesta de la API (lo que se devuelve al cliente)
 class ProductoEducativo(ProductoEducativoBase):
     id: int
-    # --- CORRECCIÓN EN EL TIPO DE DATO ---
-    # Se usa 'DocenteOut' en la lista de docentes.
-    docentes: List[DocenteOut] = []
+    docentes: List[Docente] = []
 
     class Config:
         from_attributes = True

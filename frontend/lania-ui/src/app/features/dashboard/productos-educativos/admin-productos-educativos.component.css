@@ -1,0 +1,448 @@
+/* General Layout & Header */
+.module-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f9fafb;
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.module-header h2 {
+  color: #1e293b;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-container input {
+  padding: 10px 10px 10px 35px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  width: 250px;
+  transition: all 0.2s;
+}
+
+.search-container input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+/* Form Styles */
+.form-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.form-card h3, .form-card h4 {
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+/* Docentes Selection in Form */
+.docentes-selection {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.docentes-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-top: 4px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.checkbox-item label {
+  margin: 0;
+  cursor: pointer;
+  flex: 1;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.checkbox-item label small {
+  display: block;
+  color: #6b7280;
+  font-weight: normal;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Button Styles */
+.primary-btn, .secondary-btn {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.primary-btn {
+  background-color: #4f46e5;
+  color: white;
+}
+.primary-btn:hover {
+  background-color: #4338ca;
+}
+.primary-btn:disabled {
+  background-color: #a5b4fc;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: 1px solid transparent;
+}
+
+.secondary-btn:hover {
+  background: #d1d5db;
+}
+
+/* Course Card Styles */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.course-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.course-card-header {
+  padding: 20px;
+  color: white;
+  position: relative;
+  min-height: 100px;
+}
+.course-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.course-card-body {
+  padding: 20px;
+  flex-grow: 1;
+}
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.detail-item.docentes {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.detail-item strong {
+  color: #1e293b;
+  font-weight: 600;
+  min-width: 60px;
+}
+.docentes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.docente-tag-small {
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+.course-card-footer {
+  padding: 12px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.icon-btn-card {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #6b7280;
+  background: transparent;
+}
+.icon-btn-card:hover {
+  background: #e5e7eb;
+}
+.icon-btn.edit {
+  color: #f59e0b;
+}
+.icon-btn.edit:hover {
+    background-color: #fef3c7;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(17, 24, 39, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.modal-content {
+  background: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  width: 90%;
+  max-width: 1250px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1e293b;
+}
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  color: #64748b;
+  font-size: 24px;
+  line-height: 1;
+}
+.close-btn:hover {
+  color: #ef4444;
+}
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+.modal-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+.modal-section h4 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    color: #1f2937;
+}
+.upload-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.form-card.nested-form {
+  padding: 16px;
+  margin-top: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+/* Data Table in Modal */
+.data-table .table-title {
+  font-size: 18px;
+  color: #1f2937;
+  padding: 16px;
+  background: #f9fafb;
+  margin: -24px -24px 24px -24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.cert-actions, .send-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.serial-tag {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+.no-data, .no-data-card {
+  text-align: center;
+  padding: 32px;
+  color: #9ca3af;
+  font-style: italic;
+}
+.no-data-card {
+    background-color: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 12px;
+}
+
+.icon-btn.delete {
+    color: #ef4444;
+    background: #fee2e2;
+}
+.icon-btn.delete:hover {
+    background: #fca5a5;
+}
+.small-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Modal de Competencias */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafb;
+}
+
+.competency-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.competency-input-group input {
+    flex-grow: 1;
+}
+
+.icon-btn {
+    padding: .5rem;
+    line-height: 1;
+}

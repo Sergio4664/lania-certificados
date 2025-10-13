@@ -1,3 +1,4 @@
+//ruta: frontend/lania-ui/src/app/app.module.ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';   // Para [(ngModel)]

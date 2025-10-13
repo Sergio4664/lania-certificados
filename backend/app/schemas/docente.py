@@ -8,6 +8,7 @@ class DocenteBase(BaseModel):
     email_personal: Optional[EmailStr] = None
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
+    especialidad: Optional[str] = None
 
 # Propiedades para la creación
 class DocenteCreate(DocenteBase):
@@ -20,7 +21,7 @@ class DocenteUpdate(BaseModel):
     email_personal: Optional[EmailStr] = None
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
-
+    especialidad: Optional[str] = None
     # CORRECCIÓN: Se usa 'field_validator' en Pydantic v2
     @field_validator('email_institucional')
     @classmethod

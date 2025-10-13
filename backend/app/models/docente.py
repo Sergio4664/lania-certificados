@@ -12,8 +12,8 @@ class Docente(Base):
     email_personal = Column(CITEXT, nullable=True)
     telefono = Column(String(20), nullable=True)
     whatsapp = Column(String(20), nullable=True)
+    especialidad = Column(String(255), nullable=True)
 
-    # Relación con la tabla de asociación
     productos_educativos = relationship(
         "ProductoEducativo",
         secondary="productos_educativos_docentes",
