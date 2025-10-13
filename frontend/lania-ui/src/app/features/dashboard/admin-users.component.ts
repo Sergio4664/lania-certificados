@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 // 👇 1. CORRECCIÓN: Importa el verdadero AuthService, no el interceptor.
-import { AuthService } from '@core/auth-token.interceptor';
+import { AuthService } from '@app/core/auth.service';
 import { NotificationService } from '../../shared/services/notification.service';
 
 // Interfaces para los usuarios
