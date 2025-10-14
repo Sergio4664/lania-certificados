@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator
 from datetime import date
 from typing import List, Optional
 from app.models.enums import TipoProductoEnum, ModalidadEnum
-from .docente import Docente
+from .docente import DocenteOut
 
 class ProductoEducativoBase(BaseModel):
     nombre: str
@@ -50,7 +50,7 @@ class ProductoEducativoUpdate(BaseModel):
 
 class ProductoEducativo(ProductoEducativoBase):
     id: int
-    docentes: List[Docente] = []
+    docentes: List[DocenteOut] = []
 
     class Config:
         from_attributes = True

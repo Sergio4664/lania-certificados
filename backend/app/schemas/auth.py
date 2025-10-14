@@ -2,6 +2,13 @@ from pydantic import BaseModel
 from typing import Optional
 import enum
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 # El único rol con acceso al sistema es ADMINISTRADOR
 class UserRole(str, enum.Enum):
     ADMINISTRADOR = "administrador"

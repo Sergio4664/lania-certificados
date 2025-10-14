@@ -28,7 +28,10 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
         horas=producto.horas,
         fecha_inicio=producto.fecha_inicio,
         fecha_fin=producto.fecha_fin,
-        docentes=docentes
+        docentes=docentes,
+        tipo_producto=producto.tipo_producto,
+        modalidad=producto.modalidad,
+        competencias=producto.competencias
     )
     db.add(db_producto)
     db.commit()

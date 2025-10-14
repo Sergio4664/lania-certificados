@@ -1,24 +1,26 @@
-import { HttpHandlerFn, HttpRequest } from '@angular/common/http';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from './auth.service';
 
 /**
- * Interceptor funcional que añade el token de autenticación a las cabeceras
- * de las peticiones HTTP salientes si el usuario está autenticado.
+ * Interceptor funcional que añade el token de autenticación JWT a las cabeceras
+ * de las solicitudes HTTP salientes.
  */
-export const authTokenInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
+export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
+  // Inyectamos el AuthService para poder obtener el token
   const authService = inject(AuthService);
   const token = authService.getToken();
 
-  // Si no hay token, la petición sigue su curso sin modificaciones.
+  // Si no hay un token, la solicitud continúa sin modificarse.
   if (!token) {
     return next(req);
   }
 
-  // Si hay token, se clona la petición y se añade la cabecera de autorización.
-  const authReq = req.clone({
-    headers: req.headers.set('Authorization', `Bearer ${token}`),
+  // Si existe un token, clonamos la solicitud para añadir la cabecera 'Authorization'.
+  const clonedReq = req.clone({
+    headers: req.headers.set('Authorization', `Bearer ${token}`)
   });
 
-  return next(authReq);
+  // Pasamos la solicitud modificada al siguiente manejador en la cadena.
+  return next(clonedReq);
 };

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/auth.service';
-import { LoginDTO } from '@shared/interfaces/auth.interface';
+import { LoginCredentials } from '@shared/interfaces/auth.interface';
 
 
 
@@ -216,7 +216,7 @@ export default class LoginComponent implements OnInit {
     this.isLoading = true;
     this.error = '';
     
-    const credentials: LoginDTO = this.loginForm.value;
+    const credentials: LoginCredentials = this.loginForm.value;
     
     this.authService.login(credentials).subscribe({
       next: (response) => {

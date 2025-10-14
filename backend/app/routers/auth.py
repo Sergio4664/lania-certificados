@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
+import secrets
+import hashlib
 
 from app.database import get_db
 from app import models
-# --- CORRECCIÓN DE IMPORTACIÓN ---
-# En lugar de "from app import schemas", importamos las clases específicas que necesitamos.
-from app.schemas.auth import Token, UserAuth, UserRole
+from app.schemas.auth import Token, UserAuth, UserRole, ForgotPasswordRequest, ResetPasswordRequest
 from app.core import security
+# Importamos el módulo de email_service para llamarlo de forma clara
+from app.services import email_service
 
 router = APIRouter(
     tags=["Auth"]
@@ -23,7 +25,6 @@ def authenticate_admin(db: Session, email: str, password: str):
         return None
     return admin
 
-# Ahora usamos 'Token' directamente, sin el prefijo 'schemas.'
 @router.post("/token", response_model=Token)
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_admin(db, email=form_data.username, password=form_data.password)
@@ -39,12 +40,10 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
 
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        # Usamos 'UserRole' directamente
         data={"sub": user.email_institucional, "rol": UserRole.ADMINISTRADOR.value},
         expires_delta=access_token_expires
     )
 
-    # Usamos 'UserAuth' directamente
     user_auth_data = UserAuth(
         id=user.id,
         nombre_completo=user.nombre_completo,
@@ -53,3 +52,69 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
     )
 
     return {"access_token": access_token, "token_type": "bearer", "user": user_auth_data}
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    admin = db.query(models.Administrador).filter(models.Administrador.email_institucional == request.email).first()
+    if not admin:
+        # Por seguridad, no revelamos si el correo existe o no
+        return {"message": "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña."}
+
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+    expires_delta = timedelta(hours=1)
+    expires_at = datetime.now(timezone.utc) + expires_delta
+    
+    existing_token = db.query(models.TokenRestablecimientoPassword).filter(models.TokenRestablecimientoPassword.email == request.email).first()
+
+    if existing_token:
+        existing_token.token = token_hash
+        existing_token.fecha_expiracion = expires_at
+    else:
+        db.add(models.TokenRestablecimientoPassword(email=request.email, token=token_hash, fecha_expiracion=expires_at))
+    
+    db.commit()
+
+    # Asegúrate que el link coincida con tu ruta del frontend
+    reset_link = f"http://localhost:4200/reset-password/{token}"
+
+    # --- AJUSTE CLAVE AQUÍ ---
+    # Llamamos a TU función `send_password_reset_email` con los parámetros que espera:
+    # recipient_email, user_name, y reset_link.
+    background_tasks.add_task(
+        email_service.send_password_reset_email,
+        recipient_email=admin.email_institucional,
+        user_name=admin.nombre_completo,  # Pasamos el nombre del admin
+        reset_link=reset_link
+    )
+
+    return {"message": "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña."}
+
+@router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    token_hash = hashlib.sha256(request.token.encode()).hexdigest()
+    
+    reset_token = db.query(models.TokenRestablecimientoPassword).filter(models.TokenRestablecimientoPassword.token == token_hash).first()
+
+    if not reset_token or reset_token.fecha_expiracion < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="El token es inválido o ha expirado.")
+
+    admin = db.query(models.Administrador).filter(models.Administrador.email_institucional == reset_token.email).first()
+    if not admin:
+        # Este error es poco probable si el token existe, pero es una buena práctica de seguridad
+        raise HTTPException(status_code=400, detail="Usuario no encontrado.")
+
+    hashed_password = security.get_password_hash(request.new_password)
+    admin.password_hash = hashed_password
+    db.delete(reset_token)  # El token se usa una sola vez
+    db.commit()
+
+    return {"message": "Contraseña actualizada exitosamente."}

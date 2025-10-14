@@ -1,9 +1,10 @@
+//RUTA: frontend/lania-ui/src/app/core/auth.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
-// Estas interfaces las actualizaremos en el siguiente paso
+// Asegúrate de que esta interfaz ahora se llame LoginDTO como corregimos antes
 import { AuthResponse, CurrentUser, LoginCredentials } from '@shared/interfaces/auth.interface';
 
 @Injectable({ providedIn: 'root' })
@@ -22,7 +23,8 @@ export class AuthService {
    */
   login(credentials: LoginCredentials): Observable<AuthResponse> {
     const formData = new FormData();
-    formData.append('username', credentials.username);
+    // El backend espera 'username', no 'email', para el login.
+    formData.append('username', credentials.username); 
     formData.append('password', credentials.password);
 
     return this.http.post<AuthResponse>(`${this.apiUrl}/token`, formData).pipe(
@@ -75,5 +77,26 @@ export class AuthService {
   private saveAuthData(token: string, user: CurrentUser): void {
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  // --- MÉTODOS AÑADIDOS ---
+
+  /**
+   * Solicita un enlace para restablecer la contraseña.
+   * @param email El correo del usuario.
+   */
+  forgotPassword(email: string): Observable<{ message: string }> {
+    // Este endpoint espera un cuerpo JSON, no FormData
+    return this.http.post<{ message: string }>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  /**
+   * Envía el token y la nueva contraseña para actualizarla.
+   * @param token El token recibido en el correo.
+   * @param newPassword La nueva contraseña.
+   */
+  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    // Este endpoint también espera un cuerpo JSON
+    return this.http.post<{ message: string }>(`${this.apiUrl}/reset-password`, { token, new_password: newPassword });
   }
 }

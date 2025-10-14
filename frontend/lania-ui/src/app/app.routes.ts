@@ -1,48 +1,53 @@
 import { Routes } from '@angular/router';
-import LoginComponent from './features/auth/login/login.component';
-import PublicVerifyComponent from './features/public-verify/public-verify.component';
 import { authGuard } from './core/auth.guard';
 
-// Importa los nuevos componentes que vas a crear
-import {ForgotPasswordComponent} from '@features/auth/forgot-password/forgot-password.component';
-import {ResetPasswordComponent} from '@features/auth/reset-password/reset-password.component';
+// --- Vistas de Autenticación y Públicas ---
+import LoginComponent from '@features/auth/login/login.component';
+import { ForgotPasswordComponent } from '@features/auth/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from '@features/auth/reset-password/reset-password.component';
+// Nota: Asumo que tienes un componente PublicVerifyComponent, aunque no se listó en los archivos
+// import PublicVerifyComponent from './features/public-verify/public-verify.component';
 
-// Admin
-import DashboardLayoutComponent from './features/dashboard/dashboard-layout.component';
-import AdminOverviewComponent from './features/dashboard/admin-overview.component';
-import { AdminCoursesComponent } from './features/dashboard/admin-courses.component';
-import AdminDocentesComponent from './features/dashboard/admin-docentes.component';
-import AdminParticipantsComponent from './features/dashboard/admin-participants.component';
-import AdminCertificatesComponent from './features/dashboard/admin-certificates.component';
-import { AdminUsersComponent } from './features/admin/users/admin-users.component';
+// --- Layout Principal del Panel de Administración ---
+import DashboardLayoutComponent from '@features/dashboard/dashboard-layout.component';
 
+// --- Páginas del Panel de Administración ---
+import AdminOverviewComponent from '@features/dashboard/overview/admin-overview.component';
+import AdminProductosEducativosComponent from './features/dashboard/productos-educativos/admin-productos-educativos.component';
+import AdminDocentesComponent from './features/dashboard/docentes/admin-docentes.component';
+import AdminParticipantsComponent from './features/dashboard/participantes/admin-participantes.component';
+import AdminCertificatesComponent from './features/dashboard/certificados/admin-certificados.component';
+// Corregido: El componente real se llama 'AdminAdministradoresComponent'
+import AdminAdministradoresComponent from '@features/admin/administradores/admin-administradores.component';
 export const routes: Routes = [
+  // --- Rutas Públicas (no requieren autenticación) ---
   { path: 'login', component: LoginComponent },
-  { path: 'v/:token', component: PublicVerifyComponent },
-
-  // --- AÑADE LAS NUEVAS RUTAS PÚBLICAS ---
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password/:token', component: ResetPasswordComponent },
+  // { path: 'v/:token', component: PublicVerifyComponent }, // Ruta para la verificación pública de certificados
 
-  // Ruta principal del dashboard que carga el layout
+  // --- Rutas Protegidas del Panel de Administración ---
   {
     path: 'admin',
     component: DashboardLayoutComponent,
-    canActivate: [authGuard], // Este guard protege todas las rutas hijas
+    canActivate: [authGuard], // Este guard protege a todas las rutas hijas
     children: [
       { path: 'dashboard', component: AdminOverviewComponent },
-      { path: 'courses', component: AdminCoursesComponent },
+      { path: 'productos-educativos', component: AdminProductosEducativosComponent }, // Corregido para coincidir con el nombre real
       { path: 'docentes', component: AdminDocentesComponent },
-      { path: 'participants', component: AdminParticipantsComponent },
-      { path: 'certificates', component: AdminCertificatesComponent },
-      { path: 'usuarios', component: AdminUsersComponent},
-      // Redirigido a la vista general por defecto
+      { path: 'participantes', component: AdminParticipantsComponent }, // Corregido para coincidir con el nombre real
+      { path: 'certificados', component: AdminCertificatesComponent }, // Corregido para coincidir con el nombre real
+      { path: 'administradores', component: AdminAdministradoresComponent }, // Corregido para coincidir con el nombre real
+      
+      // Si el usuario va a '/admin', se le redirige al dashboard
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ] 
   },
   
-  // Redirigir a login por defecto si la ruta está vacía
+  // --- Redirecciones Globales ---
+  // Si la ruta está vacía, redirige al login
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  // Ruta wildcard para cualquier otra URL no encontrada
+  
+  // Si la ruta no coincide con ninguna anterior, redirige al login
   { path: '**', redirectTo: 'login' }
 ];
