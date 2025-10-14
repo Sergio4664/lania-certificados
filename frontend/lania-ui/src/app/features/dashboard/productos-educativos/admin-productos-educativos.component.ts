@@ -1,28 +1,28 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule, FormArray } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
-// Interfaces actualizadas
+// Interfaces
 import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } from '@shared/interfaces/producto-educativo.interface';
+import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
 import { Participante } from '@shared/interfaces/participante.interface';
 import { Inscripcion, InscripcionCreate } from '@shared/interfaces/inscripcion.interface';
 import { Certificado, CertificadoCreate } from '@shared/interfaces/certificado.interface';
 
-// Servicios actualizados
+// Servicios
 import { ProductoEducativoService } from '@shared/services/producto-educativo.service';
 import { DocenteService } from '@shared/services/docente.service';
 import { NotificationService } from '@shared/services/notification.service';
 import { InscripcionService } from '@shared/services/inscripcion.service';
 import { CertificadoService } from '@shared/services/certificado.service';
 import { ParticipanteService } from '@shared/services/participante.service';
-import { DocenteDTO } from '@app/shared/interfaces/docente.interfaces';
 
 
 @Component({
   selector: 'app-admin-productos-educativos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, DatePipe], // <-- FormsModule AÑADIDO
   templateUrl: './admin-productos-educativos.component.html',
   styleUrls: ['./admin-productos-educativos.component.css']
 })
@@ -52,7 +52,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   showCompetenciesModal = false;
   searchTerm: string = '';
 
-  // Formularios Reactivos
+  // Formularios
   courseForm: FormGroup;
   competenciesList: string[] = [];
   participantToAdd: number | null = null;
@@ -61,12 +61,12 @@ export default class AdminProductosEducativosComponent implements OnInit {
   constructor() {
     this.courseForm = this.fb.group({
       nombre: ['', Validators.required],
-      horas: [0, [Validators.required, Validators.min(1)]],
+      horas: [8, [Validators.required, Validators.min(1)]],
       fecha_inicio: ['', Validators.required],
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: [[]],
+      docente_ids: this.fb.array([]), // Se manejará como FormArray
       competencias: ['']
     });
   }
@@ -96,6 +96,41 @@ export default class AdminProductosEducativosComponent implements OnInit {
     );
   }
 
+  // --- MÉTODOS QUE FALTABAN ---
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+    } else {
+      this.selectedFile = null;
+    }
+  }
+
+  uploadParticipants(): void {
+    if (this.selectedFile && this.selectedCourse) {
+      this.notificationSvc.showError('La carga de archivos aún no está implementada.');
+      console.log(`Simulando carga de ${this.selectedFile.name} para el curso ${this.selectedCourse.nombre}`);
+    }
+  }
+
+  toggleDocenteSelection(docenteId: number, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    const formArray = this.courseForm.get('docente_ids') as FormArray;
+
+    if (isChecked) {
+      formArray.push(this.fb.control(docenteId));
+    } else {
+      const index = formArray.controls.findIndex(x => x.value === docenteId);
+      formArray.removeAt(index);
+    }
+  }
+
+  getCourseColor(id: number): string {
+    const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C'];
+    return colors[id % colors.length];
+  }
+
   // --- Lógica del Formulario de Producto ---
 
   resetCourseForm() {
@@ -106,9 +141,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: '',
       tipo_producto: 'CURSO_EDUCATIVO',
       modalidad: 'PRESENCIAL',
-      docente_ids: [],
       competencias: ''
     });
+    // Limpiar el FormArray
+    (this.courseForm.get('docente_ids') as FormArray).clear();
     this.editingCourse = null;
   }
 
@@ -119,10 +155,28 @@ export default class AdminProductosEducativosComponent implements OnInit {
   
   editCourse(producto: ProductoEducativo) {
     this.editingCourse = producto;
+    
+    // Convertir competencias de JSON string a string con saltos de línea
+    let competenciasStr = '';
+    try {
+      const competenciasArr = JSON.parse(producto.competencias || '[]');
+      competenciasStr = competenciasArr.join('\n');
+    } catch (e) {
+      competenciasStr = producto.competencias || ''; // Si no es JSON, usa el valor directo
+    }
+    
     this.courseForm.patchValue({
       ...producto,
-      docente_ids: producto.docentes.map(d => d.id)
+      competencias: competenciasStr,
     });
+    
+    // Setear los docentes en el FormArray
+    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    formArray.clear();
+    producto.docentes.forEach(docente => {
+      formArray.push(this.fb.control(docente.id));
+    });
+
     this.showCourseForm = true;
   }
 
@@ -131,16 +185,24 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.notificationSvc.showError("Por favor, complete todos los campos requeridos.");
       return;
     }
-    const formValue = this.courseForm.value;
+    const formValue = this.courseForm.getRawValue();
+
+    // Convertir competencias a un JSON string array antes de enviar
+    const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
+    const payload = {
+        ...formValue,
+        competencias: JSON.stringify(competenciasArray)
+    };
+
     if (this.editingCourse) {
-      this.updateCourse(formValue);
+      this.updateCourse(payload);
     } else {
-      this.createCourse(formValue);
+      this.createCourse(payload);
     }
   }
   
-  createCourse(formValue: any) {
-    this.productoSvc.create(formValue).subscribe({
+  createCourse(payload: ProductoEducativoCreate) {
+    this.productoSvc.create(payload).subscribe({
       next: () => {
         this.notificationSvc.showSuccess('Producto educativo creado exitosamente.');
         this.loadInitialData();
@@ -150,9 +212,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
   
-  updateCourse(formValue: any) {
+  updateCourse(payload: ProductoEducativoUpdate) {
     if (!this.editingCourse) return;
-    this.productoSvc.update(this.editingCourse.id, formValue).subscribe({
+    this.productoSvc.update(this.editingCourse.id, payload).subscribe({
       next: () => {
         this.notificationSvc.showSuccess('Producto educativo actualizado exitosamente.');
         this.loadInitialData();
@@ -242,8 +304,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   issueCertificate(inscripcionId: number) {
     const payload: CertificadoCreate = {
       inscripcion_id: inscripcionId,
-      folio: `LANIA-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-      fecha_emision: new Date().toISOString().split('T')[0]
+      folio: '',
+      fecha_emision: ''
     };
 
     this.certificadoSvc.create(payload).subscribe({
@@ -270,7 +332,18 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- Lógica de Competencias Modal ---
   
   openCompetenciesModal() {
-    this.competenciesList = this.courseForm.value.competencias?.split('\n').filter((c:string) => c.trim()) || [''];
+    let competenciasValue = this.courseForm.value.competencias || '';
+    // Intenta parsear por si es un string JSON
+    try {
+        const parsed = JSON.parse(competenciasValue);
+        if (Array.isArray(parsed)) {
+            competenciasValue = parsed.join('\n');
+        }
+    } catch (e) {
+        // No es JSON, usa el valor como está
+    }
+
+    this.competenciesList = competenciasValue.split('\n').filter((c:string) => c.trim()) || [''];
     if (this.competenciesList.length === 0) this.competenciesList.push('');
     this.showCompetenciesModal = true;
   }
@@ -286,4 +359,3 @@ export default class AdminProductosEducativosComponent implements OnInit {
   removeCompetency = (index: number) => { if (this.competenciesList.length > 1) this.competenciesList.splice(index, 1); }
   trackByIndex = (index: number) => index;
 }
-

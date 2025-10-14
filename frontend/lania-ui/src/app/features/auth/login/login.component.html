@@ -1,0 +1,62 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="header-section">
+      <div class="logo-container">
+        <!-- Puedes poner un <img> aquí si tienes un logo -->
+        <h1>LANIA</h1>
+        <p>Laboratorio Nacional de Informática Avanzada</p>
+      </div>
+      <h2>Sistema de Constancias</h2>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Correo Institucional</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="usuario@lania.edu.mx">
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+            El correo es requerido.
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+            Por favor ingrese un correo válido.
+          </mat-error>
+        </mat-form-field>
+      </div>
+      
+      <div class="form-group">
+        <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Contraseña</mat-label>
+            <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'">
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+                <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+            </button>
+            <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+                La contraseña es requerida.
+            </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div *ngIf="error" class="error-message">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+      
+      <button mat-raised-button color="primary" type="submit" class="login-btn" [disabled]="loginForm.invalid || isLoading">
+        <mat-spinner *ngIf="isLoading" diameter="24" class="mr-2"></mat-spinner>
+        <span *ngIf="!isLoading">Iniciar Sesión</span>
+        <span *ngIf="isLoading">Iniciando...</span>
+      </button>
+
+      <div class="text-center mt-6">
+        <a routerLink="/forgot-password" class="text-sm text-blue-600 hover:underline">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </div>
+    </form>
+    
+    <div class="footer">
+      <p>&copy; 2025 LANIA. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</div>

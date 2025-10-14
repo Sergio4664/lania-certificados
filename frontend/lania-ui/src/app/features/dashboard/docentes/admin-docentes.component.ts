@@ -1,5 +1,7 @@
+//ruta: frontend/lania-ui/src/app/features/dashboard/docentes/admin-docentes.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 
 // Interfaces y Servicios actualizados y centralizados
@@ -10,7 +12,7 @@ import { NotificationService } from '@app/shared/services/notification.service';
 @Component({
   selector: 'app-admin-docentes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './admin-docentes.component.html',
   styleUrls: ['./admin-docentes.component.css']
 })
