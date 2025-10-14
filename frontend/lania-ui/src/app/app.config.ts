@@ -1,18 +1,18 @@
-import { ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { routes } from './app.routes';
+import { provideAnimations } from '@angular/platform-browser/animations'; // <-- IMPORTANTE: Añadir esto
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
-// --- CORRECCIÓN DE LA RUTA DE IMPORTACIÓN ---
-// Ahora importamos el interceptor desde su propio archivo.
-import { authTokenInterceptor } from '@app/core/auth.interceptor';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { routes } from './app.routes';
+import { authTokenInterceptor } from './core/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    // Usamos el interceptor funcional con el nuevo sistema de `provideHttpClient`
     provideHttpClient(withInterceptors([authTokenInterceptor])),
-    provideAnimationsAsync()
+    provideAnimations(), // <-- Y AÑADIR ESTO AQUÍ
+    importProvidersFrom(MatSnackBarModule)
   ]
 };
+

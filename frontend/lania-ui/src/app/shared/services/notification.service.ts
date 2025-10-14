@@ -1,44 +1,36 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '@environments/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class NotificationService {
-  private http = inject(HttpClient);
-  private base = environment.apiBase;
 
-  // TODO en FastAPI: POST /api/notifications/email
-  sendEmail(payload: {to:string; subject:string; html:string}) {
-    return this.http.post(`${this.base}/api/notifications/email`, payload);
-  }
-
-  // TODO en FastAPI: POST /api/notifications/whatsapp
-  sendWhatsApp(payload: {to:string; message:string}) {
-    return this.http.post(`${this.base}/api/notifications/whatsapp`, payload);
-  }
-
-  constructor(){ }
-
+  private snackBar = inject(MatSnackBar);
 
   /**
-   * Muestra una notificación de éxito.
-   * Puedes reemplazar el alert() con tu librería de notificaciones preferida.
+   * Muestra una notificación de error (roja).
    * @param message El mensaje a mostrar.
+   * @param action El texto del botón de acción (ej. 'Cerrar').
    */
-  showSuccess(message: string, p0: string): void {
-    // Ejemplo simple con alert. ¡Puedes mejorarlo!
-    alert(`Éxito: ${message}`);
+  showError(message: string, action: string = 'Cerrar'): void {
+    this.snackBar.open(message, action, {
+      duration: 5000, // 5 segundos
+      panelClass: ['snackbar-error'],
+      verticalPosition: 'top'
+    });
   }
 
   /**
-   * Muestra una notificación de error.
-   * Puedes reemplazar el alert() con tu librería de notificaciones preferida.
+   * Muestra una notificación de éxito (verde).
    * @param message El mensaje a mostrar.
+   * @param action El texto del botón de acción (opcional).
    */
-  showError(message: string): void {
-    // Ejemplo simple con alert. ¡Puedes mejorarlo!
-    console.error(message); // También es útil registrar el error en la consola
-    alert(`Error: ${message}`);
+  showSuccess(message: string, action: string = 'Cerrar'): void { // <-- CORREGIDO: El segundo argumento ahora es opcional.
+    this.snackBar.open(message, action, {
+      duration: 3000, // 3 segundos
+      panelClass: ['snackbar-success'],
+      verticalPosition: 'top'
+    });
   }
-
 }

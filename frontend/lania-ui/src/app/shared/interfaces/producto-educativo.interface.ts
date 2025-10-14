@@ -1,39 +1,23 @@
-// Importamos la interfaz de Docente porque un producto educativo tiene docentes asociados.
-import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
+import { DocenteDTO } from "./docente.interfaces";
+import { Inscripcion } from "./inscripcion.interface";
 
-/**
- * Representa la estructura completa de un producto educativo,
- * tal como se recibe desde el backend.
- */
 export interface ProductoEducativo {
   id: number;
   nombre: string;
   horas: number;
-  fecha_inicio: string; // Las fechas se manejan como strings en formato YYYY-MM-DD
-  fecha_fin: string;
+  fecha_inicio: string; // O Date, si lo conviertes
+  fecha_fin: string;    // O Date, si lo conviertes
+  competencias: string;
   docentes: DocenteDTO[];
+  inscripciones: Inscripcion[];
+
+  // --- PROPIEDADES AÑADIDAS ---
+  tipo_producto?: string;
+  modalidad?: string;
 }
 
-/**
- * Representa la estructura de datos necesaria para crear
- * un nuevo producto educativo.
- */
-export interface ProductoEducativoCreate {
-  nombre: string;
-  horas: number;
-  fecha_inicio: string;
-  fecha_fin: string;
-  docentes_ids: number[];
-}
+export type ProductoEducativoCreate = Omit<ProductoEducativo, 'id' | 'docentes' | 'inscripciones'> & {
+  docente_ids: number[];
+};
 
-/**
- * Representa la estructura de datos para actualizar un producto educativo.
- * Todos los campos son opcionales para permitir actualizaciones parciales.
- */
-export interface ProductoEducativoUpdate {
-  nombre?: string;
-  horas?: number;
-  fecha_inicio?: string;
-  fecha_fin?: string;
-  docentes_ids?: number[];
-}
+export type ProductoEducativoUpdate = Partial<ProductoEducativoCreate>;
