@@ -1,18 +1,35 @@
 //ruta: frontend/lania-ui/src/app/features/auth/reset-password/reset-password.component.ts
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@app/core/auth.service';
 import { NotificationService } from '@shared/services/notification.service';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-reset-password',
   templateUrl: './reset-password.component.html',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule
+  ]
 })
 export class ResetPasswordComponent implements OnInit {
   resetPasswordForm: FormGroup;
   isLoading = false;
   token: string | null = null;
+  hidePassword = true;
 
   constructor(
     private fb: FormBuilder,
