@@ -1,34 +1,40 @@
 # create_user.py
 from app.database import SessionLocal
-from app.models.user import User
-from app.core.security import hash_password
+from app.models.administradores import Administrador
+from app.core.security import get_password_hash
 
 def create_user():
+    """
+    Crea un usuario administrador inicial en la base de datos si no existe.
+    """
     db = SessionLocal()
     try:
-        # Verificar si ya existe
-        existing = db.query(User).filter(User.email == "lania_ser").first()
-        if existing:
-            print("❌ Usuario ya existe")
+        admin_email = "sergio@lania.edu.mx"
+        admin_nombre = "Sergio Cervantes"
+        admin_password = "12345678"
+
+        existing_admin = db.query(Administrador).filter(Administrador.email_institucional == admin_email).first()
+        if existing_admin:
+            print(f"❌ El usuario con el correo '{admin_email}' ya existe.")
             return
             
-        # Crear usuario
-        user = User(
-            email="lania_ser",
-            full_name="Sergio LANIA",
-            role="ADMIN",
-            password_hash=hash_password("12345678"),
-            is_active=True
+        # CORRECCIÓN: Se usa 'password_hash' para que coincida con el modelo en administradores.py
+        nuevo_administrador = Administrador(
+            email_institucional=admin_email,
+            nombre_completo=admin_nombre,
+            password_hash=get_password_hash(admin_password) 
         )
-        db.add(user)
+        
+        db.add(nuevo_administrador)
         db.commit()
-        db.refresh(user)
-        print(f"✅ Usuario creado exitosamente!")
-        print(f"   Email: {user.email}")
-        print(f"   ID: {user.id}")
+        db.refresh(nuevo_administrador)
+        
+        print("✅ ¡Usuario administrador creado exitosamente!")
+        print(f"   Email: {nuevo_administrador.email_institucional}")
+        print(f"   ID: {nuevo_administrador.id}")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Ocurrió un error al crear el usuario: {e}")
         db.rollback()
     finally:
         db.close()
