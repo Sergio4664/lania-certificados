@@ -1,3 +1,4 @@
+# Ruta: backend/app/routers/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -9,7 +10,6 @@ from app.database import get_db
 from app import models
 from app.schemas.auth import Token, UserAuth, UserRole, ForgotPasswordRequest, ResetPasswordRequest
 from app.core import security
-# Importamos el módulo de email_service para llamarlo de forma clara
 from app.services import email_service
 
 router = APIRouter(
@@ -28,7 +28,7 @@ def authenticate_admin(db: Session, email: str, password: str):
 @router.post("/token", response_model=Token)
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_admin(db, email=form_data.username, password=form_data.password)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -39,6 +39,9 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
         raise HTTPException(status_code=400, detail="Usuario inactivo")
 
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    # --- CORRECCIÓN CLAVE AQUÍ ---
+    # La función create_access_token espera un diccionario de datos como primer argumento.
     access_token = security.create_access_token(
         data={"sub": user.email_institucional, "rol": UserRole.ADMINISTRADOR.value},
         expires_delta=access_token_expires
@@ -53,6 +56,7 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
 
     return {"access_token": access_token, "token_type": "bearer", "user": user_auth_data}
 
+# ... (el resto del archivo de forgot-password y reset-password se mantiene igual)
 @router.post("/forgot-password")
 async def forgot_password(
     request: ForgotPasswordRequest,
@@ -61,7 +65,6 @@ async def forgot_password(
 ):
     admin = db.query(models.Administrador).filter(models.Administrador.email_institucional == request.email).first()
     if not admin:
-        # Por seguridad, no revelamos si el correo existe o no
         return {"message": "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña."}
 
     token = secrets.token_urlsafe(32)
@@ -69,7 +72,7 @@ async def forgot_password(
 
     expires_delta = timedelta(hours=1)
     expires_at = datetime.now(timezone.utc) + expires_delta
-    
+
     existing_token = db.query(models.TokenRestablecimientoPassword).filter(models.TokenRestablecimientoPassword.email == request.email).first()
 
     if existing_token:
@@ -77,19 +80,15 @@ async def forgot_password(
         existing_token.fecha_expiracion = expires_at
     else:
         db.add(models.TokenRestablecimientoPassword(email=request.email, token=token_hash, fecha_expiracion=expires_at))
-    
+
     db.commit()
 
-    # Asegúrate que el link coincida con tu ruta del frontend
     reset_link = f"http://localhost:4200/reset-password/{token}"
 
-    # --- AJUSTE CLAVE AQUÍ ---
-    # Llamamos a TU función `send_password_reset_email` con los parámetros que espera:
-    # recipient_email, user_name, y reset_link.
     background_tasks.add_task(
         email_service.send_password_reset_email,
         recipient_email=admin.email_institucional,
-        user_name=admin.nombre_completo,  # Pasamos el nombre del admin
+        user_name=admin.nombre_completo,
         reset_link=reset_link
     )
 
@@ -101,7 +100,7 @@ async def reset_password(
     db: Session = Depends(get_db)
 ):
     token_hash = hashlib.sha256(request.token.encode()).hexdigest()
-    
+
     reset_token = db.query(models.TokenRestablecimientoPassword).filter(models.TokenRestablecimientoPassword.token == token_hash).first()
 
     if not reset_token or reset_token.fecha_expiracion < datetime.now(timezone.utc):
@@ -109,12 +108,11 @@ async def reset_password(
 
     admin = db.query(models.Administrador).filter(models.Administrador.email_institucional == reset_token.email).first()
     if not admin:
-        # Este error es poco probable si el token existe, pero es una buena práctica de seguridad
         raise HTTPException(status_code=400, detail="Usuario no encontrado.")
 
     hashed_password = security.get_password_hash(request.new_password)
     admin.password_hash = hashed_password
-    db.delete(reset_token)  # El token se usa una sola vez
+    db.delete(reset_token)
     db.commit()
 
     return {"message": "Contraseña actualizada exitosamente."}
