@@ -1,14 +1,14 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-
-// Interfaces y Servicios actualizados
 import { Administrador } from '@shared/interfaces/administrador.interface';
 import { AdministradorService } from '@shared/services/administrador.service';
+import { NotificationService } from '@shared/services/notification.service'; // Asumiendo que este servicio existe
 
 @Component({
   selector: 'app-admin-administradores',
   standalone: true,
+  // ReactiveFormsModule ya se importa aquí, lo cual es correcto para componentes standalone
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './admin-administradores.component.html',
   styleUrls: ['./admin-administradores.component.css']
@@ -16,6 +16,7 @@ import { AdministradorService } from '@shared/services/administrador.service';
 export default class AdminAdministradoresComponent implements OnInit {
   private adminService = inject(AdministradorService);
   private fb = inject(FormBuilder);
+  private notificationService = inject(NotificationService);
 
   administradores: Administrador[] = [];
   adminForm: FormGroup;
@@ -25,18 +26,32 @@ export default class AdminAdministradoresComponent implements OnInit {
   isLoading = false;
 
   constructor() {
+    // Definimos el formulario con todas las validaciones
     this.adminForm = this.fb.group({
-      nombre_completo: ['', Validators.required],
-      email_institucional: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
-      telefono: [''],
-      whatsapp: ['']
+      nombre_completo: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]], // Email de la empresa
+      email_institucional: ['', [
+        Validators.required,
+        Validators.pattern(/^[a-zA-Z0-9._%+-]+@lania\.edu\.mx$/)
+      ]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      telefono: ['', [
+        Validators.required,
+        Validators.pattern(/^(\d{10}|\d{12})$/)
+      ]],
+      whatsapp: ['', [
+        Validators.required,
+        Validators.pattern(/^(\d{10}|\d{12})$/)
+      ]]
     });
   }
 
   ngOnInit(): void {
     this.loadAdmins();
   }
+
+  // Helper para acceder a los controles del formulario en el HTML
+  get f() { return this.adminForm.controls; }
 
   loadAdmins(): void {
     this.isLoading = true;
@@ -47,7 +62,7 @@ export default class AdminAdministradoresComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        alert('Error al cargar los administradores.');
+        this.notificationService.showError('Error al cargar los administradores.', 'Error');
       }
     });
   }
@@ -59,23 +74,22 @@ export default class AdminAdministradoresComponent implements OnInit {
     if (admin) {
       this.isEditing = true;
       this.currentAdminId = admin.id;
-      // Pre-llenamos el formulario con los datos del admin
       this.adminForm.patchValue(admin);
-      // La contraseña es opcional al editar
-      this.adminForm.get('password')?.clearValidators();
-      this.adminForm.get('password')?.updateValueAndValidity();
+      this.f['password'].clearValidators();
+      this.f['password'].updateValueAndValidity();
     } else {
       this.isEditing = false;
       this.currentAdminId = null;
-      // La contraseña es requerida al crear
-      this.adminForm.get('password')?.setValidators([Validators.required]);
-      this.adminForm.get('password')?.updateValueAndValidity();
+      this.f['password'].setValidators([Validators.required, Validators.minLength(8)]);
+      this.f['password'].updateValueAndValidity();
     }
   }
 
   onSubmit(): void {
+    this.adminForm.markAllAsTouched();
+
     if (this.adminForm.invalid) {
-      this.adminForm.markAllAsTouched();
+      this.notificationService.showError('Por favor, rellene todos los campos obligatorios correctamente.', 'Formulario Inválido');
       return;
     }
 
@@ -85,11 +99,11 @@ export default class AdminAdministradoresComponent implements OnInit {
 
     action.subscribe({
       next: () => {
-        alert(`Administrador ${this.isEditing ? 'actualizado' : 'creado'} con éxito.`);
+        this.notificationService.showSuccess(`Administrador ${this.isEditing ? 'actualizado' : 'creado'} con éxito.`, 'Éxito');
         this.loadAdmins();
         this.toggleForm();
       },
-      error: (err) => alert(err.error?.detail || 'Ocurrió un error.')
+      error: (err) => this.notificationService.showError(err.error?.detail || 'Ocurrió un error.', 'Error')
     });
   }
 
@@ -97,10 +111,10 @@ export default class AdminAdministradoresComponent implements OnInit {
     if (confirm(`¿Estás seguro de que quieres eliminar a ${admin.nombre_completo}?`)) {
       this.adminService.delete(admin.id).subscribe({
         next: () => {
-          alert('Administrador eliminado con éxito.');
+          this.notificationService.showSuccess('Administrador eliminado con éxito.', 'Eliminado');
           this.loadAdmins();
         },
-        error: (err) => alert(err.error?.detail || 'Error al eliminar administrador.')
+        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar administrador.', 'Error')
       });
     }
   }

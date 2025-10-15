@@ -1,3 +1,6 @@
+/* --- AÑADE ESTA LÍNEA AL PRINCIPIO DE TODO --- */
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
 /* You can add global styles to this file, and also import other style files */
 /* Global Styles */
 * {
@@ -151,3 +154,15 @@ textarea:focus {
   }
 }
 
+/* --- AÑADE ESTOS ESTILOS AL FINAL DEL ARCHIVO --- */
+/* Estilo para notificaciones de error */
+.snackbar-error {
+  background-color: #f44336; /* Rojo */
+  color: white;
+}
+
+/* Estilo para notificaciones de éxito */
+.snackbar-success {
+  background-color: #4CAF50; /* Verde */
+  color: white;
+}

@@ -26,7 +26,7 @@ export class NotificationService {
    * @param message El mensaje a mostrar.
    * @param action El texto del botón de acción (opcional).
    */
-  showSuccess(message: string, action: string = 'Cerrar'): void { // <-- CORREGIDO: El segundo argumento ahora es opcional.
+  showSuccess(message: string, action: string = 'Cerrar'): void {
     this.snackBar.open(message, action, {
       duration: 3000, // 3 segundos
       panelClass: ['snackbar-success'],

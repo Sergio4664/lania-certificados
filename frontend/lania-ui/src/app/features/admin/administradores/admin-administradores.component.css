@@ -55,6 +55,18 @@ h1 {
   box-sizing: border-box;
 }
 
+/* --- ESTILOS AÑADIDOS PARA VALIDACIÓN --- */
+.form-group input.is-invalid {
+  border-color: #dc3545; /* Rojo para indicar error */
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  font-size: 0.875em;
+  margin-top: 0.25rem;
+}
+/* --- FIN DE ESTILOS AÑADIDOS --- */
+
 .form-actions {
   display: flex;
   gap: 1rem;
