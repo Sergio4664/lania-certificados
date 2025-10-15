@@ -5,21 +5,19 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/auth.service';
 import { LoginCredentials } from '@shared/interfaces/auth.interface';
 
-// --- IMPORTACIONES DE MATERIAL ---
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+// --- IMPORTACIONES DE MATERIAL (SOLO LO QUE SE USA) ---
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon'; 
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, RouterLink,
-    MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
-    MatProgressSpinnerModule, MatCardModule,
+    CommonModule,
+    ReactiveFormsModule, // Usamos ReactiveFormsModule
+    RouterLink,
+    MatProgressSpinnerModule,
+    MatIconModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
@@ -32,7 +30,6 @@ export default class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   isLoading = false;
   error = '';
-  hidePassword = true;
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
@@ -42,7 +39,10 @@ export default class LoginComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
 
     this.isLoading = true;
     this.error = '';
@@ -53,12 +53,14 @@ export default class LoginComponent implements OnInit {
     };
 
     this.authService.login(credentials).subscribe({
-      next: () => this.router.navigate(['/admin/dashboard']),
-      error: (err) => {
-        this.error = 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+      next: () => {
+        this.router.navigate(['/admin/dashboard']);
         this.isLoading = false;
       },
-      complete: () => this.isLoading = false
+      error: (err) => {
+        this.error = err.error?.detail || 'Error de conexión. Inténtelo más tarde.';
+        this.isLoading = false;
+      }
     });
   }
 }
