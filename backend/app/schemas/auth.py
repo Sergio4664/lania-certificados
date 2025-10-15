@@ -1,3 +1,4 @@
+#Ruta: backend/app/schemas/auth.py
 from pydantic import BaseModel
 from typing import Optional
 import enum

@@ -3,7 +3,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 
-from app import models, schemas
+from app import models
+from app.schemas import auth as schemas_auth
 from app.database import get_db
 # --- CORRECCIÓN AQUÍ ---
 # Se importa la función 'get_settings'
@@ -27,11 +28,11 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
         role: str = payload.get("rol")
         if email is None or role is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email, rol=role)
+        token_data = schemas_auth.TokenData(email=email, rol=role)
     except JWTError:
         raise credentials_exception
 
-    if token_data.rol != schemas.UserRole.ADMINISTRADOR:
+    if token_data.rol != schemas_auth.UserRole.ADMINISTRADOR:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permisos insuficientes",
