@@ -44,4 +44,14 @@ export class CertificadoService {
   verifyPublic(folio: string): Observable<CertificadoPublic> {
     return this.http.get<CertificadoPublic>(`${this.publicApiUrl}/verificar/${folio}`);
   }
+
+  /**
+   * Solicita al backend que envíe un certificado por correo.
+   * @param certificadoId - El ID del certificado a enviar.
+   */
+  sendEmail(certificadoId: number): Observable<any> {
+    // --- CORRECCIÓN AQUÍ ---
+    // Se añadió la diagonal (/) antes del ID del certificado.
+    return this.http.post(`${this.adminApiUrl}/send-email/${certificadoId}`, {});
+  }
 }

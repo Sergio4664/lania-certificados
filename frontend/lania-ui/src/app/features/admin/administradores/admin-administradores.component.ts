@@ -3,12 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Administrador } from '@shared/interfaces/administrador.interface';
 import { AdministradorService } from '@shared/services/administrador.service';
-import { NotificationService } from '@shared/services/notification.service'; // Asumiendo que este servicio existe
+import { NotificationService } from '@shared/services/notification.service';
 
 @Component({
   selector: 'app-admin-administradores',
   standalone: true,
-  // ReactiveFormsModule ya se importa aquí, lo cual es correcto para componentes standalone
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './admin-administradores.component.html',
   styleUrls: ['./admin-administradores.component.css']
@@ -26,10 +25,9 @@ export default class AdminAdministradoresComponent implements OnInit {
   isLoading = false;
 
   constructor() {
-    // Definimos el formulario con todas las validaciones
     this.adminForm = this.fb.group({
       nombre_completo: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]], // Email de la empresa
+      email: ['', [Validators.required, Validators.email]],
       email_institucional: ['', [
         Validators.required,
         Validators.pattern(/^[a-zA-Z0-9._%+-]+@lania\.edu\.mx$/)
@@ -50,7 +48,6 @@ export default class AdminAdministradoresComponent implements OnInit {
     this.loadAdmins();
   }
 
-  // Helper para acceder a los controles del formulario en el HTML
   get f() { return this.adminForm.controls; }
 
   loadAdmins(): void {
@@ -62,7 +59,7 @@ export default class AdminAdministradoresComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        this.notificationService.showError('Error al cargar los administradores.', 'Error');
+        this.notificationService.showError('Error al cargar los administradores.');
       }
     });
   }
@@ -99,11 +96,11 @@ export default class AdminAdministradoresComponent implements OnInit {
 
     action.subscribe({
       next: () => {
-        this.notificationService.showSuccess(`Administrador ${this.isEditing ? 'actualizado' : 'creado'} con éxito.`, 'Éxito');
+        this.notificationService.showSuccess(`Administrador ${this.isEditing ? 'actualizado' : 'creado'} con éxito.`);
         this.loadAdmins();
         this.toggleForm();
       },
-      error: (err) => this.notificationService.showError(err.error?.detail || 'Ocurrió un error.', 'Error')
+      error: (err) => this.notificationService.showError(err.error?.detail || 'Ocurrió un error.')
     });
   }
 
@@ -111,10 +108,10 @@ export default class AdminAdministradoresComponent implements OnInit {
     if (confirm(`¿Estás seguro de que quieres eliminar a ${admin.nombre_completo}?`)) {
       this.adminService.delete(admin.id).subscribe({
         next: () => {
-          this.notificationService.showSuccess('Administrador eliminado con éxito.', 'Eliminado');
+          this.notificationService.showSuccess('Administrador eliminado con éxito.');
           this.loadAdmins();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar administrador.', 'Error')
+        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar administrador.')
       });
     }
   }

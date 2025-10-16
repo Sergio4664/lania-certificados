@@ -10,12 +10,10 @@ export class NotificationService {
 
   /**
    * Muestra una notificación de error (roja).
-   * @param message El mensaje a mostrar.
-   * @param action El texto del botón de acción (ej. 'Cerrar').
    */
   showError(message: string, action: string = 'Cerrar'): void {
     this.snackBar.open(message, action, {
-      duration: 5000, // 5 segundos
+      duration: 5000,
       panelClass: ['snackbar-error'],
       verticalPosition: 'top'
     });
@@ -23,12 +21,10 @@ export class NotificationService {
 
   /**
    * Muestra una notificación de éxito (verde).
-   * @param message El mensaje a mostrar.
-   * @param action El texto del botón de acción (opcional).
    */
   showSuccess(message: string, action: string = 'Cerrar'): void {
     this.snackBar.open(message, action, {
-      duration: 3000, // 3 segundos
+      duration: 3000,
       panelClass: ['snackbar-success'],
       verticalPosition: 'top'
     });

@@ -1,4 +1,4 @@
-/* --- AÑADE ESTA LÍNEA AL PRINCIPIO DE TODO --- */
+/* --- 1. IMPORTACIÓN DEL TEMA DE ANGULAR MATERIAL (ESENCIAL) --- */
 @import "@angular/material/prebuilt-themes/indigo-pink.css";
 
 /* You can add global styles to this file, and also import other style files */
@@ -154,7 +154,7 @@ textarea:focus {
   }
 }
 
-/* --- AÑADE ESTOS ESTILOS AL FINAL DEL ARCHIVO --- */
+/* --- 2. ESTILOS PARA NOTIFICACIONES (AÑADIDOS AL FINAL) --- */
 /* Estilo para notificaciones de error */
 .snackbar-error {
   background-color: #f44336; /* Rojo */

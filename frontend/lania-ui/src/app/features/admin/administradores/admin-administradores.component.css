@@ -157,3 +157,13 @@ h1 {
   background: #fee2e2;
   color: #b91c1c;
 }
+
+.form-group input.is-invalid {
+  border-color: #dc3545; /* Rojo para indicar error */
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  font-size: 0.875em;
+  margin-top: 0.25rem;
+}

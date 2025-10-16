@@ -55,6 +55,21 @@
   color: #9ca3af;
 }
 
+/* --- ESTILOS NUEVOS PARA SECCIONES DE PRODUCTOS --- */
+.product-section {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1e293b;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+
 /* Form Styles */
 .form-card {
   background: white;
@@ -363,16 +378,25 @@
     font-size: 18px;
     color: #1f2937;
 }
+.add-participant-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
 .upload-section {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .form-card.nested-form {
   padding: 16px;
-  margin-top: 12px;
+  margin-top: 0;
   background-color: #f8fafc;
   border-radius: 8px;
+  flex-grow: 1;
 }
 
 /* Data Table in Modal */
@@ -381,14 +405,16 @@
   color: #1f2937;
   padding: 16px;
   background: #f9fafb;
-  margin: -24px -24px 24px -24px;
+  margin: 0 0 24px 0;
   border-bottom: 1px solid #e5e7eb;
 }
-.cert-actions, .send-actions {
+
+.cert-actions, .send-actions, .actions-cell {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .serial-tag {
   background: #eef2ff;
   color: #4338ca;
@@ -417,6 +443,16 @@
 .icon-btn.delete:hover {
     background: #fca5a5;
 }
+
+/* --- ESTILO NUEVO PARA BOTÓN DE EMAIL --- */
+.icon-btn.email {
+    color: #0ea5e9;
+    background-color: #f0f9ff;
+}
+.icon-btn.email:hover {
+    background-color: #e0f2fe;
+}
+
 .small-btn {
     padding: 6px 12px;
     font-size: 12px;

@@ -12,7 +12,7 @@
       
       <div class="form-group">
         <label for="nombre_completo">Nombre Completo *</label>
-        <input id="nombre_completo" formControlName="nombre_completo"
+        <input id="nombre_completo" formControlName="nombre_completo" 
                [ngClass]="{ 'is-invalid': f['nombre_completo'].touched && f['nombre_completo'].invalid }">
         <div *ngIf="f['nombre_completo'].touched && f['nombre_completo'].invalid" class="invalid-feedback">
           <div *ngIf="f['nombre_completo'].errors?.['required']">El nombre es obligatorio.</div>
@@ -72,7 +72,7 @@
 
       <div class="form-actions">
         <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
-        <button type="submit" class="primary-btn" [disabled]="adminForm.invalid && isEditing">
+        <button type="submit" class="primary-btn">
           {{ isEditing ? 'Actualizar' : 'Crear' }}
         </button>
       </div>
@@ -80,43 +80,5 @@
   </div>
 
   <div class="data-table">
-    <table>
-      <thead>
-        <tr>
-          <th>Nombre Completo</th>
-          <th>Email Institucional</th>
-          <th>Contacto</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let admin of administradores">
-          <td>{{ admin.nombre_completo }}</td>
-          <td>{{ admin.email_institucional }}</td>
-          <td>
-            <div class="contact-info">
-              <span *ngIf="admin.telefono">Tel: {{ admin.telefono }}</span>
-              <span *ngIf="admin.whatsapp">WA: {{ admin.whatsapp }}</span>
-            </div>
-          </td>
-          <td>
-            <span class="status" [class.status-active]="admin.activo" [class.status-inactive]="!admin.activo">
-              {{ admin.activo ? 'Activo' : 'Inactivo' }}
-            </span>
-          </td>
-          <td class="actions">
-            <button class="icon-btn edit" (click)="toggleForm(admin)" title="Editar">✏️</button>
-            <button class="icon-btn delete" (click)="deleteAdmin(admin)" title="Eliminar">🗑️</button>
-          </td>
-        </tr>
-        <tr *ngIf="!isLoading && administradores.length === 0">
-          <td colspan="5" style="text-align: center;">No hay administradores registrados.</td>
-        </tr>
-        <tr *ngIf="isLoading">
-          <td colspan="5" style="text-align: center;">Cargando...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    </div>
 </div>

@@ -6,7 +6,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/auth.interceptor';
 
-// ATENCIÓN: Se han eliminado las líneas de provideFormsModule y provideReactiveFormsModule de aquí.
+// ATENCIÓN: Se han eliminado las líneas de provideFormsModule y provideReactiveFormsModule.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),

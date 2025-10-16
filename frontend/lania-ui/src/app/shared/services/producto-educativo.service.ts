@@ -52,4 +52,13 @@ export class ProductoEducativoService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  uploadParticipants(productoId: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    
+    // Apunta al nuevo endpoint del backend
+    return this.http.post(`${this.apiUrl}/${productoId}/upload-participantes`, formData);
+  }
+  
 }

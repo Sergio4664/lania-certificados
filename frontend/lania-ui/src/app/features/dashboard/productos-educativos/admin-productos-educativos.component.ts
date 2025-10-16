@@ -2,6 +2,8 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule, FormArray } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { environment } from '@environments/environment';
+import { HttpErrorResponse } from '@angular/common/http'; // Importación añadida
 
 // Interfaces
 import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } from '@shared/interfaces/producto-educativo.interface';
@@ -18,11 +20,10 @@ import { InscripcionService } from '@shared/services/inscripcion.service';
 import { CertificadoService } from '@shared/services/certificado.service';
 import { ParticipanteService } from '@shared/services/participante.service';
 
-
 @Component({
   selector: 'app-admin-productos-educativos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, DatePipe], // <-- FormsModule AÑADIDO
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, DatePipe],
   templateUrl: './admin-productos-educativos.component.html',
   styleUrls: ['./admin-productos-educativos.component.css']
 })
@@ -36,9 +37,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
 
+  // --- Listas de datos separadas por tipo de producto ---
+  cursos: ProductoEducativo[] = [];
+  pildoras: ProductoEducativo[] = [];
+  inyecciones: ProductoEducativo[] = [];
+
   // Listas de datos
-  productos: ProductoEducativo[] = [];
-  productosFiltrados: ProductoEducativo[] = [];
+  private productos: ProductoEducativo[] = [];
   docentes: DocenteDTO[] = [];
   participantes: Participante[] = [];
   inscripcionesDelProducto: Inscripcion[] = [];
@@ -66,7 +71,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: this.fb.array([]), // Se manejará como FormArray
+      docente_ids: this.fb.array([]),
       competencias: ['']
     });
   }
@@ -86,17 +91,31 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.docentes = docentes;
       this.participantes = participantes;
       this.certificados = certificados;
-      this.filterCourses();
+      // CORRECCIÓN: Se llama a la función con paréntesis
+      this.groupAndFilterProducts();
     });
   }
 
-  filterCourses() {
-    this.productosFiltrados = this.productos.filter(p =>
-      p.nombre.toLowerCase().includes(this.searchTerm.toLowerCase())
-    );
+  groupAndFilterProducts() {
+    const term = this.searchTerm.toLowerCase();
+    const filtered = this.productos.filter(p => p.nombre.toLowerCase().includes(term));
+
+    // CORRECCIÓN: Se usan los nombres correctos del enum/tipo
+    this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO');
+    this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA');
+    this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
   }
 
-  // --- MÉTODOS QUE FALTABAN ---
+  descargarPlantilla(): void {
+    const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = 'plantilla_participantes.xlsx';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    this.notificationSvc.showSuccess('Iniciando la descarga de la plantilla...');
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -108,16 +127,29 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   uploadParticipants(): void {
-    if (this.selectedFile && this.selectedCourse) {
-      this.notificationSvc.showError('La carga de archivos aún no está implementada.');
-      console.log(`Simulando carga de ${this.selectedFile.name} para el curso ${this.selectedCourse.nombre}`);
+    if (!this.selectedFile || !this.selectedCourse) {
+      this.notificationSvc.showError('Por favor, seleccione un curso y un archivo para subir.');
+      return;
     }
+    this.productoSvc.uploadParticipants(this.selectedCourse.id, this.selectedFile).subscribe({
+      next: (response) => {
+        const { nuevas_inscripciones_realizadas, nuevos_participantes_creados } = response;
+        this.notificationSvc.showSuccess(
+          `Carga completada: ${nuevas_inscripciones_realizadas} inscripciones y ${nuevos_participantes_creados} nuevos participantes.`
+        );
+        this.loadParticipantsForCourse(this.selectedCourse!.id);
+        this.selectedFile = null;
+      },
+      error: (err: HttpErrorResponse) => {
+        const detail = err.error?.detail || 'Ocurrió un error al subir el archivo.';
+        this.notificationSvc.showError(detail);
+      }
+    });
   }
 
   toggleDocenteSelection(docenteId: number, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
     const formArray = this.courseForm.get('docente_ids') as FormArray;
-
     if (isChecked) {
       formArray.push(this.fb.control(docenteId));
     } else {
@@ -131,8 +163,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return colors[id % colors.length];
   }
 
-  // --- Lógica del Formulario de Producto ---
-
   resetCourseForm() {
     this.courseForm.reset({
       nombre: '',
@@ -143,7 +173,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       modalidad: 'PRESENCIAL',
       competencias: ''
     });
-    // Limpiar el FormArray
     (this.courseForm.get('docente_ids') as FormArray).clear();
     this.editingCourse = null;
   }
@@ -155,28 +184,17 @@ export default class AdminProductosEducativosComponent implements OnInit {
   
   editCourse(producto: ProductoEducativo) {
     this.editingCourse = producto;
-    
-    // Convertir competencias de JSON string a string con saltos de línea
     let competenciasStr = '';
     try {
       const competenciasArr = JSON.parse(producto.competencias || '[]');
       competenciasStr = competenciasArr.join('\n');
     } catch (e) {
-      competenciasStr = producto.competencias || ''; // Si no es JSON, usa el valor directo
+      competenciasStr = producto.competencias || '';
     }
-    
-    this.courseForm.patchValue({
-      ...producto,
-      competencias: competenciasStr,
-    });
-    
-    // Setear los docentes en el FormArray
+    this.courseForm.patchValue({ ...producto, competencias: competenciasStr });
     const formArray = this.courseForm.get('docente_ids') as FormArray;
     formArray.clear();
-    producto.docentes.forEach(docente => {
-      formArray.push(this.fb.control(docente.id));
-    });
-
+    producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
     this.showCourseForm = true;
   }
 
@@ -186,14 +204,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
       return;
     }
     const formValue = this.courseForm.getRawValue();
-
-    // Convertir competencias a un JSON string array antes de enviar
     const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
-    const payload = {
-        ...formValue,
-        competencias: JSON.stringify(competenciasArray)
-    };
-
+    const payload = { ...formValue, competencias: JSON.stringify(competenciasArray) };
     if (this.editingCourse) {
       this.updateCourse(payload);
     } else {
@@ -204,11 +216,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
   createCourse(payload: ProductoEducativoCreate) {
     this.productoSvc.create(payload).subscribe({
       next: () => {
-        this.notificationSvc.showSuccess('Producto educativo creado exitosamente.');
+        this.notificationSvc.showSuccess('Producto educativo creado.');
         this.loadInitialData();
         this.cancelCourseForm();
       },
-      error: (err) => this.notificationSvc.showError(err.error.detail || 'Error al crear el producto.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
     });
   }
   
@@ -216,31 +228,27 @@ export default class AdminProductosEducativosComponent implements OnInit {
     if (!this.editingCourse) return;
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
       next: () => {
-        this.notificationSvc.showSuccess('Producto educativo actualizado exitosamente.');
+        this.notificationSvc.showSuccess('Producto educativo actualizado.');
         this.loadInitialData();
         this.cancelCourseForm();
       },
-      error: (err) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar el producto.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')
     });
   }
 
   deleteCourse(courseId: number) {
-    if (confirm('¿Está seguro de eliminar el producto educativo? Esto eliminará inscripciones y certificados asociados.')) {
+    if (confirm('¿Está seguro de eliminar este producto educativo?')) {
       this.productoSvc.delete(courseId).subscribe({
         next: () => {
-          this.notificationSvc.showSuccess('Producto educativo eliminado exitosamente.');
+          this.notificationSvc.showSuccess('Producto educativo eliminado.');
           this.loadInitialData();
-          if (this.selectedCourse?.id === courseId) {
-            this.unselectCourse();
-          }
+          if (this.selectedCourse?.id === courseId) this.unselectCourse();
         },
-        error: (err) => this.notificationSvc.showError(err.error.detail || 'Error al eliminar el producto.')
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al eliminar.')
       });
     }
   }
   
-  // --- Lógica del Modal de Detalles ---
-
   selectCourse(course: ProductoEducativo) {
     this.selectedCourse = course;
     this.loadParticipantsForCourse(course.id);
@@ -273,76 +281,70 @@ export default class AdminProductosEducativosComponent implements OnInit {
     };
     this.inscripcionSvc.create(payload).subscribe({
       next: () => {
-        this.notificationSvc.showSuccess('Participante inscrito exitosamente.');
+        this.notificationSvc.showSuccess('Participante inscrito.');
         this.loadParticipantsForCourse(this.selectedCourse!.id);
         this.showAddParticipantForm = false;
         this.participantToAdd = null;
       },
-      error: (err) => this.notificationSvc.showError(err.error?.detail || 'No se pudo inscribir.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo inscribir.')
     });
   }
 
   removeParticipantFromCourse(inscripcionId: number) {
-    if (!confirm('¿Está seguro que desea eliminar la inscripción de este participante?')) return;
+    if (!confirm('¿Seguro que desea eliminar la inscripción?')) return;
     this.inscripcionSvc.delete(inscripcionId).subscribe({
       next: () => {
         this.notificationSvc.showSuccess('Inscripción eliminada.');
-        if(this.selectedCourse) {
-          this.loadParticipantsForCourse(this.selectedCourse.id);
-        }
+        if (this.selectedCourse) this.loadParticipantsForCourse(this.selectedCourse.id);
       },
-      error: (err) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar la inscripción.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
     });
   }
   
-  // --- Lógica de Emisión de Certificados ---
+  // --- LÓGICA DE CONSTANCIAS ---
   
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
   }
 
   issueCertificate(inscripcionId: number) {
-    const payload: CertificadoCreate = {
-      inscripcion_id: inscripcionId,
-      folio: '',
-      fecha_emision: ''
-    };
-
+    const payload: CertificadoCreate = { inscripcion_id: inscripcionId };
     this.certificadoSvc.create(payload).subscribe({
       next: (newCert) => {
-        this.notificationSvc.showSuccess(`Certificado emitido con folio: ${newCert.folio}`);
-        this.certificados.push(newCert); // Actualiza la lista localmente
+        this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
+        this.certificados.push(newCert);
       },
-      error: (err) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir certificado.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia.')
+    });
+  }
+  
+  sendCertificate(certificadoId: number) {
+    this.certificadoSvc.sendEmail(certificadoId).subscribe({
+      next: () => this.notificationSvc.showSuccess('Enviando constancia por correo...'),
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar correo.')
     });
   }
 
   deleteCertificate(cert: Certificado) {
-    if (confirm(`¿Está seguro que desea eliminar el certificado con folio ${cert.folio}?`)) {
+    if (confirm(`¿Eliminar constancia con folio ${cert.folio}?`)) {
       this.certificadoSvc.delete(cert.id).subscribe({
         next: () => {
-          this.notificationSvc.showSuccess('Certificado eliminado.');
+          this.notificationSvc.showSuccess('Constancia eliminada.');
           this.certificados = this.certificados.filter(c => c.id !== cert.id);
         },
-        error: (err) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar.')
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar.')
       });
     }
   }
 
-  // --- Lógica de Competencias Modal ---
+  // --- Lógica de Competencias (sin cambios) ---
   
   openCompetenciesModal() {
     let competenciasValue = this.courseForm.value.competencias || '';
-    // Intenta parsear por si es un string JSON
     try {
         const parsed = JSON.parse(competenciasValue);
-        if (Array.isArray(parsed)) {
-            competenciasValue = parsed.join('\n');
-        }
-    } catch (e) {
-        // No es JSON, usa el valor como está
-    }
-
+        if (Array.isArray(parsed)) competenciasValue = parsed.join('\n');
+    } catch (e) { /* No es JSON */ }
     this.competenciesList = competenciasValue.split('\n').filter((c:string) => c.trim()) || [''];
     if (this.competenciesList.length === 0) this.competenciesList.push('');
     this.showCompetenciesModal = true;

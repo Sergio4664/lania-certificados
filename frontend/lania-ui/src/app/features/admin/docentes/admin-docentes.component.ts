@@ -2,10 +2,12 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
-// Interfaces y Servicios actualizados
-import { DocenteDTO } from '@shared/interfaces/docente.interfaces'
+// Interfaces y Servicios
+import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
 import { DocenteService } from '@shared/services/docente.service';
+import { NotificationService } from '@shared/services/notification.service';
 
 @Component({
   selector: 'app-admin-docentes',
@@ -26,32 +28,51 @@ import { DocenteService } from '@shared/services/docente.service';
           
           <div class="form-group">
             <label for="nombre_completo">Nombre Completo *</label>
-            <input id="nombre_completo" formControlName="nombre_completo" required>
+            <input id="nombre_completo" formControlName="nombre_completo">
+            <div *ngIf="docenteForm.get('nombre_completo')?.invalid && docenteForm.get('nombre_completo')?.touched" class="error-text">
+              <small *ngIf="docenteForm.get('nombre_completo')?.errors?.['required']">El nombre completo es requerido.</small>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="email_institucional">Email Institucional *</label>
-            <input id="email_institucional" type="email" formControlName="email_institucional" required>
+            <input id="email_institucional" type="email" formControlName="email_institucional">
+            <div *ngIf="docenteForm.get('email_institucional')?.invalid && docenteForm.get('email_institucional')?.touched" class="error-text">
+              <small *ngIf="docenteForm.get('email_institucional')?.errors?.['required']">El email institucional es requerido.</small>
+              <small *ngIf="docenteForm.get('email_institucional')?.errors?.['pattern']">El email debe ser del dominio @lania.edu.mx.</small>
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="email_personal">Email Personal</label>
+            <label for="email_personal">Email Personal *</label>
             <input id="email_personal" type="email" formControlName="email_personal">
+             <div *ngIf="docenteForm.get('email_personal')?.invalid && docenteForm.get('email_personal')?.touched" class="error-text">
+              <small *ngIf="docenteForm.get('email_personal')?.errors?.['required']">El email personal es requerido.</small>
+              <small *ngIf="docenteForm.get('email_personal')?.errors?.['email']">El formato del email no es válido (ej: usuario@dominio.com).</small>
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="telefono">Teléfono</label>
+            <label for="telefono">Teléfono *</label>
             <input id="telefono" formControlName="telefono">
+            <div *ngIf="docenteForm.get('telefono')?.invalid && docenteForm.get('telefono')?.touched" class="error-text">
+              <small *ngIf="docenteForm.get('telefono')?.errors?.['required']">El teléfono es requerido.</small>
+              <small *ngIf="docenteForm.get('telefono')?.errors?.['pattern']">El teléfono debe tener 10 o 12 dígitos.</small>
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="whatsapp">WhatsApp</label>
+            <label for="whatsapp">WhatsApp *</label>
             <input id="whatsapp" formControlName="whatsapp">
+            <div *ngIf="docenteForm.get('whatsapp')?.invalid && docenteForm.get('whatsapp')?.touched" class="error-text">
+              <small *ngIf="docenteForm.get('whatsapp')?.errors?.['required']">El WhatsApp es requerido.</small>
+              <small *ngIf="docenteForm.get('whatsapp')?.errors?.['pattern']">El número de WhatsApp debe tener 10 o 12 dígitos.</small>
+            </div>
           </div>
 
           <div class="form-actions">
             <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
-            <button type="submit" class="primary-btn" [disabled]="docenteForm.invalid">
+            <button type="submit" class="primary-btn">
               {{ isEditing ? 'Actualizar' : 'Crear' }}
             </button>
           </div>
@@ -93,7 +114,6 @@ import { DocenteService } from '@shared/services/docente.service';
       </div>
     </div>
   `,
-  // Los estilos se pueden mover a un archivo .css separado
   styles: [ `
     :host { display: block; padding: 2rem; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
@@ -113,11 +133,13 @@ import { DocenteService } from '@shared/services/docente.service';
     .icon-btn { padding: .5rem; line-height: 1; }
     .edit { background-color: #ffc107; }
     .delete { background-color: #f44336; color: white; }
+    .error-text { color: #f44336; margin-top: .25rem; font-size: 0.875em; }
   `]
 })
 export default class AdminDocentesComponent implements OnInit {
   private docenteService = inject(DocenteService);
   private fb = inject(FormBuilder);
+  private notificationService = inject(NotificationService);
 
   docentes: DocenteDTO[] = [];
   showForm = false;
@@ -127,11 +149,11 @@ export default class AdminDocentesComponent implements OnInit {
 
   constructor() {
     this.docenteForm = this.fb.group({
-      nombre_completo: ['', Validators.required],
-      email_institucional: ['', [Validators.required, Validators.email]],
-      email_personal: ['', [Validators.email]],
-      telefono: [''],
-      whatsapp: ['']
+      nombre_completo: ['', [Validators.required]],
+      email_institucional: ['', [Validators.required, Validators.pattern('^[a-z0-9._%+-]+@lania\\.edu\\.mx$')]],
+      email_personal: ['', [Validators.required, Validators.email]],
+      telefono: ['', [Validators.required, Validators.pattern('^(\\d{10}|\\d{12})$')]],
+      whatsapp: ['', [Validators.required, Validators.pattern('^(\\d{10}|\\d{12})$')]]
     });
   }
 
@@ -161,29 +183,40 @@ export default class AdminDocentesComponent implements OnInit {
 
   deleteDocente(docente: DocenteDTO) {
     if (confirm(`¿Está seguro que desea eliminar a ${docente.nombre_completo}?`)) {
-      this.docenteService.delete(docente.id).subscribe(() => {
+      this.docenteService.delete(docente.id!).subscribe(() => { // Asumiendo que el id siempre existirá
         this.loadDocentes();
-        alert('Docente eliminado exitosamente.');
+        this.notificationService.showSuccess('Docente eliminado exitosamente.');
       });
     }
   }
 
   onSubmit() {
-    if (this.docenteForm.invalid) return;
+    if (this.docenteForm.invalid) {
+      this.docenteForm.markAllAsTouched(); // Marca todos los campos para mostrar errores
+      this.notificationService.showError('Por favor, rellene todos los campos requeridos correctamente.');
+      return;
+    }
+
+    const handleSuccess = (message: string) => {
+      this.loadDocentes();
+      this.toggleForm();
+      this.notificationService.showSuccess(message);
+    };
+
+    const handleError = (error: HttpErrorResponse) => {
+      const errorMessage = error.error?.detail || 'Ocurrió un error inesperado.';
+      this.notificationService.showError(errorMessage);
+    };
 
     if (this.isEditing && this.currentDocenteId) {
-      // Lógica de Actualización
-      this.docenteService.update(this.currentDocenteId, this.docenteForm.value).subscribe(() => {
-        this.loadDocentes();
-        this.toggleForm();
-        alert('Docente actualizado exitosamente.');
+      this.docenteService.update(this.currentDocenteId, this.docenteForm.value).subscribe({
+        next: () => handleSuccess('Docente actualizado exitosamente.'),
+        error: handleError
       });
     } else {
-      // Lógica de Creación
-      this.docenteService.create(this.docenteForm.value).subscribe(() => {
-        this.loadDocentes();
-        this.toggleForm();
-        alert('Docente creado exitosamente.');
+      this.docenteService.create(this.docenteForm.value).subscribe({
+        next: () => handleSuccess('Docente creado exitosamente.'),
+        error: handleError
       });
     }
   }

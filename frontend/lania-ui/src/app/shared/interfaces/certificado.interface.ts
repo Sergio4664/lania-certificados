@@ -15,8 +15,6 @@ export interface Certificado {
  */
 export interface CertificadoCreate {
   inscripcion_id: number;
-  folio: string;
-  fecha_emision: string; // YYYY-MM-DD
 }
 
 /**

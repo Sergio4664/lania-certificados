@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+import pandas as pd
+import io
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -84,3 +86,79 @@ def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db.delete(db_producto)
     db.commit()
     return
+
+@router.post("/{producto_id}/upload-participantes", summary="Inscribir participantes desde un archivo Excel o CSV")
+def upload_participantes_file(
+    producto_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Sube un archivo (.xlsx o .csv) con los datos de los participantes para
+    inscribirlos masivamente a un producto educativo.
+
+    El archivo debe contener las columnas: 'nombre_completo' y 'email_personal'.
+    """
+    db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
+    if not db_producto:
+        raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+
+    try:
+        contents = file.file.read()
+        
+        if file.filename.endswith('.xlsx'):
+            df = pd.read_excel(io.BytesIO(contents))
+        elif file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        else:
+            raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use .xlsx o .csv")
+
+        required_columns = ['nombre_completo', 'email_personal']
+        if not all(col in df.columns for col in required_columns):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"El archivo debe contener las columnas: {', '.join(required_columns)}"
+            )
+
+        creados = 0
+        inscritos = 0
+        
+        for index, row in df.iterrows():
+            nombre = row['nombre_completo']
+            email = row['email_personal']
+
+            if pd.isna(nombre) or pd.isna(email):
+                continue
+
+            db_participante = db.query(models.Participante).filter(models.Participante.email_personal == email).first()
+            if not db_participante:
+                db_participante = models.Participante(nombre_completo=str(nombre), email_personal=str(email))
+                db.add(db_participante)
+                db.commit()
+                db.refresh(db_participante)
+                creados += 1
+            
+            inscripcion_existente = db.query(models.Inscripcion).filter(
+                models.Inscripcion.producto_educativo_id == producto_id,
+                models.Inscripcion.participante_id == db_participante.id
+            ).first()
+
+            if not inscripcion_existente:
+                nueva_inscripcion = models.Inscripcion(
+                    producto_educativo_id=producto_id,
+                    participante_id=db_participante.id
+                )
+                db.add(nueva_inscripcion)
+                inscritos += 1
+        
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
+
+    return {
+        "message": "Archivo procesado exitosamente.",
+        "nuevos_participantes_creados": creados,
+        "nuevas_inscripciones_realizadas": inscritos
+    }
