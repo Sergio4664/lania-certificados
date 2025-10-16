@@ -264,5 +264,28 @@
   </div>
 
   <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Gestionar Competencias</h2>
+        <button class="close-btn" (click)="showCompetenciesModal = false">✖</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-instructions">Añade cada competencia en una línea separada. Puedes agregar o eliminar las que necesites.</p>
+        <div class="competency-list">
+          <div class="competency-item" *ngFor="let competency of competenciesList; let i = index; trackBy: trackByIndex">
+            <textarea [(ngModel)]="competenciesList[i]" placeholder="Escribe una competencia..." class="competency-input" rows="2"></textarea>
+            <button *ngIf="competenciesList.length > 1" type="button" class="icon-btn delete small-btn" (click)="removeCompetency(i)" title="Eliminar competencia">🗑️</button>
+          </div>
+        </div>
+        <button type="button" class="secondary-btn small-btn" (click)="addCompetency()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Añadir otra competencia
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" (click)="showCompetenciesModal = false">Cancelar</button>
+        <button type="button" class="primary-btn" (click)="saveCompetencies()">Guardar Competencias</button>
+      </div>
     </div>
+  </div>
 </div>

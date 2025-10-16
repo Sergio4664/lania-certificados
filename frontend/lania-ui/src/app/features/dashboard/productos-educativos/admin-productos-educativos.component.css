@@ -332,17 +332,26 @@
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
   width: 90%;
-  max-width: 1250px;
+  max-width: 1250px; /* Ancho ajustado para el modal principal */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
+
+/* --- ✅ Ajuste para el modal de competencias --- */
+.modal-content.competencies-modal {
+  max-width: 700px; /* Un ancho más adecuado para este modal */
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #e2e8f0;
+  background: white;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 .modal-header h2 {
   margin: 0;
@@ -442,6 +451,7 @@
 }
 .icon-btn.delete:hover {
     background: #fca5a5;
+    color: white;
 }
 
 /* --- ESTILO NUEVO PARA BOTÓN DE EMAIL --- */
@@ -458,27 +468,69 @@
     font-size: 12px;
 }
 
-/* Modal de Competencias */
+/* --- ✅ INICIO DE ESTILOS PARA MODAL DE COMPETENCIAS --- */
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
   border-top: 1px solid #e2e8f0;
-  background: #f8fafb;
+  background: white;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
-.competency-input-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
+.modal-instructions {
+  margin: 0 0 16px 0;
+  color: #6b7280;
+  font-size: 14px;
+  background-color: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
-.competency-input-group input {
-    flex-grow: 1;
+
+.competency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.competency-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.competency-input {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical; /* Permite al usuario ajustar la altura */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.competency-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
 .icon-btn {
-    padding: .5rem;
-    line-height: 1;
+  padding: .5rem;
+  line-height: 1;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
+
+/* --- ✅ FIN DE ESTILOS PARA MODAL DE COMPETENCIAS --- */

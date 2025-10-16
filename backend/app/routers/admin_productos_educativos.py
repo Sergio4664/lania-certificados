@@ -1,11 +1,11 @@
+# backend/app/routers/admin_productos_educativos.py
 import pandas as pd
 import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from app import models
-# --- CORRECCIÓN DE IMPORTACIÓN ---
 from app.schemas.producto_educativo import ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -16,13 +16,15 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-# Se usan las clases importadas directamente
 @router.post("/", response_model=ProductoEducativo, status_code=201)
 def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = Depends(get_db)):
     docentes = []
-    if producto.docentes_ids:
-        docentes = db.query(models.Docente).filter(models.Docente.id.in_(producto.docentes_ids)).all()
-        if len(docentes) != len(producto.docentes_ids):
+    # --- ✅ CORRECCIÓN AQUÍ ---
+    if producto.docente_ids:
+        # --- ✅ CORRECCIÓN AQUÍ ---
+        docentes = db.query(models.Docente).filter(models.Docente.id.in_(producto.docente_ids)).all()
+        # --- ✅ CORRECCIÓN AQUÍ ---
+        if len(docentes) != len(producto.docente_ids):
             raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
 
     db_producto = models.ProductoEducativo(
@@ -37,39 +39,42 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
     )
     db.add(db_producto)
     db.commit()
-    db.refresh(db_producto)
-    return db_producto
+    
+    # Recargamos el objeto con sus relaciones para devolverlo completo
+    created_producto = db.query(models.ProductoEducativo).options(joinedload(models.ProductoEducativo.docentes)).filter(models.ProductoEducativo.id == db_producto.id).first()
+    
+    return created_producto
 
 @router.get("/", response_model=List[ProductoEducativo])
 def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    productos = db.query(models.ProductoEducativo).order_by(models.ProductoEducativo.id).offset(skip).limit(limit).all()
+    productos = db.query(models.ProductoEducativo).options(joinedload(models.ProductoEducativo.docentes)).order_by(models.ProductoEducativo.id.desc()).offset(skip).limit(limit).all()
     return productos
 
 @router.get("/{producto_id}", response_model=ProductoEducativo)
 def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
-    db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
+    db_producto = db.query(models.ProductoEducativo).options(joinedload(models.ProductoEducativo.docentes)).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
     return db_producto
 
 @router.put("/{producto_id}", response_model=ProductoEducativo)
-def update_producto_educativo(producto_id: int, producto: ProductoEducativoUpdate, db: Session = Depends(get_db)):
+def update_producto_educativo(producto_id: int, producto_update: ProductoEducativoUpdate, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
-    update_data = producto.dict(exclude_unset=True)
+    update_data = producto_update.dict(exclude_unset=True)
     
-    if "docentes_ids" in update_data:
-        docentes_ids = update_data["docentes_ids"]
-        if docentes_ids:
-            docentes = db.query(models.Docente).filter(models.Docente.id.in_(docentes_ids)).all()
-            if len(docentes) != len(docentes_ids):
+    # --- ✅ LÓGICA CORREGIDA ---
+    if "docente_ids" in update_data:
+        docente_ids = update_data.pop("docente_ids") # Usamos pop para extraer y eliminar la clave
+        if docente_ids:
+            docentes = db.query(models.Docente).filter(models.Docente.id.in_(docente_ids)).all()
+            if len(docentes) != len(docente_ids):
                 raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
             db_producto.docentes = docentes
         else:
             db_producto.docentes = []
-        del update_data["docentes_ids"]
 
     for key, value in update_data.items():
         setattr(db_producto, key, value)
@@ -87,18 +92,14 @@ def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return
 
+# (El resto del archivo no requiere cambios)
 @router.post("/{producto_id}/upload-participantes", summary="Inscribir participantes desde un archivo Excel o CSV")
 def upload_participantes_file(
     producto_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """
-    Sube un archivo (.xlsx o .csv) con los datos de los participantes para
-    inscribirlos masivamente a un producto educativo.
-
-    El archivo debe contener las columnas: 'nombre_completo' y 'email_personal'.
-    """
+    # ... (código sin cambios)
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")

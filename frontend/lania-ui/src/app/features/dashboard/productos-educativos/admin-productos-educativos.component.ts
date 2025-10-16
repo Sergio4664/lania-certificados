@@ -213,23 +213,36 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
   
+  // --- ✅ FUNCIÓN CORREGIDA ---
   createCourse(payload: ProductoEducativoCreate) {
     this.productoSvc.create(payload).subscribe({
-      next: () => {
+      next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.loadInitialData();
+        // Añadimos el nuevo producto al inicio del array principal
+        this.productos.unshift(newProduct);
+        // Re-ordenamos y filtramos para que la UI se actualice
+        this.productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
+        this.groupAndFilterProducts();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
     });
   }
   
+  // --- ✅ FUNCIÓN CORREGIDA ---
   updateCourse(payload: ProductoEducativoUpdate) {
     if (!this.editingCourse) return;
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
-      next: () => {
+      next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        this.loadInitialData();
+        // Buscamos el producto antiguo y lo reemplazamos con el nuevo
+        const index = this.productos.findIndex(p => p.id === updatedProduct.id);
+        if (index !== -1) {
+          this.productos[index] = updatedProduct;
+        }
+        // Re-ordenamos y filtramos para que la UI se actualice
+        this.productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
+        this.groupAndFilterProducts();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')

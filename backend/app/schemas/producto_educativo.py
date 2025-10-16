@@ -1,3 +1,4 @@
+# backend/app/schemas/producto_educativo.py
 from pydantic import BaseModel, field_validator
 from datetime import date
 from typing import List, Optional
@@ -35,15 +36,16 @@ class ProductoEducativoBase(BaseModel):
         return v
 
 class ProductoEducativoCreate(ProductoEducativoBase):
-    docentes_ids: List[int] = []
+    # --- ✅ CORRECCIÓN AQUÍ ---
+    docente_ids: List[int] = []
 
 class ProductoEducativoUpdate(BaseModel):
     nombre: Optional[str] = None
     horas: Optional[int] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
-    docentes_ids: Optional[List[int]] = None
-    # --- CAMPOS AÑADIDOS ---
+    # --- ✅ CORRECCIÓN AQUÍ ---
+    docente_ids: Optional[List[int]] = None
     tipo_producto: Optional[TipoProductoEnum] = None
     modalidad: Optional[ModalidadEnum] = None
     competencias: Optional[str] = None
@@ -53,4 +55,4 @@ class ProductoEducativo(ProductoEducativoBase):
     docentes: List[DocenteOut] = []
 
     class Config:
-        from_attributes = True
+        orm_mode = True
