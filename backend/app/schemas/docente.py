@@ -10,6 +10,13 @@ class DocenteBase(BaseModel):
     whatsapp: Optional[str] = None
     especialidad: Optional[str] = None
 
+    @field_validator('email_institucional')
+    @classmethod
+    def validate_email_domain(cls, v):
+        if not v.endswith('@lania.edu.mx'):
+            raise ValueError('El correo institucional debe tener el dominio @lania.edu.mx')
+        return v
+
 # Propiedades para la creación
 class DocenteCreate(DocenteBase):
     pass
@@ -22,7 +29,7 @@ class DocenteUpdate(BaseModel):
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
     especialidad: Optional[str] = None
-    # CORRECCIÓN: Se usa 'field_validator' en Pydantic v2
+
     @field_validator('email_institucional')
     @classmethod
     def validate_email_domain_optional(cls, v):

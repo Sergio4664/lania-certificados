@@ -9,9 +9,12 @@ class Docente(Base):
     id = Column(Integer, primary_key=True)
     nombre_completo = Column(String(255), nullable=False)
     email_institucional = Column(CITEXT, unique=True, nullable=False)
-    email_personal = Column(CITEXT, nullable=True)
-    telefono = Column(String(20), nullable=True)
-    whatsapp = Column(String(20), nullable=True)
+
+    # CORRECCIÓN: Añadir unique=True a estos campos
+    email_personal = Column(CITEXT, unique=True, nullable=True)
+    telefono = Column(String(20), unique=True, nullable=True)
+    whatsapp = Column(String(20), unique=True, nullable=True)
+
     especialidad = Column(String(255), nullable=True)
 
     productos_educativos = relationship(
