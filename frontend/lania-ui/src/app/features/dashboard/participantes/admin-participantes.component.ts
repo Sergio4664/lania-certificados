@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http'; // Importante para el manejo de errores
 
 // Interfaces y Servicios actualizados y centralizados
 import { Participante } from '@shared/interfaces/participante.interface';
@@ -52,9 +53,10 @@ export default class AdminParticipantesComponent implements OnInit {
         this.filteredParticipants = data;
         this.isLoading = false;
       },
-      error: () => {
-        this.notificationService.showError('Error al cargar los participantes.');
+      error: (err: HttpErrorResponse) => {
         this.isLoading = false;
+        // --- CORRECCIÓN: Usar la función centralizada ---
+        this.handleError(err, 'Error al cargar los participantes.');
       }
     });
   }
@@ -85,11 +87,13 @@ export default class AdminParticipantesComponent implements OnInit {
   deleteParticipant(participante: Participante) {
     if (confirm(`¿Está seguro que desea eliminar a ${participante.nombre_completo}? Esta acción no se puede deshacer.`)) {
       this.participanteService.delete(participante.id).subscribe({
-        next: () => {
-          this.notificationService.showSuccess('Participante eliminado exitosamente.');
+        next: (response) => {
+          // --- CORRECCIÓN CLAVE: Usar el mensaje de la respuesta del backend ---
+          this.notificationService.showSuccess(response.detail);
           this.loadParticipants();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar el participante.')
+        // --- CORRECCIÓN: Usar la función centralizada ---
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al eliminar el participante.')
       });
     }
   }
@@ -109,7 +113,8 @@ export default class AdminParticipantesComponent implements OnInit {
           this.loadParticipants();
           this.toggleForm();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al actualizar el participante.')
+        // --- CORRECCIÓN: Usar la función centralizada ---
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al actualizar el participante.')
       });
     } else {
       this.participanteService.create(formData).subscribe({
@@ -118,8 +123,16 @@ export default class AdminParticipantesComponent implements OnInit {
           this.loadParticipants();
           this.toggleForm();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al crear el participante.')
+        // --- CORRECCIÓN: Usar la función centralizada ---
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al crear el participante.')
       });
     }
+  }
+
+  // --- FUNCIÓN CENTRALIZADA Y MEJORADA PARA MANEJAR TODOS LOS ERRORES ---
+  private handleError(error: HttpErrorResponse, fallbackMessage: string) {
+    console.error('Backend Error:', error);
+    const userMessage = error.error?.detail || fallbackMessage;
+    this.notificationService.showError(userMessage);
   }
 }

@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status
 from sqlalchemy.orm import Session
 from typing import List
 import pandas as pd
 import io
 
 from app import models
-# --- CORRECCIÓN DE IMPORTACIÓN ---
-from app.schemas.inscripcion import Inscripcion, InscripcionCreate
+from app.schemas.inscripcion import InscripcionOut, InscripcionCreate
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
@@ -16,46 +15,42 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=Inscripcion, status_code=201)
+@router.post("/", response_model=InscripcionOut, status_code=status.HTTP_201_CREATED)
 def create_inscripcion(inscripcion: InscripcionCreate, db: Session = Depends(get_db)):
-    db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == inscripcion.producto_educativo_id).first()
-    if not db_producto:
-        raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+    if not db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == inscripcion.producto_educativo_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto educativo no encontrado")
+    if not db.query(models.Participante).filter(models.Participante.id == inscripcion.participante_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participante no encontrado")
     
-    db_participante = db.query(models.Participante).filter(models.Participante.id == inscripcion.participante_id).first()
-    if not db_participante:
-        raise HTTPException(status_code=404, detail="Participante no encontrado")
-
-    db_inscripcion = db.query(models.Inscripcion).filter_by(
+    existing_inscripcion = db.query(models.Inscripcion).filter_by(
         producto_educativo_id=inscripcion.producto_educativo_id,
         participante_id=inscripcion.participante_id
     ).first()
-    if db_inscripcion:
-        raise HTTPException(status_code=400, detail="El participante ya está inscrito en este producto")
+    if existing_inscripcion:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El participante ya está inscrito en este producto")
 
-    new_inscripcion = models.Inscripcion(**inscripcion.dict())
+    new_inscripcion = models.Inscripcion(**inscripcion.model_dump())
     db.add(new_inscripcion)
     db.commit()
     db.refresh(new_inscripcion)
     return new_inscripcion
 
-
-@router.get("/producto/{producto_id}", response_model=List[Inscripcion])
+@router.get("/producto/{producto_id}", response_model=List[InscripcionOut])
 def get_inscripciones_por_producto(producto_id: int, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
     return db_producto.inscripciones
 
-
-@router.delete("/{inscripcion_id}", status_code=204)
+@router.delete("/{inscripcion_id}", status_code=status.HTTP_200_OK)
 def delete_inscripcion(inscripcion_id: int, db: Session = Depends(get_db)):
     db_inscripcion = db.query(models.Inscripcion).filter(models.Inscripcion.id == inscripcion_id).first()
     if not db_inscripcion:
-        raise HTTPException(status_code=404, detail="Inscripción no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inscripción no encontrada")
     db.delete(db_inscripcion)
     db.commit()
-    return
+    # --- CORRECCIÓN DE RESPUESTA ---
+    return {"detail": "Inscripción eliminada exitosamente"}
 
 @router.post("/producto/{producto_id}/upload-participantes/")
 async def upload_participantes_e_inscribir(
