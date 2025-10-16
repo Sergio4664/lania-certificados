@@ -1,6 +1,10 @@
+//Ruta: frontend/lania-ui/src/app/features/admin/administradores/admin-administradores.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+
+// Usando tus interfaces y servicios existentes
 import { Administrador } from '@shared/interfaces/administrador.interface';
 import { AdministradorService } from '@shared/services/administrador.service';
 import { NotificationService } from '@shared/services/notification.service';
@@ -25,8 +29,11 @@ export default class AdminAdministradoresComponent implements OnInit {
   isLoading = false;
 
   constructor() {
+    // Tu formulario se mantiene igual, ya que la validación del lado del cliente es correcta.
     this.adminForm = this.fb.group({
       nombre_completo: ['', [Validators.required, Validators.minLength(3)]],
+      // NOTA: El backend parece no usar este campo 'email', solo 'email_institucional'.
+      // Lo mantenemos para no romper tu formulario actual, pero considera si es necesario.
       email: ['', [Validators.required, Validators.email]],
       email_institucional: ['', [
         Validators.required,
@@ -57,9 +64,10 @@ export default class AdminAdministradoresComponent implements OnInit {
         this.administradores = data;
         this.isLoading = false;
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.isLoading = false;
-        this.notificationService.showError('Error al cargar los administradores.');
+        // --- CORRECCIÓN: Usar la función centralizada para errores ---
+        this.handleError(err, 'Error al cargar los administradores.');
       }
     });
   }
@@ -100,19 +108,32 @@ export default class AdminAdministradoresComponent implements OnInit {
         this.loadAdmins();
         this.toggleForm();
       },
-      error: (err) => this.notificationService.showError(err.error?.detail || 'Ocurrió un error.')
+      // --- CORRECCIÓN: Usar la función centralizada para errores ---
+      error: (err: HttpErrorResponse) => {
+        const fallback = `Ocurrió un error al ${this.isEditing ? 'actualizar' : 'crear'} el administrador.`;
+        this.handleError(err, fallback);
+      }
     });
   }
 
   deleteAdmin(admin: Administrador): void {
     if (confirm(`¿Estás seguro de que quieres eliminar a ${admin.nombre_completo}?`)) {
       this.adminService.delete(admin.id).subscribe({
-        next: () => {
-          this.notificationService.showSuccess('Administrador eliminado con éxito.');
+        next: (response) => {
+          // --- CORRECCIÓN CLAVE: Usar el mensaje de la respuesta del backend ---
+          this.notificationService.showSuccess(response.detail);
           this.loadAdmins();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar administrador.')
+        // --- CORRECCIÓN: Usar la función centralizada para errores ---
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al eliminar el administrador.')
       });
     }
+  }
+
+  // --- FUNCIÓN CENTRALIZADA Y MEJORADA PARA MANEJAR TODOS LOS ERRORES ---
+  private handleError(error: HttpErrorResponse, fallbackMessage: string) {
+    console.error('Backend Error:', error);
+    const userMessage = error.error?.detail || fallbackMessage;
+    this.notificationService.showError(userMessage);
   }
 }
