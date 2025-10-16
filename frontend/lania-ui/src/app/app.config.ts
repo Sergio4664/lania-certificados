@@ -1,17 +1,24 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+
 import { routes } from './app.routes';
+// --- CORRECCIÓN DE LA IMPORTACIÓN ---
+// Se importa el interceptor funcional con el nombre correcto.
 import { authTokenInterceptor } from './core/auth.interceptor';
 
-// ATENCIÓN: Se han eliminado las líneas de provideFormsModule y provideReactiveFormsModule.
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authTokenInterceptor])),
     provideAnimations(),
-    importProvidersFrom(MatSnackBarModule)
+    
+    // --- CORRECCIÓN DEL REGISTRO ---
+    // Se registra el 'authTokenInterceptor' funcional.
+    // Esto asegura que cada petición HTTP incluya el token de autenticación.
+    provideHttpClient(
+      withInterceptors([authTokenInterceptor])
+    ),
   ]
 };
