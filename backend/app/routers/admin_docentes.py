@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app import models
+# Se importa 'DocenteOut' que es el nombre correcto del schema de salida.
 from app.schemas.docente import DocenteCreate, DocenteUpdate, DocenteOut
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -15,23 +16,23 @@ router = APIRouter(
 
 @router.post("/", response_model=DocenteOut, status_code=201)
 def create_docente(docente: DocenteCreate, db: Session = Depends(get_db)):
-    # --- VALIDACIÓN DE UNICIDAD MEJORADA ---
+    # --- VALIDACIONES DE UNICIDAD PARA CREACIÓN ---
 
-    # 1. Verificar email institucional (obligatorio)
+    # 1. Email Institucional
     if db.query(models.Docente).filter(models.Docente.email_institucional == docente.email_institucional).first():
         raise HTTPException(status_code=400, detail="El email institucional ya se encuentra registrado.")
-
-    # 2. Verificar email personal (si se proporciona)
+    
+    # 2. Email Personal (si existe)
     if docente.email_personal and db.query(models.Docente).filter(models.Docente.email_personal == docente.email_personal).first():
-        raise HTTPException(status_code=400, detail="El email personal ya está en uso por otro docente.")
+        raise HTTPException(status_code=400, detail="El email personal ya está en uso.")
 
-    # 3. Verificar teléfono (si se proporciona)
+    # 3. Teléfono (si existe)
     if docente.telefono and db.query(models.Docente).filter(models.Docente.telefono == docente.telefono).first():
-        raise HTTPException(status_code=400, detail="El número de teléfono ya está en uso por otro docente.")
+        raise HTTPException(status_code=400, detail="El teléfono ya está en uso.")
 
-    # 4. Verificar WhatsApp (si se proporciona)
+    # 4. WhatsApp (si existe)
     if docente.whatsapp and db.query(models.Docente).filter(models.Docente.whatsapp == docente.whatsapp).first():
-        raise HTTPException(status_code=400, detail="El número de WhatsApp ya está en uso por otro docente.")
+        raise HTTPException(status_code=400, detail="El WhatsApp ya está en uso.")
 
     # CORRECCIÓN: Usar model_dump() para Pydantic v2
     db_docente = models.Docente(**docente.model_dump())
@@ -61,16 +62,17 @@ def update_docente(docente_id: int, docente: DocenteUpdate, db: Session = Depend
     # CORRECCIÓN: Usar model_dump() para Pydantic v2
     update_data = docente.model_dump(exclude_unset=True)
 
-    # --- VALIDACIÓN DE UNICIDAD EN ACTUALIZACIÓN ---
+    # --- LÓGICA DE VALIDACIÓN MEJORADA PARA ACTUALIZACIÓN ---
     for key, value in update_data.items():
-        if value is None:  # Permite establecer un campo a null
-            setattr(db_docente, key, value)
-            continue
+        # Si el valor es uno de los campos que debe ser único
+        if key in ["email_institucional", "email_personal", "telefono", "whatsapp"] and value is not None:
+            # Busca si otro docente (con ID diferente) ya tiene este valor
+            existing_docente = db.query(models.Docente).filter(
+                getattr(models.Docente, key) == value
+            ).filter(models.Docente.id != docente_id).first()
             
-        # Comprobar si el valor ya existe en OTRO docente
-        query = db.query(models.Docente).filter(getattr(models.Docente, key) == value).filter(models.Docente.id != docente_id)
-        if query.first():
-            raise HTTPException(status_code=400, detail=f"El valor '{value}' para el campo '{key}' ya está en uso.")
+            if existing_docente:
+                raise HTTPException(status_code=400, detail=f"El campo '{key}' con valor '{value}' ya está en uso por otro docente.")
         
         setattr(db_docente, key, value)
         
@@ -78,7 +80,7 @@ def update_docente(docente_id: int, docente: DocenteUpdate, db: Session = Depend
     db.refresh(db_docente)
     return db_docente
 
-@router.delete("/{docente_id}", status_code=204)
+@router.delete("/{docente_id}", status_code=status.HTTP_200_OK)
 def delete_docente(docente_id: int, db: Session = Depends(get_db)):
     db_docente = db.query(models.Docente).filter(models.Docente.id == docente_id).first()
     if db_docente is None:
@@ -86,4 +88,5 @@ def delete_docente(docente_id: int, db: Session = Depends(get_db)):
     
     db.delete(db_docente)
     db.commit()
-    return
+    # --- CAMBIO CLAVE: Devolver un JSON en lugar de una respuesta vacía ---
+    return {"detail": "Docente eliminado exitosamente"}

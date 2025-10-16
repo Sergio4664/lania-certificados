@@ -1,10 +1,11 @@
-//ruta: frontend/lania-ui/src/app/features/dashboard/docentes/admin-docentes.component.ts
+// frontend/lania-ui/src/app/features/dashboard/docentes/admin-docentes.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
-// Interfaces y Servicios actualizados y centralizados
+// Interfaces y Servicios
 import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '@shared/interfaces/docente.interfaces';
 import { DocenteService } from '@shared/services/docente.service';
 import { NotificationService } from '@app/shared/services/notification.service';
@@ -34,7 +35,7 @@ export default class AdminDocentesComponent implements OnInit {
   constructor() {
     this.docenteForm = this.fb.group({
       nombre_completo: ['', Validators.required],
-      especialidad: [''], // Campo opcional
+      especialidad: [''],
       email_institucional: ['', [Validators.required, Validators.email]],
       email_personal: ['', [Validators.email]],
       telefono: [''],
@@ -54,10 +55,7 @@ export default class AdminDocentesComponent implements OnInit {
         this.filteredDocentes = data;
         this.isLoading = false;
       },
-      error: () => {
-        this.notificationService.showError('Error al cargar los docentes.');
-        this.isLoading = false;
-      }
+      error: (err: HttpErrorResponse) => this.handleError(err, 'Error al cargar los docentes.')
     });
   }
 
@@ -90,7 +88,7 @@ export default class AdminDocentesComponent implements OnInit {
           this.notificationService.showSuccess('Docente eliminado exitosamente.');
           this.loadDocentes();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar el docente.')
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al eliminar el docente.')
       });
     }
   }
@@ -110,8 +108,7 @@ export default class AdminDocentesComponent implements OnInit {
           this.loadDocentes();
           this.toggleForm();
         },
-        
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al actualizar el docente.')
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al actualizar el docente.')
       });
     } else {
       this.docenteService.create(formData as CreateDocenteDTO).subscribe({
@@ -120,8 +117,33 @@ export default class AdminDocentesComponent implements OnInit {
           this.loadDocentes();
           this.toggleForm();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al crear el docente.')
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al crear el docente.')
       });
     }
+  }
+
+  // --- FUNCIÓN DE MANEJO DE ERRORES MEJORADA ---
+  private handleError(error: HttpErrorResponse, fallbackMessage: string) {
+    console.error('Backend Error:', error);
+    let userMessage = fallbackMessage;
+    const errorBody = error.error;
+
+    if (errorBody) {
+      // Si 'detail' es un string (error de unicidad personalizado desde FastAPI)
+      if (typeof errorBody.detail === 'string') {
+        userMessage = errorBody.detail;
+      } 
+      // Si 'detail' es un array (error de validación de Pydantic)
+      else if (Array.isArray(errorBody.detail)) {
+        // Formateamos el primer error del array para mostrarlo
+        const firstError = errorBody.detail[0];
+        if (firstError && firstError.msg) {
+          const field = firstError.loc[1] || 'campo';
+          userMessage = `Error en '${field}': ${firstError.msg}`;
+        }
+      }
+    }
+    
+    this.notificationService.showError(userMessage);
   }
 }

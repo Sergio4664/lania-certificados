@@ -11,7 +11,7 @@ import { Inscripcion, InscripcionCreate } from '@shared/interfaces/inscripcion.i
 })
 export class InscripcionService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/admin/inscripciones`;
+  private apiUrl = `${environment.apiUrl}/admin/inscripciones`;
 
   /**
    * Obtiene una lista de todas las inscripciones.

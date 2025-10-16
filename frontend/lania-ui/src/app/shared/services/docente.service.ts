@@ -11,7 +11,7 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '@shared/interfac
 })
 export class DocenteService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/admin/docentes`;
+  private apiUrl = `${environment.apiUrl}/admin/docentes`;
 
   // Obtener todos los docentes
   getAll(): Observable<DocenteDTO[]> {

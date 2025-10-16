@@ -11,7 +11,7 @@ import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } f
 })
 export class ProductoEducativoService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/admin/productos-educativos`;
+  private apiUrl = `${environment.apiUrl}/admin/productos-educativos`;
 
   /**
    * Obtiene una lista de todos los productos educativos.

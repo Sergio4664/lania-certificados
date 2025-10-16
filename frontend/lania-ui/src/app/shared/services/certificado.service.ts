@@ -11,7 +11,7 @@ import { Certificado, CertificadoCreate, CertificadoPublic } from '@shared/inter
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados`;
+  private adminApiUrl = `${environment.apiUrl}/admin/certificados`;
   private publicApiUrl = `${environment.apiUrl}/public`;
 
   /**

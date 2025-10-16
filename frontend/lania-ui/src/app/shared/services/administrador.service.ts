@@ -10,7 +10,7 @@ import { Administrador, AdministradorCreate, AdministradorUpdate } from '@shared
 })
 export class AdministradorService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/admin/administradores`;
+  private apiUrl = `${environment.apiUrl}/admin/administradores`;
 
   // Obtener todos los administradores
   getAll(): Observable<Administrador[]> {
