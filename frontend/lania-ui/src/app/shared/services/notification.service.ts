@@ -29,4 +29,15 @@ export class NotificationService {
       verticalPosition: 'top'
     });
   }
+
+  /**
+   * Muestra una notificación de información (azul).
+   */
+  showInfo(message: string, action: string = 'Cerrar'): void {
+    this.snackBar.open(message, action, {
+      duration: 4000, // Duración intermedia
+      panelClass: ['snackbar-info'], // Clase CSS para el estilo
+      verticalPosition: 'top'
+    });
+  }
 }

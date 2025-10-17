@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/app/shared/services/certificado.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -6,12 +7,19 @@ import { environment } from '../../../environments/environment';
 // Asumiremos que estas interfaces se crearán en /shared/interfaces/
 import { Certificado, CertificadoCreate, CertificadoPublic } from '@shared/interfaces/certificado.interface';
 
+export interface BulkIssuanceResponse {
+  success: { participante: string; folio: string }[];
+  errors: { participante: string; error: string }[];
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados`;
+  // Se ajusta la URL para que coincida con la ruta base de los endpoints de certificados en el backend.
+  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados`; 
   private publicApiUrl = `${environment.apiUrl}/public`;
 
   /**
@@ -50,8 +58,16 @@ export class CertificadoService {
    * @param certificadoId - El ID del certificado a enviar.
    */
   sendEmail(certificadoId: number): Observable<any> {
-    // --- CORRECCIÓN AQUÍ ---
-    // Se añadió la diagonal (/) antes del ID del certificado.
     return this.http.post(`${this.adminApiUrl}/send-email/${certificadoId}`, {});
+  }
+
+  /**
+   * Llama al endpoint del backend para iniciar la emisión y envío masivo de constancias
+   * para un producto educativo específico.
+   * @param productoId El ID del producto educativo.
+   */
+  emitirYEnviarMasivamente(productoId: number): Observable<BulkIssuanceResponse> {
+    // Este método llama al nuevo endpoint creado en el backend.
+    return this.http.post<BulkIssuanceResponse>(`${this.adminApiUrl}/emitir-masivamente/${productoId}`, {});
   }
 }

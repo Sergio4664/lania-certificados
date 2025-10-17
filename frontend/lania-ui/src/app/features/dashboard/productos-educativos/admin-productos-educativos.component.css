@@ -1,4 +1,10 @@
-/* General Layout & Header */
+/*
+  ========================================
+  ESTILOS CORREGIDOS PARA PRODUCTOS EDUCATIVOS
+  ========================================
+*/
+
+/* --- 1. Layout General y Encabezado --- */
 .module-content {
   max-width: 1400px;
   margin: 0 auto;
@@ -17,7 +23,7 @@
 }
 
 .module-header h2 {
-  color: #1e293b;
+  color: #111827;
   margin: 0;
   font-size: 28px;
   font-weight: 700;
@@ -36,14 +42,14 @@
 .search-container input {
   padding: 10px 10px 10px 35px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d1d5db;
   width: 250px;
   transition: all 0.2s;
 }
 
 .search-container input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
   outline: none;
 }
 
@@ -52,10 +58,11 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: #6b7280;
 }
 
-/* --- ESTILOS NUEVOS PARA SECCIONES DE PRODUCTOS --- */
+
+/* --- 2. Secciones de Productos y Cuadrícula (CORREGIDO) --- */
 .product-section {
   margin-bottom: 48px;
 }
@@ -63,52 +70,53 @@
 .section-title {
   font-size: 22px;
   font-weight: 600;
-  color: #1e293b;
+  color: #111827;
   padding-bottom: 12px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e5e7eb;
   margin-bottom: 24px;
 }
 
+/* FIX: Asegura que la cuadrícula se aplique correctamente. */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
 
-/* Form Styles */
+
+/* --- 3. Estilos de Formularios --- */
 .form-card {
   background: white;
   border-radius: 12px;
   padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  margin-bottom: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
 }
-
-.form-card h3, .form-card h4 {
-  color: #1e293b;
+.form-card h3 {
+  color: #111827;
   margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
 }
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
-
 .form-group {
   display: flex;
   flex-direction: column;
 }
-
 .form-group.full-width {
   grid-column: 1 / -1;
 }
-
 .form-group label {
   color: #374151;
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 14px;
 }
-
 .form-group input, .form-group select, .form-group textarea {
   padding: 12px;
   border: 1px solid #d1d5db;
@@ -116,13 +124,11 @@
   font-size: 14px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
-
 .form-actions {
   display: flex;
   gap: 12px;
@@ -130,21 +136,11 @@
   margin-top: 8px;
   justify-content: flex-end;
 }
-
-/* Docentes Selection in Form */
-.docentes-selection {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  background: #f9fafb;
-}
-
 .docentes-checkboxes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
-
 .checkbox-item {
   display: flex;
   align-items: flex-start;
@@ -154,31 +150,11 @@
   border-radius: 6px;
   border: 1px solid #e2e8f0;
 }
+.checkbox-item input[type="checkbox"] { margin-top: 4px; }
+.checkbox-item label { flex: 1; }
 
-.checkbox-item input[type="checkbox"] {
-  margin-top: 4px;
-  transform: scale(1.2);
-  cursor: pointer;
-}
-
-.checkbox-item label {
-  margin: 0;
-  cursor: pointer;
-  flex: 1;
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.checkbox-item label small {
-  display: block;
-  color: #6b7280;
-  font-weight: normal;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-/* Button Styles */
-.primary-btn, .secondary-btn {
+/* --- 4. Estilos de Botones --- */
+.primary-btn, .secondary-btn, .btn-success {
   border: none;
   padding: 10px 18px;
   border-radius: 8px;
@@ -190,240 +166,128 @@
   justify-content: center;
   gap: 8px;
 }
-.primary-btn {
-  background-color: #4f46e5;
-  color: white;
-}
-.primary-btn:hover {
-  background-color: #4338ca;
-}
-.primary-btn:disabled {
-  background-color: #a5b4fc;
-  cursor: not-allowed;
-}
+.primary-btn { background-color: #4f46e5; color: white; }
+.primary-btn:hover { background-color: #4338ca; }
+.primary-btn:disabled { background-color: #a5b4fc; cursor: not-allowed; }
+.secondary-btn { background: #e5e7eb; color: #374151; }
+.secondary-btn:hover { background: #d1d5db; }
+.btn-success { background-color: #16a34a; color: white; }
+.btn-success:hover { background-color: #15803d; }
+.small-btn { padding: 6px 12px; font-size: 12px; }
 
-.secondary-btn {
-  background: #e5e7eb;
-  color: #374151;
-  border: 1px solid transparent;
-}
 
-.secondary-btn:hover {
-  background: #d1d5db;
-}
-
-/* Course Card Styles */
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-}
-
+/* --- 5. Estilos de Tarjetas de Producto --- */
 .course-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
-
 .course-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
-
-.course-card-header {
-  padding: 20px;
-  color: white;
-  position: relative;
-  min-height: 100px;
-}
-.course-name {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-.course-card-body {
-  padding: 20px;
-  flex-grow: 1;
-}
-.detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: #64748b;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-.detail-item.docentes {
-  flex-direction: column;
-  align-items: flex-start;
-}
-.detail-item strong {
-  color: #1e293b;
-  font-weight: 600;
-  min-width: 60px;
-}
-.docentes-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-.docente-tag-small {
-  background: #e0e7ff;
-  color: #4338ca;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-}
-.course-card-footer {
-  padding: 12px 20px;
-  background: #f9fafb;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.icon-btn-card {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
+.course-card-header { padding: 20px; color: white; min-height: 100px; }
+.course-name { font-size: 18px; font-weight: 600; margin: 0; }
+.course-card-body { padding: 20px; flex-grow: 1; }
+.detail-item { display: flex; gap: 8px; color: #4b5563; font-size: 14px; margin-bottom: 12px; }
+.detail-item strong { color: #111827; font-weight: 600; min-width: 70px; }
+.course-card-footer { padding: 12px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
+.no-data-card {
+  grid-column: 1 / -1; /* Ocupa todo el ancho de la cuadrícula si está vacía */
+  text-align: center;
+  padding: 32px;
   color: #6b7280;
-  background: transparent;
-}
-.icon-btn-card:hover {
-  background: #e5e7eb;
-}
-.icon-btn.edit {
-  color: #f59e0b;
-}
-.icon-btn.edit:hover {
-    background-color: #fef3c7;
+  font-style: italic;
+  background-color: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
 }
 
-/* Modal Styles */
+
+/* --- 6. Estilos del Modal (CORREGIDO) --- */
 .modal-overlay {
+  /* FIX: Estas propiedades aseguran que el modal cubra toda la pantalla y se mantenga al frente. */
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: rgba(17, 24, 39, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  z-index: 1000; /* Un z-index alto lo pone por encima de todo */
 }
 .modal-content {
   background: #f9fafb;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
   width: 90%;
-  max-width: 1250px; /* Ancho ajustado para el modal principal */
+  max-width: 1250px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Evita que el contenido se desborde */
 }
-
-/* --- ✅ Ajuste para el modal de competencias --- */
-.modal-content.competencies-modal {
-  max-width: 700px; /* Un ancho más adecuado para este modal */
-}
-
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e5e7eb;
   background: white;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
 }
-.modal-header h2 {
-  margin: 0;
-  font-size: 22px;
-  color: #1e293b;
-}
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  color: #64748b;
-  font-size: 24px;
-  line-height: 1;
-}
-.close-btn:hover {
-  color: #ef4444;
-}
+.modal-header h2 { margin: 0; font-size: 22px; color: #111827; }
+.close-btn { background: transparent; border: none; cursor: pointer; color: #6b7280; font-size: 24px; }
+.close-btn:hover { color: #ef4444; }
 .modal-body {
   padding: 24px;
-  overflow-y: auto;
+  overflow-y: auto; /* Permite el scroll solo en el cuerpo del modal */
   flex-grow: 1;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
 }
 .modal-section {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #e5e7eb;
-}
-.modal-section h4 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
-    color: #1f2937;
-}
-.add-participant-section {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-}
-.upload-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.form-card.nested-form {
-  padding: 16px;
-  margin-top: 0;
-  background-color: #f8fafc;
+  background: white;
+  padding: 20px;
   border-radius: 8px;
-  flex-grow: 1;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
 }
+.modal-section h4 { margin: 0 0 16px 0; font-size: 18px; color: #1f2937; }
 
-/* Data Table in Modal */
-.data-table .table-title {
-  font-size: 18px;
-  color: #1f2937;
-  padding: 16px;
-  background: #f9fafb;
-  margin: 0 0 24px 0;
-  border-bottom: 1px solid #e5e7eb;
+
+/* --- 7. Estilos de Tablas y Elementos del Modal --- */
+.data-table {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
 }
+.data-table table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+.data-table th { background-color: #f9fafb; font-size: 12px; font-weight: 600; color: #4b5563; text-transform: uppercase; }
+.data-table tbody tr:last-child td { border-bottom: none; }
 
-.cert-actions, .send-actions, .actions-cell {
+.actions-cell {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .serial-tag {
   background: #eef2ff;
   color: #4338ca;
@@ -433,93 +297,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-.no-data, .no-data-card {
-  text-align: center;
-  padding: 32px;
-  color: #9ca3af;
-  font-style: italic;
-}
-.no-data-card {
-    background-color: #f9fafb;
-    border: 1px dashed #d1d5db;
-    border-radius: 12px;
-}
-
-.icon-btn.delete {
-    color: #ef4444;
-    background: #fee2e2;
-}
-.icon-btn.delete:hover {
-    background: #fca5a5;
-    color: white;
-}
-
-/* --- ESTILO NUEVO PARA BOTÓN DE EMAIL --- */
-.icon-btn.email {
-    color: #0ea5e9;
-    background-color: #f0f9ff;
-}
-.icon-btn.email:hover {
-    background-color: #e0f2fe;
-}
-
-.small-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-}
-
-/* --- ✅ INICIO DE ESTILOS PARA MODAL DE COMPETENCIAS --- */
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid #e2e8f0;
-  background: white;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-
-.modal-instructions {
-  margin: 0 0 16px 0;
-  color: #6b7280;
-  font-size: 14px;
-  background-color: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.competency-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.competency-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.competency-input {
-  flex-grow: 1;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  resize: vertical; /* Permite al usuario ajustar la altura */
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.competency-input:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-}
-
 .icon-btn {
   padding: .5rem;
   line-height: 1;
@@ -532,5 +309,12 @@
   justify-content: center;
   transition: background-color 0.2s;
 }
+.icon-btn.delete { color: #ef4444; }
+.icon-btn.delete:hover { background: #fee2e2; }
+.icon-btn.email { color: #0ea5e9; }
+.icon-btn.email:hover { background-color: #e0f2fe; }
 
-/* --- ✅ FIN DE ESTILOS PARA MODAL DE COMPETENCIAS --- */
+/* ... (otros estilos de competencias que ya tenías) ... */
+.competency-item { display: flex; align-items: center; gap: 12px; }
+.competency-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.competency-input { flex-grow: 1; resize: vertical; }

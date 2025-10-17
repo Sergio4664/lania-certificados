@@ -1,68 +1,110 @@
-# backend/app/services/certificate_service.py
-import logging
-import os
-from sqlalchemy.orm import Session
+import uuid
+import secrets
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
+import logging
 
-# Importamos los modelos y los otros servicios
-from app import models
-from app.services.pdf_service import generate_certificate_pdf
+from app.models.certificado import Certificado
+from app.models.inscripciones import Inscripcion
+from app.schemas.certificado import CertificadoCreate
+from app.services.pdf_service import generate_certificate_pdf # Asumimos que pdf_service.py está adaptado
 from app.services.email_service import send_certificate_email
 
 logger = logging.getLogger(__name__)
 
-
-def emitir_certificado_completo(db: Session, certificado: models.Certificado):
+def issue_single_certificate(db: Session, inscripcion: Inscripcion) -> Certificado:
     """
-    Orquesta todo el proceso: genera el PDF, lo guarda y envía el correo.
+    Crea, genera el PDF, envía por correo y guarda un único certificado para una inscripción.
     """
-    try:
-        # 1. Extraer toda la información necesaria de las relaciones del objeto
-        inscripcion = certificado.inscripcion
-        if not inscripcion:
-            raise ValueError("El certificado no está asociado a ninguna inscripción.")
-        
-        participante = inscripcion.participante
-        producto = inscripcion.producto_educativo
+    # 1. Verificar si ya existe un certificado para esta inscripción
+    existing_cert = db.query(Certificado).filter(Certificado.inscripcion_id == inscripcion.id).first()
+    if existing_cert:
+        raise HTTPException(status_code=409, detail=f"La constancia para '{inscripcion.participante.nombre_completo}' ya fue emitida (Folio: {existing_cert.folio}).")
 
-        nombres_docentes = ", ".join([d.nombre_completo for d in producto.docentes]) or "N/A"
-        fechas_producto_str = f"del {producto.fecha_inicio.strftime('%d de %B de %Y')} al {producto.fecha_fin.strftime('%d de %B de %Y')}"
+    # 2. Crear la entidad del certificado en la base de datos
+    nuevo_certificado = Certificado(
+        inscripcion_id=inscripcion.id,
+        folio=f"LANIA-{datetime.now().strftime('%Y')}-{secrets.token_hex(4).upper()}",
+        fecha_emision=datetime.now(timezone.utc),
+        qr_token=str(uuid.uuid4())
+    )
+    db.add(nuevo_certificado)
+    db.flush()  # Para obtener el ID del nuevo certificado
 
-        # 2. Generar el contenido del PDF llamando a pdf_service
-        pdf_bytes = generate_certificate_pdf(
-            participant_name=participante.nombre_completo,
-            course_name=producto.nombre,
-            hours=producto.horas,
-            issue_date=certificado.fecha_emision,
-            serial=certificado.folio,
-            qr_token=certificado.folio,
-            course_dates_str=fechas_producto_str,
-            docente_names_str=nombres_docentes
-        )
+    # 3. Preparar datos para el PDF y el correo
+    producto = inscripcion.producto_educativo
+    participante = inscripcion.participante
+    
+    # Lógica de competencias (simplificada)
+    competencias_list = []
+    if producto.tipo_producto == 'CURSO_EDUCATIVO' and producto.competencias:
+        try:
+            # Asumimos que las competencias son una lista de strings en formato JSON
+            import json
+            competencias_list = json.loads(producto.competencias)
+        except (json.JSONDecodeError, TypeError):
+            # Si no es un JSON válido, lo tratamos como texto plano separado por saltos de línea
+            competencias_list = [c.strip() for c in producto.competencias.split('\n') if c.strip()]
 
-        # 3. Guardar el archivo PDF en el servidor
-        os.makedirs("certificates", exist_ok=True)
-        pdf_filename = f"certificates/{certificado.folio}.pdf"
-        with open(pdf_filename, "wb") as f:
-            f.write(pdf_bytes)
+    # 4. Generar el contenido del PDF
+    pdf_bytes = generate_certificate_pdf(
+        participant_name=participante.nombre_completo,
+        course_name=producto.nombre,
+        hours=producto.horas,
+        issue_date=nuevo_certificado.fecha_emision.date(),
+        serial=nuevo_certificado.folio,
+        qr_token=nuevo_certificado.qr_token,
+        course_modality=producto.modalidad.value,
+        course_date=producto.fecha_inicio.strftime("%d de %B de %Y"),
+        competencies=competencias_list
+    )
+    
+    # 5. Enviar el correo electrónico con el PDF adjunto
+    send_certificate_email(
+        recipient_email=participante.email_personal,
+        recipient_name=participante.nombre_completo,
+        course_name=producto.nombre,
+        pdf_content=pdf_bytes,
+        serial=nuevo_certificado.folio
+    )
 
-        # 4. Enviar el correo electrónico al participante (si tiene email)
-        if participante.email_personal:
-            try:
-                send_certificate_email(
-                    recipient_email=participante.email_personal,
-                    recipient_name=participante.nombre_completo,
-                    course_name=producto.nombre,
-                    pdf_content=pdf_bytes,
-                    serial=certificado.folio
-                )
-            except Exception as e:
-                # Si falla el correo, solo se registra, no se detiene el proceso
-                logger.error(f"FALLO EL ENVÍO DE CORREO para el certificado {certificado.folio}: {e}")
-        
-        logger.info(f"Certificado {certificado.folio} emitido y procesado correctamente.")
+    db.commit()
+    db.refresh(nuevo_certificado)
+    
+    return nuevo_certificado
 
-    except Exception as e:
-        logger.error(f"Error crítico en el proceso de emisión del certificado {certificado.id}: {e}")
-        # Es importante relanzar la excepción para que el router sepa que algo salió mal
-        raise HTTPException(status_code=500, detail=f"No se pudo generar el PDF o procesar el certificado: {e}")
+def issue_and_send_bulk_certificates_for_product(db: Session, producto_id: int):
+    """
+    Orquesta la emisión y envío masivo de certificados para todos los participantes
+    de un producto educativo que aún no tienen una constancia.
+    """
+    # Cargar inscripciones junto con sus participantes y productos para evitar N+1 queries
+    inscripciones_sin_certificado = db.query(Inscripcion).options(
+        joinedload(Inscripcion.participante),
+        joinedload(Inscripcion.producto_educativo)
+    ).outerjoin(Certificado).filter(
+        Inscripcion.producto_educativo_id == producto_id,
+        Certificado.id == None
+    ).all()
+
+    if not inscripciones_sin_certificado:
+        raise HTTPException(status_code=404, detail="No hay participantes nuevos a los que emitir constancias para este producto.")
+
+    results = {"success": [], "errors": []}
+
+    for inscripcion in inscripciones_sin_certificado:
+        try:
+            certificado_emitido = issue_single_certificate(db, inscripcion)
+            results["success"].append({
+                "participante": inscripcion.participante.nombre_completo,
+                "folio": certificado_emitido.folio
+            })
+        except Exception as e:
+            db.rollback() # Revertir la transacción para esta inscripción fallida
+            results["errors"].append({
+                "participante": inscripcion.participante.nombre_completo,
+                "error": str(e)
+            })
+
+    return results
