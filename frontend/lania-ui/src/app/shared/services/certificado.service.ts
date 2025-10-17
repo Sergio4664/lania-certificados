@@ -15,7 +15,8 @@ export interface BulkIssuanceResponse {
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados`;
+  // ✅ CORRECCIÓN: Se añade una barra al final de la URL base.
+  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados/`;
   private publicApiUrl = `${environment.apiUrl}/public`;
 
   /**
@@ -29,6 +30,7 @@ export class CertificadoService {
    * Crea un nuevo certificado para una inscripción existente.
    */
   create(certificado: CertificadoCreate): Observable<Certificado> {
+    // La URL base ya tiene la barra, por lo que la llamada POST es correcta.
     return this.http.post<Certificado>(this.adminApiUrl, certificado);
   }
 
@@ -36,7 +38,8 @@ export class CertificadoService {
    * Elimina un certificado por su ID.
    */
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.adminApiUrl}/${id}`);
+    // Se construye la URL como: .../certificados/123
+    return this.http.delete<void>(`${this.adminApiUrl}${id}`);
   }
 
   /**
@@ -50,13 +53,14 @@ export class CertificadoService {
    * Solicita al backend que reenvíe un certificado por correo.
    */
   sendEmail(certificadoId: number): Observable<any> {
-    return this.http.post(`${this.adminApiUrl}/send-email/${certificadoId}`, {});
+    return this.http.post(`${this.adminApiUrl}send-email/${certificadoId}`, {});
   }
 
   /**
    * Llama al endpoint del backend para la emisión y envío masivo de constancias.
    */
   emitirYEnviarMasivamente(productoId: number): Observable<BulkIssuanceResponse> {
-    return this.http.post<BulkIssuanceResponse>(`${this.adminApiUrl}/emitir-masivamente/${productoId}`, {});
+    // ✅ CORRECCIÓN: Se añade una barra al final para ser consistentes.
+    return this.http.post<BulkIssuanceResponse>(`${this.adminApiUrl}emitir-masivamente/${productoId}/`, {});
   }
 }

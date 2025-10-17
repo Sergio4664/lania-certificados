@@ -305,8 +305,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
   
-  // --- LÓGICA DE CONSTANCIAS ---
-  
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
   }
@@ -373,7 +371,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
             this.notificationSvc.showError(`${errorCount} constancias no pudieron ser emitidas. Revisa la consola para más detalles.`);
           }
   
-          // Recargar los datos para que la UI refleje las nuevas constancias emitidas
           this.loadInitialData(); 
           if(this.selectedCourse) {
             this.loadParticipantsForCourse(this.selectedCourse.id);
@@ -386,9 +383,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
-
-  // --- Lógica de Competencias (sin cambios) ---
-  
   openCompetenciesModal() {
     let competenciasValue = this.courseForm.value.competencias || '';
     try {

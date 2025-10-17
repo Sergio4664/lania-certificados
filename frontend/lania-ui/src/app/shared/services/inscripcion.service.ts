@@ -11,20 +11,14 @@ import { Inscripcion, InscripcionCreate } from '@shared/interfaces/inscripcion.i
 })
 export class InscripcionService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/admin/inscripciones`;
+  
+  // ✅ CORRECCIÓN AQUÍ: Se añadió el prefijo '/api' a la URL.
+  private apiUrl = `${environment.apiUrl}/api/admin/inscripciones`;
 
   /**
    * Obtiene una lista de todas las inscripciones.
-   * NOTA: Este endpoint debe existir en el backend. Si no, necesitaríamos un método
-   * como getByProductoId para cargar las inscripciones por producto.
    */
   getAll(): Observable<Inscripcion[]> {
-    // Por ahora, asumimos que un endpoint general es necesario.
-    // Si no lo tienes, puedes cambiar esto para que llame a `getByProductoId` donde sea necesario.
-    // O podrías tener un endpoint en el backend que devuelva todas las inscripciones.
-    // Por simplicidad para el componente de certificados, agregaremos un endpoint / en el backend router.
-    // Lo más probable es que tu router `admin_inscripciones` no tenga un GET a `/`. 
-    // Por favor, añade uno que devuelva todas las inscripciones.
     return this.http.get<Inscripcion[]>(this.apiUrl);
   }
 
@@ -61,6 +55,8 @@ export class InscripcionService {
     const formData = new FormData();
     formData.append('file', file, file.name);
 
+    // Nota: Asegúrate de que esta ruta coincida con la de tu backend para subir archivos.
+    // La hemos dejado como estaba, pero si tienes problemas, es posible que también necesite el prefijo /api.
     return this.http.post<any>(`${this.apiUrl}/producto/${productoId}/upload-participantes/`, formData);
   }
 }
