@@ -53,13 +53,6 @@
             <option value="ESCOLARIZADA">Escolarizada</option>
         </select>
       </div>
-      <div class="form-group full-width" *ngIf="courseForm.get('tipo_producto')?.value === 'CURSO_EDUCATIVO'">
-        <label>Competencias del Curso</label>
-        <button type="button" class="secondary-btn icon-left" (click)="openCompetenciesModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          {{ courseForm.get('competencias')?.value ? 'Editar Competencias' : 'Añadir Competencias' }}
-        </button>
-      </div>
       <div class="form-group full-width">
         <label>Docentes Asignados</label>
         <div class="docentes-selection">
@@ -109,56 +102,17 @@
       </div>
     </div>
     <div *ngIf="!cursos || cursos.length === 0" class="no-data-card">
-      {{ searchTerm ? 'No se encontraron cursos que coincidan con la búsqueda.' : 'No hay cursos registrados.' }}
+      {{ searchTerm ? 'No se encontraron cursos que coincidan.' : 'No hay cursos registrados.' }}
     </div>
   </div>
-
+  
   <div class="product-section">
     <h3 class="section-title">Píldoras Educativas</h3>
-    <div class="courses-grid">
-      <div class="course-card" *ngFor="let producto of pildoras" (click)="selectCourse(producto)">
-         <div class="course-card-header" [style.backgroundColor]="getCourseColor(producto.id)">
-            <h3 class="course-name">{{ producto.nombre }}</h3>
-        </div>
-        <div class="course-card-body">
-            <div class="detail-item"><strong>Modalidad:</strong> {{ producto.modalidad | titlecase }}</div>
-            <div class="detail-item"><strong>Fechas:</strong> {{ producto.fecha_inicio | date:'dd/MM/yy' }} - {{ producto.fecha_fin | date:'dd/MM/yy' }}</div>
-            <div class="detail-item"><strong>Horas:</strong> {{ producto.horas }}h</div>
-        </div>
-        <div class="course-card-footer">
-            <button class="icon-btn-card edit" (click)="editCourse(producto); $event.stopPropagation()" title="Editar">✏️</button>
-            <button class="icon-btn-card delete" (click)="deleteCourse(producto.id); $event.stopPropagation()" title="Eliminar">🗑️</button>
-        </div>
-      </div>
-    </div>
-    <div *ngIf="!pildoras || pildoras.length === 0" class="no-data-card">
-      {{ searchTerm ? 'No se encontraron píldoras que coincidan con la búsqueda.' : 'No hay píldoras registradas.' }}
-    </div>
-  </div>
-
-  <div class="product-section">
+     </div>
+  
+   <div class="product-section">
     <h3 class="section-title">Inyecciones Educativas</h3>
-    <div class="courses-grid">
-      <div class="course-card" *ngFor="let producto of inyecciones" (click)="selectCourse(producto)">
-        <div class="course-card-header" [style.backgroundColor]="getCourseColor(producto.id)">
-            <h3 class="course-name">{{ producto.nombre }}</h3>
-        </div>
-        <div class="course-card-body">
-            <div class="detail-item"><strong>Modalidad:</strong> {{ producto.modalidad | titlecase }}</div>
-            <div class="detail-item"><strong>Fechas:</strong> {{ producto.fecha_inicio | date:'dd/MM/yy' }} - {{ producto.fecha_fin | date:'dd/MM/yy' }}</div>
-            <div class="detail-item"><strong>Horas:</strong> {{ producto.horas }}h</div>
-        </div>
-        <div class="course-card-footer">
-            <button class="icon-btn-card edit" (click)="editCourse(producto); $event.stopPropagation()" title="Editar">✏️</button>
-            <button class="icon-btn-card delete" (click)="deleteCourse(producto.id); $event.stopPropagation()" title="Eliminar">🗑️</button>
-        </div>
-      </div>
-    </div>
-    <div *ngIf="!inyecciones || inyecciones.length === 0" class="no-data-card">
-      {{ searchTerm ? 'No se encontraron inyecciones que coincidan con la búsqueda.' : 'No hay inyecciones registradas.' }}
-    </div>
-  </div>
-
+     </div>
 
   <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -168,16 +122,18 @@
       </div>
       <div class="modal-body">
         
-        <div *ngIf="selectedCourse.docentes && selectedCourse.docentes.length > 0" class="data-table">
+        <div *ngIf="selectedCourse.docentes?.length > 0" class="data-table">
             <div class="table-header">
                 <h3 class="table-title">Docentes Asignados ({{ selectedCourse.docentes.length }})</h3>
-                <button class="btn-success small-btn" (click)="emitAndSendAll('docentes')">Emisión y Envío Masivo a Docentes</button>
+                <div>
+                  <button class="btn-success small-btn" (click)="emitirTodas('docentes')">Emitir Todas</button>
+                  <button class="btn-info small-btn" (click)="enviarTodas('docentes')">Enviar Todas</button>
+                </div>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Nombre del Docente</th>
-                  <th>Especialidad</th>
+                  <th>Nombre</th>
                   <th>Estado Constancia</th>
                   <th>Acciones</th>
                 </tr>
@@ -185,30 +141,22 @@
               <tbody>
                 <tr *ngFor="let docente of selectedCourse.docentes">
                   <td>{{ docente.nombre_completo }}</td>
-                  <td>{{ docente.especialidad || 'N/A' }}</td>
                   <td>
-                    <ng-container *ngIf="getCertificadoForDocente(docente) as cert; else noCertDocente">
-                      <span class="serial-tag">{{ cert.folio }}</span>
-                    </ng-container>
-                    <ng-template #noCertDocente>
-                      <span class="no-docentes-small">No emitida</span>
-                    </ng-template>
+                    <span *ngIf="getCertificadoForDocente(docente) as cert" class="serial-tag">{{ cert.folio }}</span>
+                    <span *ngIf="!getCertificadoForDocente(docente)" class="no-docentes-small">No emitida</span>
                   </td>
                   <td class="actions-cell">
-                    <ng-container *ngIf="getCertificadoForDocente(docente) as cert; else issueBtnDocente">
-                      <button class="icon-btn email" (click)="sendCertificate(cert.id)" title="Reenviar por Correo">📧</button>
-                      <button class="icon-btn delete" (click)="deleteCertificate(cert)" title="Eliminar Constancia">🗑️</button>
+                    <ng-container *ngIf="getCertificadoForDocente(docente) as cert; else emitDocenteBtn">
+                      <button class="icon-btn email" (click)="enviarConstancia(cert.id, 'docente')" title="Enviar por Correo">📧</button>
                     </ng-container>
-                    <ng-template #issueBtnDocente>
-                      <button class="secondary-btn small-btn" (click)="issueCertificateForDocente(docente.id)">
-                        Emitir
-                      </button>
+                    <ng-template #emitDocenteBtn>
+                      <button class="secondary-btn small-btn" (click)="emitirConstancia(docente.id, 'docente')">Emitir</button>
                     </ng-template>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
+        </div>
 
         <div class="modal-section">
             <h4>Inscripción de Participantes</h4>
@@ -242,13 +190,15 @@
         <div class="data-table">
             <div class="table-header">
                 <h3 class="table-title">Participantes Inscritos ({{ getParticipantInscriptions().length }})</h3>
-                <button class="btn-success small-btn" (click)="emitAndSendAll('participantes')">Emisión y Envío Masivo a Participantes</button>
+                <div>
+                  <button class="btn-success small-btn" (click)="emitirTodas('participantes')">Emitir Todas</button>
+                  <button class="btn-info small-btn" (click)="enviarTodas('participantes')">Enviar Todas</button>
+                </div>
             </div>
           <table>
             <thead>
               <tr>
                 <th>Nombre</th>
-                <th>Email Personal</th>
                 <th>Estado Constancia</th>
                 <th>Acciones</th>
               </tr>
@@ -256,62 +206,29 @@
             <tbody>
               <tr *ngFor="let inscripcion of getParticipantInscriptions()">
                 <td>{{ inscripcion.participante.nombre_completo }}</td>
-                <td>{{ inscripcion.participante.email_personal }}</td>
                 <td>
-                  <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else noCert">
-                    <span class="serial-tag">{{ cert.folio }}</span>
-                  </ng-container>
-                  <ng-template #noCert>
-                    <span class="no-docentes-small">No emitida</span>
-                  </ng-template>
+                  <span *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert" class="serial-tag">{{ cert.folio }}</span>
+                  <span *ngIf="!getCertificadoForInscripcion(inscripcion.id)" class="no-docentes-small">No emitida</span>
                 </td>
                 <td class="actions-cell">
-                  <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else issueBtn">
-                    <button class="icon-btn email" (click)="sendCertificate(cert.id)" title="Reenviar por Correo">📧</button>
-                    <button class="icon-btn delete" (click)="deleteCertificate(cert)" title="Eliminar Constancia">🗑️</button>
+                  <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else emitParticipanteBtn">
+                    <button class="icon-btn email" (click)="enviarConstancia(cert.id, 'participante')" title="Enviar por Correo">📧</button>
                   </ng-container>
-                  <ng-template #issueBtn>
-                    <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id)">Emitir</button>
+                  <ng-template #emitParticipanteBtn>
+                    <button class="secondary-btn small-btn" (click)="emitirConstancia(inscripcion.participante.id, 'participante')">Emitir</button>
                   </ng-template>
-                  <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar del curso">✖</button>
+                   <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar del curso">🗑️</button>
                 </td>
               </tr>
               <tr *ngIf="getParticipantInscriptions().length === 0">
-                <td colspan="4" class="no-data">No hay participantes inscritos.</td>
+                <td colspan="3" class="no-data">No hay participantes inscritos.</td>
               </tr>
             </tbody>
           </table>
         </div>
-
       </div>
       <div class="modal-footer">
-        <button type="button" class="secondary-btn" (click)="unselectCourse()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-  
-  <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
-    <div class="modal-content competencies-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Gestionar Competencias</h2>
-        <button class="close-btn" (click)="showCompetenciesModal = false">✖</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-instructions">Añade cada competencia en una línea separada. Puedes agregar o eliminar las que necesites.</p>
-        <div class="competency-list">
-          <div class="competency-item" *ngFor="let competency of competenciesList; let i = index; trackBy: trackByIndex">
-            <textarea [(ngModel)]="competenciesList[i]" placeholder="Escribe una competencia..." class="competency-input" rows="2"></textarea>
-            <button *ngIf="competenciesList.length > 1" type="button" class="icon-btn delete small-btn" (click)="removeCompetency(i)" title="Eliminar competencia">🗑️</button>
-          </div>
-        </div>
-        <button type="button" class="secondary-btn small-btn" (click)="addCompetency()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Añadir otra competencia
-        </button>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="secondary-btn" (click)="showCompetenciesModal = false">Cancelar</button>
-        <button type="button" class="primary-btn" (click)="saveCompetencies()">Guardar Competencias</button>
+          <button type="button" class="secondary-btn" (click)="unselectCourse()">Cerrar</button>
       </div>
     </div>
   </div>
