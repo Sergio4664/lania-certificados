@@ -1,79 +1,122 @@
-<div class="container">
-  <header class="header">
-    <h1>Gestión de Certificados</h1>
-    <button class="primary-btn" (click)="toggleForm()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      {{ showForm ? 'Cancelar' : 'Crear Certificado' }}
-    </button>
-  </header>
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '@environments/environment';
 
-  <!-- Formulario de Creación -->
-  <div *ngIf="showForm" class="form-card">
-    <h3>Nuevo Certificado</h3>
-    <form [formGroup]="certificadoForm" (ngSubmit)="onSubmit()">
-      
-      <div class="form-group">
-        <label for="inscripcion_id">Inscripción (Participante - Producto) *</label>
-        <select id="inscripcion_id" formControlName="inscripcion_id" required>
-            <option [ngValue]="null" disabled>Seleccione una inscripción sin certificado...</option>
-            <option *ngFor="let inscripcion of inscripcionesDisponibles" [value]="inscripcion.id">
-              {{ inscripcion.participante.nombre_completo }} - {{ inscripcion.producto_educativo.nombre }}
-            </option>
-        </select>
-        <small *ngIf="inscripcionesDisponibles.length === 0">No hay inscripciones disponibles para certificar.</small>
-      </div>
+// Interfaces
+import { Certificado } from '@shared/interfaces/certificado.interface';
+import { Inscripcion } from '@shared/interfaces/inscripcion.interface';
 
-      <div class="form-grid">
-        <div class="form-group">
-            <label for="folio">Folio *</label>
-            <input id="folio" formControlName="folio" required placeholder="Ej: LANIA-2025-ABCD">
-        </div>
-        <div class="form-group">
-            <label for="fecha_emision">Fecha de Emisión *</label>
-            <input id="fecha_emision" type="date" formControlName="fecha_emision" required>
-        </div>
-      </div>
+// Servicios
+import { CertificadoService } from '@shared/services/certificado.service';
+import { InscripcionService } from '@shared/services/inscripcion.service';
+import { NotificationService } from '@shared/services/notification.service';
 
-      <div class="form-actions">
-        <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
-        <button type="submit" class="primary-btn" [disabled]="certificadoForm.invalid">Crear</button>
-      </div>
-    </form>
-  </div>
+@Component({
+  selector: 'app-admin-certificados',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, DatePipe], // <-- Se agregó ReactiveFormsModule
+  templateUrl: './admin-certificados.component.html',
+  styleUrls: ['./admin-certificados.component.css']
+})
+export default class AdminCertificadosComponent implements OnInit {
+  // Inyección de servicios
+  private certificadoSvc = inject(CertificadoService);
+  private inscripcionSvc = inject(InscripcionService);
+  private notificationSvc = inject(NotificationService);
+  private fb = inject(FormBuilder);
 
-  <!-- Tabla de Certificados -->
-  <div class="data-table">
-    <table>
-      <thead>
-        <tr>
-          <th>Folio</th>
-          <th>Participante</th>
-          <th>Producto Educativo</th>
-          <th>Fecha de Emisión</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let cert of certificados">
-          <td><span class="folio-tag">{{ cert.folio }}</span></td>
-          <td>{{ cert.nombre_participante }}</td>
-          <td>{{ cert.nombre_producto }}</td>
-          <td>{{ cert.fecha_emision | date:'dd/MM/yyyy' }}</td>
-          <td class="actions">
-            <a class="icon-btn view" [href]="cert.url_validacion" target="_blank" title="Verificar Certificado">👁️</a>
-            <button class="icon-btn delete" (click)="deleteCertificado(cert)" title="Eliminar">🗑️</button>
-          </td>
-        </tr>
-         <tr *ngIf="isLoading">
-          <td colspan="5">Cargando certificados...</td>
-        </tr>
-        <tr *ngIf="!isLoading && certificados.length === 0">
-          <td colspan="5">No hay certificados registrados.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+  // Listas de datos
+  certificados: Certificado[] = [];
+  filteredCertificados: Certificado[] = [];
+  inscripcionesDisponibles: Inscripcion[] = [];
+
+  // Estados de la UI
+  isLoading = true;
+  showForm = false;
+  searchTerm: string = '';
+
+  // Formulario
+  certificadoForm: FormGroup;
+
+  constructor() {
+    this.certificadoForm = this.fb.group({
+      inscripcion_id: [null, Validators.required]
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  loadInitialData(): void {
+    this.isLoading = true;
+    forkJoin({
+      certificados: this.certificadoSvc.getAll(),
+      inscripciones: this.inscripcionSvc.getAll()
+    }).subscribe({
+      next: ({ certificados, inscripciones }) => {
+        this.certificados = certificados;
+        this.filteredCertificados = certificados;
+        // Filtramos las inscripciones que ya tienen un certificado
+        const certifiedIds = new Set(certificados.map(c => c.inscripcion_id));
+        this.inscripcionesDisponibles = inscripciones.filter(i => !certifiedIds.has(i.id));
+        this.isLoading = false;
+      },
+      error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al cargar datos')
+    });
+  }
+
+  filterCertificados(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredCertificados = this.certificados.filter(c =>
+      c.folio.toLowerCase().includes(term) ||
+      c.inscripcion?.participante.nombre_completo.toLowerCase().includes(term) ||
+      c.inscripcion?.producto_educativo.nombre.toLowerCase().includes(term)
+    );
+  }
+
+  toggleForm(): void {
+    this.showForm = !this.showForm;
+    this.certificadoForm.reset();
+  }
+
+  onSubmit(): void {
+    if (this.certificadoForm.invalid) {
+      this.notificationSvc.showError('Debe seleccionar una inscripción válida.');
+      return;
+    }
+    this.certificadoSvc.create(this.certificadoForm.value).subscribe({
+      next: (nuevoCertificado) => {
+        this.notificationSvc.showSuccess(`Certificado ${nuevoCertificado.folio} creado.`);
+        this.loadInitialData(); // Recargamos todo para mantener la consistencia
+        this.toggleForm();
+      },
+      error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al crear el certificado')
+    });
+  }
+
+  deleteCertificado(certificado: Certificado): void {
+    if (confirm(`¿Está seguro de eliminar el certificado con folio ${certificado.folio}?`)) {
+      this.certificadoSvc.delete(certificado.id).subscribe({
+        next: () => {
+          this.notificationSvc.showSuccess('Certificado eliminado.');
+          this.loadInitialData(); // Recargamos
+        },
+        error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al eliminar')
+      });
+    }
+  }
+  
+  // Construye la URL completa para la validación del certificado
+  getVerificationUrl(folio: string): string {
+    return `${environment.frontendUrl}/verificacion/${folio}`;
+  }
+
+  private handleError(message: string): void {
+    this.notificationSvc.showError(message);
+    this.isLoading = false;
+  }
+}

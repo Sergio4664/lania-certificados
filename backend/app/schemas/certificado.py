@@ -1,36 +1,25 @@
+# backend/app/schemas/certificado.py
+
 from pydantic import BaseModel
-from datetime import date
+from datetime import datetime
 from typing import Optional
+from .inscripcion import Inscripcion  # Asegúrate de que esta importación funcione en tu estructura
 
-# Propiedades compartidas
 class CertificadoBase(BaseModel):
-    inscripcion_id: int
-    folio: str
-    fecha_emision: date
+    inscripcion_id: Optional[int] = None
+    docente_id: Optional[int] = None
+    producto_educativo_id: int
 
-# Propiedades para la creación
 class CertificadoCreate(CertificadoBase):
     pass
 
-# Propiedades para la actualización (por si se necesita cambiar algo en el futuro)
-class CertificadoUpdate(BaseModel):
-    folio: Optional[str] = None
-    fecha_emision: Optional[date] = None
-    url_validacion: Optional[str] = None
-
-# Propiedades que se devuelven desde la API
 class Certificado(CertificadoBase):
     id: int
-    url_validacion: Optional[str] = None
+    folio: str
+    fecha_emision: datetime
+    archivo_path: str
+    inscripcion: Optional[Inscripcion] = None
 
     class Config:
+        # ✅ CORRECCIÓN: Se cambió 'orm_mode' por 'from_attributes'
         from_attributes = True
-
-# Schema especial para la página de verificación pública
-class CertificadoPublic(BaseModel):
-    folio: str
-    fecha_emision: date
-    nombre_participante: str
-    nombre_producto: str
-    horas: int
-    nombre_docente: str # Se concatenarán los nombres de los docentes aquí

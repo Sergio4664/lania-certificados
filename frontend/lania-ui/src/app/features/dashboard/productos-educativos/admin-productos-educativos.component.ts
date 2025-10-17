@@ -1,3 +1,5 @@
+// frontend/lania-ui/src/app/features/dashboard/productos-educativos/admin-productos-educativos.component.ts
+
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule, FormArray } from '@angular/forms';
@@ -308,25 +310,33 @@ export default class AdminProductosEducativosComponent implements OnInit {
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
   }
+  
+  getCertificadoForDocente(docente: DocenteDTO): Certificado | undefined {
+    if (!this.selectedCourse) return undefined;
+    return this.certificados.find(c => c.docente_id === docente.id && c.producto_educativo_id === this.selectedCourse?.id);
+  }
 
+  getParticipantInscriptions(): Inscripcion[] {
+    return this.inscripcionesDelProducto.filter(i => i.participante);
+  }
+
+  // ACCIONES PARA DOCENTES
   issueCertificateForDocente(docenteId: number) {
     if (!this.selectedCourse) return;
-
-    this.certificadoSvc.createForDocente(this.selectedCourse.id, docenteId).subscribe({
-      next: (newCert) => {
+    this.certificadoSvc.emitirConstanciaDocente(docenteId, this.selectedCourse.id).subscribe({
+      next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de docente emitida: ${newCert.folio}`);
-        // Recargamos los datos para que el estado se actualice
-        this.loadInitialData(); 
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
+        this.certificados.push(newCert);
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de docente.')
     });
   }
 
+  // ACCIONES PARA PARTICIPANTES
   issueCertificate(inscripcionId: number) {
     const payload: CertificadoCreate = { inscripcion_id: inscripcionId };
     this.certificadoSvc.create(payload).subscribe({
-      next: (newCert) => {
+      next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
         this.certificados.push(newCert);
       },
@@ -334,6 +344,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
   
+  // ACCIÓN GENERAL PARA ENVIAR
   sendCertificate(certificadoId: number) {
     this.certificadoSvc.sendEmail(certificadoId).subscribe({
       next: () => this.notificationSvc.showSuccess('Enviando constancia por correo...'),
@@ -341,6 +352,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
+  // ACCIÓN GENERAL PARA ELIMINAR
   deleteCertificate(cert: Certificado) {
     if (confirm(`¿Eliminar constancia con folio ${cert.folio}?`)) {
       this.certificadoSvc.delete(cert.id).subscribe({
@@ -353,46 +365,32 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
-  emitAndSendCertificates() {
-    if (!this.selectedCourse) {
-      this.notificationSvc.showError('No se ha seleccionado ningún producto educativo.');
-      return;
-    }
-  
-    const unissuedCount = this.inscripcionesDelProducto.filter(
-      insc => !this.getCertificadoForInscripcion(insc.id)
-    ).length;
-  
-    if (unissuedCount === 0) {
-      this.notificationSvc.showInfo('Todas las constancias para los participantes actuales ya han sido emitidas.');
-      return;
-    }
-  
-    const confirmationMessage = `Se intentará emitir y enviar por correo ${unissuedCount} constancia(s) para el producto "${this.selectedCourse.nombre}". ¿Desea continuar?`;
-  
+  emitAndSendAll(type: 'docentes' | 'participantes') {
+    if (!this.selectedCourse) return;
+
+    const confirmationMessage = `¿Desea emitir y enviar todas las constancias pendientes para ${type} de este producto?`;
     if (confirm(confirmationMessage)) {
-      this.notificationSvc.showInfo('Iniciando proceso... Esto puede tardar unos momentos.');
-  
-      this.certificadoSvc.emitirYEnviarMasivamente(this.selectedCourse.id).subscribe({
-        next: (response) => {
+      this.notificationSvc.showInfo(`Iniciando proceso masivo para ${type}...`);
+      
+      const serviceCall = type === 'docentes' 
+        ? this.certificadoSvc.emitirYEnviarMasivamenteDocentes(this.selectedCourse.id)
+        : this.certificadoSvc.emitirYEnviarMasivamente(this.selectedCourse.id);
+
+      serviceCall.subscribe({
+        next: (response: { success: any[], errors: any[] }) => {
           const successCount = response.success.length;
           const errorCount = response.errors.length;
-  
           this.notificationSvc.showSuccess(`Proceso completado: ${successCount} constancias emitidas y enviadas.`);
-  
           if (errorCount > 0) {
-            console.error('Errores durante la emisión masiva:', response.errors);
-            this.notificationSvc.showError(`${errorCount} constancias no pudieron ser emitidas. Revisa la consola para más detalles.`);
+            console.error(`Errores en proceso masivo de ${type}:`, response.errors);
+            this.notificationSvc.showError(`${errorCount} constancias no pudieron ser procesadas. Revisa la consola.`);
           }
-  
-          this.loadInitialData(); 
+          this.loadInitialData();
           if(this.selectedCourse) {
             this.loadParticipantsForCourse(this.selectedCourse.id);
           }
         },
-        error: (err: HttpErrorResponse) => {
-          this.notificationSvc.showError(err.error?.detail || 'Ocurrió un error inesperado en el servidor.');
-        }
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error en el proceso masivo.')
       });
     }
   }

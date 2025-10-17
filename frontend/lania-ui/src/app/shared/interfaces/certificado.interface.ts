@@ -4,15 +4,14 @@
  */
 export interface Certificado {
   id: number;
-  inscripcion_id: number;
   folio: string;
-  fecha_emision: string; // YYYY-MM-DD
-  url_validacion: string | null;
+  fecha_emision: string;
+  archivo_path: string;
+  inscripcion_id?: number; // Es opcional porque puede estar ligado a un docente
+  docente_id?: number; // Añadido para certificados de docentes
+  producto_educativo_id: number; // Añadido para referencia
 }
 
-/**
- * Representa los datos necesarios para crear un nuevo Certificado.
- */
 export interface CertificadoCreate {
   inscripcion_id: number;
 }
