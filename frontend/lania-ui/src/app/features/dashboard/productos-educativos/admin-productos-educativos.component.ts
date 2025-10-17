@@ -28,7 +28,6 @@ import { ParticipanteService } from '@shared/services/participante.service';
   styleUrls: ['./admin-productos-educativos.component.css']
 })
 export default class AdminProductosEducativosComponent implements OnInit {
-  // Inyección de servicios
   private productoSvc = inject(ProductoEducativoService);
   private docenteSvc = inject(DocenteService);
   private participanteSvc = inject(ParticipanteService);
@@ -37,7 +36,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
 
-  // --- Listas de datos ---
   cursos: ProductoEducativo[] = [];
   pildoras: ProductoEducativo[] = [];
   inyecciones: ProductoEducativo[] = [];
@@ -47,17 +45,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
   inscripcionesDelProducto: Inscripcion[] = [];
   certificados: Certificado[] = [];
 
-  // --- Estados de la UI ---
   showCourseForm = false;
   editingCourse: ProductoEducativo | null = null;
   selectedCourse: ProductoEducativo | null = null;
   showAddParticipantForm = false;
-  showCompetenciesModal = false;
   searchTerm: string = '';
 
-  // --- Formularios ---
   courseForm: FormGroup;
-  competenciesList: string[] = [];
   participantToAdd: number | null = null;
   selectedFile: File | null = null;
 
@@ -69,8 +63,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: this.fb.array([]),
-      competencias: ['']
+      docente_ids: this.fb.array([])
     });
   }
 
@@ -101,7 +94,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
   }
 
-  // --- Métodos de Gestión de Cursos ---
   selectCourse(course: ProductoEducativo) {
     this.selectedCourse = course;
     this.loadParticipantsForCourse(course.id);
@@ -114,7 +106,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.participantToAdd = null;
   }
 
-  // --- Lógica de Certificados ---
   getCertificadoForDocente(docente: DocenteDTO): Certificado | undefined {
     if (!this.selectedCourse) return undefined;
     return this.certificados.find(c => c.docente_id === docente.id && c.producto_educativo_id === this.selectedCourse?.id);
@@ -125,7 +116,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   getParticipantInscriptions(): Inscripcion[] {
-    return this.inscripcionesDelProducto.filter(i => i.participante);
+    return this.inscripcionesDelProducto.filter(i => i && i.participante);
   }
 
   emitirConstancia(personaId: number, tipo: 'participante' | 'docente'): void {
@@ -137,7 +128,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     serviceCall.subscribe({
       next: (newCert) => {
         this.notificationSvc.showSuccess(`Constancia ${newCert.folio} emitida.`);
-        this.certificados.push(newCert); // Actualiza la UI al instante
+        this.certificados.push(newCert);
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia.')
     });
@@ -162,8 +153,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
     serviceCall.subscribe({
       next: (res: { message: string }) => {
-        this.notificationSvc.showSuccess(res.message || `Emisión masiva para ${tipo} completada.`);
-        this.loadInitialData(); // Recarga los certificados para actualizar el estado
+        this.notificationSvc.showSuccess(res.message);
+        this.loadInitialData(); 
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error en emisión masiva.')
     });
@@ -176,12 +167,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
       : this.certificadoSvc.enviarConstanciasDocentes(this.selectedCourse.id);
 
     serviceCall.subscribe({
-      next: (res: { message: string }) => this.notificationSvc.showSuccess(res.message || `Envío masivo para ${tipo} completado.`),
+      next: (res: { message: string }) => this.notificationSvc.showSuccess(res.message),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error en envío masivo.')
     });
   }
-
-  // --- Resto de los métodos del componente ---
 
   loadParticipantsForCourse(courseId: number) {
     this.inscripcionSvc.getByProductoId(courseId).subscribe(inscripciones => {
@@ -203,7 +192,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
-    this.notificationSvc.showSuccess('Iniciando la descarga de la plantilla...');
+    this.notificationSvc.showSuccess('Iniciando la descarga...');
   }
 
   onFileSelected(event: Event): void {
@@ -212,20 +201,14 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   uploadParticipants(): void {
-    if (!this.selectedFile || !this.selectedCourse) {
-      this.notificationSvc.showError('Por favor, seleccione un curso y un archivo para subir.');
-      return;
-    }
+    if (!this.selectedFile || !this.selectedCourse) return;
     this.productoSvc.uploadParticipants(this.selectedCourse.id, this.selectedFile).subscribe({
       next: (response) => {
-        const { nuevas_inscripciones_realizadas, nuevos_participantes_creados } = response;
-        this.notificationSvc.showSuccess(
-          `Carga completada: ${nuevas_inscripciones_realizadas} inscripciones y ${nuevos_participantes_creados} nuevos participantes.`
-        );
+        this.notificationSvc.showSuccess(`Carga: ${response.nuevas_inscripciones_realizadas} inscripciones y ${response.nuevos_participantes_creados} nuevos participantes.`);
         this.loadParticipantsForCourse(this.selectedCourse!.id);
         this.selectedFile = null;
       },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Ocurrió un error al subir el archivo.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al subir archivo.')
     });
   }
 
@@ -257,7 +240,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // Métodos del formulario
   cancelCourseForm() {
     this.showCourseForm = false;
     this.resetCourseForm();
@@ -265,13 +247,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   resetCourseForm() {
     this.courseForm.reset({
-      nombre: '',
-      horas: 8,
-      fecha_inicio: '',
-      fecha_fin: '',
-      tipo_producto: 'CURSO_EDUCATIVO',
-      modalidad: 'PRESENCIAL',
-      competencias: ''
+      nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
+      tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL'
     });
     (this.courseForm.get('docente_ids') as FormArray).clear();
     this.editingCourse = null;
@@ -279,14 +256,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   editCourse(producto: ProductoEducativo) {
     this.editingCourse = producto;
-    let competenciasStr = '';
-    try {
-      const competenciasArr = JSON.parse(producto.competencias || '[]');
-      competenciasStr = competenciasArr.join('\n');
-    } catch (e) {
-      competenciasStr = producto.competencias || '';
-    }
-    this.courseForm.patchValue({ ...producto, competencias: competenciasStr });
+    this.courseForm.patchValue(producto);
     const formArray = this.courseForm.get('docente_ids') as FormArray;
     formArray.clear();
     producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
@@ -294,13 +264,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   onSubmitCourse() {
-    if (this.courseForm.invalid) {
-      this.notificationSvc.showError("Por favor, complete todos los campos requeridos.");
-      return;
-    }
-    const formValue = this.courseForm.getRawValue();
-    const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
-    const payload = { ...formValue, competencias: JSON.stringify(competenciasArray) };
+    if (this.courseForm.invalid) return;
+    const payload = this.courseForm.value;
     if (this.editingCourse) {
       this.updateCourse(payload);
     } else {
@@ -310,9 +275,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
   
   createCourse(payload: ProductoEducativoCreate) {
     this.productoSvc.create(payload).subscribe({
-      next: (newProduct) => {
+      next: () => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.loadInitialData(); // Recargar todo
+        this.loadInitialData();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
@@ -322,9 +287,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
   updateCourse(payload: ProductoEducativoUpdate) {
     if (!this.editingCourse) return;
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
-      next: (updatedProduct) => {
+      next: () => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        this.loadInitialData(); // Recargar todo
+        this.loadInitialData();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')
@@ -332,7 +297,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   deleteCourse(courseId: number) {
-    if (confirm('¿Está seguro de eliminar este producto educativo?')) {
+    if (confirm('¿Está seguro de eliminar este producto?')) {
       this.productoSvc.delete(courseId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Producto educativo eliminado.');
