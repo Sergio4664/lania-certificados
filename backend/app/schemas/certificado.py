@@ -3,7 +3,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-from .inscripcion import Inscripcion  # Asegúrate de que esta importación funcione en tu estructura
+from .inscripcion import Inscripcion
 
 class CertificadoBase(BaseModel):
     inscripcion_id: Optional[int] = None
@@ -21,5 +21,13 @@ class Certificado(CertificadoBase):
     inscripcion: Optional[Inscripcion] = None
 
     class Config:
-        # ✅ CORRECCIÓN: Se cambió 'orm_mode' por 'from_attributes'
         from_attributes = True
+
+# ✅ NUEVO: Esquema para la verificación pública que faltaba
+class CertificadoPublic(BaseModel):
+    folio: str
+    fecha_emision: datetime
+    nombre_participante: str
+    nombre_producto: str
+    horas: int
+    nombre_docente: str
