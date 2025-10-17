@@ -309,6 +309,20 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
   }
 
+  issueCertificateForDocente(docenteId: number) {
+    if (!this.selectedCourse) return;
+
+    this.certificadoSvc.createForDocente(this.selectedCourse.id, docenteId).subscribe({
+      next: (newCert) => {
+        this.notificationSvc.showSuccess(`Constancia de docente emitida: ${newCert.folio}`);
+        // Recargamos los datos para que el estado se actualice
+        this.loadInitialData(); 
+        this.loadParticipantsForCourse(this.selectedCourse!.id);
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de docente.')
+    });
+  }
+
   issueCertificate(inscripcionId: number) {
     const payload: CertificadoCreate = { inscripcion_id: inscripcionId };
     this.certificadoSvc.create(payload).subscribe({

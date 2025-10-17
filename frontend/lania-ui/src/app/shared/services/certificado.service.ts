@@ -34,6 +34,10 @@ export class CertificadoService {
     return this.http.post<Certificado>(this.adminApiUrl, certificado);
   }
 
+  createForDocente(productoId: number, docenteId: number): Observable<Certificado> {
+    return this.http.post<Certificado>(`${this.adminApiUrl}docente/`, { producto_id: productoId, docente_id: docenteId });
+  }
+
   /**
    * Elimina un certificado por su ID.
    */
