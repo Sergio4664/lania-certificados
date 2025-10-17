@@ -15,14 +15,15 @@ export class ParticipanteService {
     return this.http.get<Participante[]>(this.apiUrl);
   }
 
-  getById(id: number): Observable<Participante> {
-    return this.http.get<Participante>(`${this.apiUrl}/${id}`);
-  }
-
   create(participante: ParticipanteCreate): Observable<Participante> {
     return this.http.post<Participante>(this.apiUrl, participante);
   }
-
+  
+  /**
+   * Actualiza un participante existente.
+   * @param id El ID del participante a actualizar.
+   * @param participante Los datos actualizados.
+   */
   update(id: number, participante: ParticipanteUpdate): Observable<Participante> {
     return this.http.put<Participante>(`${this.apiUrl}/${id}`, participante);
   }

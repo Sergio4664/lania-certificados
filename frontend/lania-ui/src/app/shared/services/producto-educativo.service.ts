@@ -11,7 +11,8 @@ import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } f
 })
 export class ProductoEducativoService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/admin/productos-educativos`;
+  private apiUrl = `${environment.apiUrl}/admin/productos-educativos`;
+  resourceUrl: any;
 
   /**
    * Obtiene una lista de todos los productos educativos.
@@ -49,8 +50,8 @@ export class ProductoEducativoService {
    * Elimina un producto educativo.
    * @param id - El ID del producto a eliminar.
    */
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  delete(id: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(`${this.resourceUrl}${id}`);
   }
 
   uploadParticipants(productoId: number, file: File): Observable<any> {

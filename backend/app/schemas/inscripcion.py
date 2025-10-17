@@ -1,30 +1,25 @@
-from pydantic import BaseModel
-from datetime import date
+from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 
-# Importamos los schemas que se anidarán para respuestas completas
+# Importa los esquemas que necesitas, pero sin anidarlos directamente
 from .participante import Participante
 from .producto_educativo import ProductoEducativo
 
-# Propiedades compartidas
 class InscripcionBase(BaseModel):
-    participante_id: int
     producto_educativo_id: int
+    participante_id: int
 
-# Propiedades para la creación
 class InscripcionCreate(InscripcionBase):
     pass
 
-# Propiedades que se devuelven desde la API
+# Este es el esquema principal para mostrar las inscripciones
 class Inscripcion(InscripcionBase):
     id: int
-    fecha_inscripcion: date
+    fecha_inscripcion: datetime
+    
+    # Anida los objetos completos aquí
     participante: Participante
-    # Omitimos el producto educativo aquí para no crear una respuesta demasiado grande por defecto
-    # Si se necesita, se puede crear un schema específico que lo incluya
-
-    class Config:
-        from_attributes = True
-
-# Un schema más detallado para cuando se necesite toda la información
-class InscripcionDetallada(Inscripcion):
     producto_educativo: ProductoEducativo
+
+    # FIX: Reemplaza 'orm_mode' por 'from_attributes' para Pydantic v2
+    model_config = ConfigDict(from_attributes=True)

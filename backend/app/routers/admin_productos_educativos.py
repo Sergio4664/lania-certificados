@@ -1,7 +1,7 @@
 # backend/app/routers/admin_productos_educativos.py
 import pandas as pd
 import io
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 
@@ -163,3 +163,13 @@ def upload_participantes_file(
         "nuevos_participantes_creados": creados,
         "nuevas_inscripciones_realizadas": inscritos
     }
+
+@router.delete("/{certificado_id}", status_code=status.HTTP_200_OK)
+def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
+    db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
+    if db_certificado is None:
+        raise HTTPException(status_code=404, detail="Certificado no encontrado")
+
+    db.delete(db_certificado)
+    db.commit()
+    return {"detail": "Certificado eliminado exitosamente"}

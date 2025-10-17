@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -13,27 +13,18 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post("/", response_model=DocenteOut, status_code=201)
+@router.post("/", response_model=DocenteOut, status_code=status.HTTP_201_CREATED)
 def create_docente(docente: DocenteCreate, db: Session = Depends(get_db)):
-    # --- VALIDACIÓN DE UNICIDAD MEJORADA ---
-
-    # 1. Verificar email institucional (obligatorio)
+    # Validaciones de unicidad
     if db.query(models.Docente).filter(models.Docente.email_institucional == docente.email_institucional).first():
-        raise HTTPException(status_code=400, detail="El email institucional ya se encuentra registrado.")
-
-    # 2. Verificar email personal (si se proporciona)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email institucional ya se encuentra registrado.")
     if docente.email_personal and db.query(models.Docente).filter(models.Docente.email_personal == docente.email_personal).first():
-        raise HTTPException(status_code=400, detail="El email personal ya está en uso por otro docente.")
-
-    # 3. Verificar teléfono (si se proporciona)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email personal ya está en uso.")
     if docente.telefono and db.query(models.Docente).filter(models.Docente.telefono == docente.telefono).first():
-        raise HTTPException(status_code=400, detail="El número de teléfono ya está en uso por otro docente.")
-
-    # 4. Verificar WhatsApp (si se proporciona)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El teléfono ya está en uso.")
     if docente.whatsapp and db.query(models.Docente).filter(models.Docente.whatsapp == docente.whatsapp).first():
-        raise HTTPException(status_code=400, detail="El número de WhatsApp ya está en uso por otro docente.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El WhatsApp ya está en uso.")
 
-    # CORRECCIÓN: Usar model_dump() para Pydantic v2
     db_docente = models.Docente(**docente.model_dump())
     db.add(db_docente)
     db.commit()
@@ -49,41 +40,33 @@ def read_docentes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 def read_docente(docente_id: int, db: Session = Depends(get_db)):
     db_docente = db.query(models.Docente).filter(models.Docente.id == docente_id).first()
     if db_docente is None:
-        raise HTTPException(status_code=404, detail="Docente no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     return db_docente
 
 @router.put("/{docente_id}", response_model=DocenteOut)
 def update_docente(docente_id: int, docente: DocenteUpdate, db: Session = Depends(get_db)):
     db_docente = db.query(models.Docente).filter(models.Docente.id == docente_id).first()
     if db_docente is None:
-        raise HTTPException(status_code=404, detail="Docente no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
 
-    # CORRECCIÓN: Usar model_dump() para Pydantic v2
     update_data = docente.model_dump(exclude_unset=True)
-
-    # --- VALIDACIÓN DE UNICIDAD EN ACTUALIZACIÓN ---
     for key, value in update_data.items():
-        if value is None:  # Permite establecer un campo a null
-            setattr(db_docente, key, value)
-            continue
-            
-        # Comprobar si el valor ya existe en OTRO docente
-        query = db.query(models.Docente).filter(getattr(models.Docente, key) == value).filter(models.Docente.id != docente_id)
-        if query.first():
-            raise HTTPException(status_code=400, detail=f"El valor '{value}' para el campo '{key}' ya está en uso.")
-        
+        if key in ["email_institucional", "email_personal", "telefono", "whatsapp"] and value is not None:
+            existing = db.query(models.Docente).filter(getattr(models.Docente, key) == value).filter(models.Docente.id != docente_id).first()
+            if existing:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"El campo '{key}' con valor '{value}' ya está en uso.")
         setattr(db_docente, key, value)
         
     db.commit()
     db.refresh(db_docente)
     return db_docente
 
-@router.delete("/{docente_id}", status_code=204)
+@router.delete("/{docente_id}", status_code=status.HTTP_200_OK)
 def delete_docente(docente_id: int, db: Session = Depends(get_db)):
     db_docente = db.query(models.Docente).filter(models.Docente.id == docente_id).first()
     if db_docente is None:
-        raise HTTPException(status_code=404, detail="Docente no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
     db.delete(db_docente)
     db.commit()
-    return
+    return {"detail": "Docente eliminado exitosamente"}

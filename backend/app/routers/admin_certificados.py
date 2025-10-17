@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status # <-- Importar status
 from sqlalchemy.orm import Session
 from typing import List
+import logging # <-- 1. Importar el módulo de logging
 
 from app import models
-# --- CORRECCIÓN DE IMPORTACIÓN ---
 from app.schemas.certificado import Certificado, CertificadoCreate
 from app.database import get_db
-from app.services import certificate_service # Importamos nuestro nuevo servicio
+from app.services import certificate_service
 from app.routers.dependencies import get_current_admin_user
-# NOTA: La lógica de generación de PDF se moverá a un 'service' más adelante
-# from app.services.certificate_service import generate_certificate_pdf 
+
+logger = logging.getLogger(__name__) # <-- 2. Crear la instancia del logger
 
 router = APIRouter(
     prefix="/api/admin/certificados",
@@ -20,14 +20,12 @@ router = APIRouter(
 @router.post(
     "/emitir-masivamente/{producto_id}",
     summary="Emite y envía todas las constancias pendientes de un producto educativo",
-    response_model=dict  # Devolverá un diccionario con success y errors
+    response_model=dict
 )
 def emitir_constancias_masivas(producto_id: int, db: Session = Depends(get_db)):
     """
     Este endpoint inicia el proceso de emisión masiva para un producto educativo.
-    - Encuentra todos los inscritos que no tienen una constancia.
-    - Para cada uno, genera el PDF, lo envía por correo, y guarda el registro.
-    - Devuelve un resumen de la operación.
+    - ... (resto de la descripción)
     """
     try:
         resultado = certificate_service.issue_and_send_bulk_certificates_for_product(db, producto_id)
@@ -35,12 +33,12 @@ def emitir_constancias_masivas(producto_id: int, db: Session = Depends(get_db)):
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
+        # Ahora 'logger' ya no estará en amarillo y funcionará correctamente
         logger.error(f"Error inesperado en la emisión masiva para el producto {producto_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ocurrió un error interno: {e}"
         )
-    
 
 # Se usan las clases importadas directamente
 @router.post("/", response_model=Certificado, status_code=201)

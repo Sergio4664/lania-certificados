@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // Interfaces y Servicios actualizados y centralizados
 import { Participante } from '@shared/interfaces/participante.interface';
@@ -45,17 +46,10 @@ export default class AdminParticipantesComponent implements OnInit {
   }
 
   loadParticipants() {
-    this.isLoading = true;
-    this.participanteService.getAll().subscribe({
-      next: (data) => {
-        this.participantes = data;
-        this.filteredParticipants = data;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.notificationService.showError('Error al cargar los participantes.');
-        this.isLoading = false;
-      }
+    this.participanteService.getAll().subscribe(data => {
+      // ✅ CORRECCIÓN AQUÍ
+      this.participantes = data; 
+      this.filteredParticipants = data;
     });
   }
 
@@ -82,14 +76,16 @@ export default class AdminParticipantesComponent implements OnInit {
     this.showForm = true;
   }
 
-  deleteParticipant(participante: Participante) {
-    if (confirm(`¿Está seguro que desea eliminar a ${participante.nombre_completo}? Esta acción no se puede deshacer.`)) {
-      this.participanteService.delete(participante.id).subscribe({
+  deleteParticipant(id: number): void {
+    if (confirm('¿Estás seguro de que quieres eliminar a este participante?')) {
+      this.participanteService.delete(id).subscribe({
         next: () => {
-          this.notificationService.showSuccess('Participante eliminado exitosamente.');
-          this.loadParticipants();
+          this.notificationService.showSuccess('Participante eliminado correctamente.');
+          this.loadParticipants(); // Recargar la lista
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al eliminar el participante.')
+        error: (err: HttpErrorResponse) => {
+          this.notificationService.showError(err.error?.detail || 'No se pudo eliminar al participante');
+        }
       });
     }
   }
@@ -109,7 +105,7 @@ export default class AdminParticipantesComponent implements OnInit {
           this.loadParticipants();
           this.toggleForm();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al actualizar el participante.')
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al actualizar el participante.')
       });
     } else {
       this.participanteService.create(formData).subscribe({
@@ -118,8 +114,14 @@ export default class AdminParticipantesComponent implements OnInit {
           this.loadParticipants();
           this.toggleForm();
         },
-        error: (err) => this.notificationService.showError(err.error?.detail || 'Error al crear el participante.')
+        error: (err: HttpErrorResponse) => this.handleError(err, 'Error al crear el participante.')
       });
     }
+  }
+
+  private handleError(error: HttpErrorResponse, fallbackMessage: string) {
+    console.error('Backend Error:', error);
+    const userMessage = error.error?.detail || fallbackMessage;
+    this.notificationService.showError(userMessage);
   }
 }
