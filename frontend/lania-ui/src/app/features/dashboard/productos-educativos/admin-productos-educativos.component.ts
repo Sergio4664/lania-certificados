@@ -55,6 +55,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
   participantToAdd: number | null = null;
   selectedFile: File | null = null;
 
+  // Propiedades para el modal de competencias
+  showCompetenciesModal = false;
+  competenciesList: string[] = [''];
+
   constructor() {
     this.courseForm = this.fb.group({
       nombre: ['', Validators.required],
@@ -63,7 +67,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: this.fb.array([])
+      docente_ids: this.fb.array([]),
+      competencias: [''] // Campo para las competencias
     });
   }
 
@@ -248,7 +253,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   resetCourseForm() {
     this.courseForm.reset({
       nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
-      tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL'
+      tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL',
+      competencias: ''
     });
     (this.courseForm.get('docente_ids') as FormArray).clear();
     this.editingCourse = null;
@@ -323,5 +329,52 @@ export default class AdminProductosEducativosComponent implements OnInit {
   getCourseColor(id: number): string {
     const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C'];
     return colors[id % colors.length];
+  }
+
+  // Métodos para el modal de competencias
+  openCompetenciesModal() {
+    this.competenciesList = this.courseForm.get('competencias')?.value?.split('\n').filter((c: string) => c) || [''];
+    this.showCompetenciesModal = true;
+  }
+
+  addCompetency() {
+    this.competenciesList.push('');
+  }
+
+  removeCompetency(index: number) {
+    if (this.competenciesList.length > 1) {
+      this.competenciesList.splice(index, 1);
+    }
+  }
+
+  saveCompetencies() {
+    const nonEmptyCompetencies = this.competenciesList.filter(c => c.trim() !== '');
+    this.courseForm.get('competencias')?.setValue(nonEmptyCompetencies.join('\n'));
+    this.showCompetenciesModal = false;
+  }
+
+  trackByIndex(index: number, obj: any): any {
+    return index;
+  }
+
+  deleteCertificate(cert: Certificado) {
+    if (confirm(`¿Está seguro de eliminar el certificado con folio ${cert.folio}?`)) {
+      this.certificadoSvc.delete(cert.id).subscribe({
+        next: () => {
+          this.notificationSvc.showSuccess('Certificado eliminado.');
+          // Remove the certificate from the local list to update the UI instantly
+          this.certificados = this.certificados.filter(c => c.id !== cert.id);
+        },
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar')
+      });
+    }
+  }
+
+  emitAndSendCertificates() {
+    if (!this.selectedCourse) return;
+    if (confirm('¿Desea emitir y enviar todas las constancias para este producto?')) {
+      // Aquí puedes agregar la lógica para llamar a los servicios de emisión y envío masivo
+      this.notificationSvc.showInfo('Iniciando proceso de emisión y envío masivo...');
+    }
   }
 }
