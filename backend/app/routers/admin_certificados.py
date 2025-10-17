@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status # <-- Importar status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-import logging # <-- 1. Importar el módulo de logging
+import logging
 
-from app import models
-from app.schemas.certificado import Certificado, CertificadoCreate
 from app.database import get_db
+from app.models.certificado import Certificado as CertificadoModel
+from app.schemas.certificado import Certificado, CertificadoCreate
 from app.services import certificate_service
 from app.routers.dependencies import get_current_admin_user
 
-logger = logging.getLogger(__name__) # <-- 2. Crear la instancia del logger
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/admin/certificados",
@@ -17,76 +17,41 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.post(
-    "/emitir-masivamente/{producto_id}",
-    summary="Emite y envía todas las constancias pendientes de un producto educativo",
-    response_model=dict
-)
-def emitir_constancias_masivas(producto_id: int, db: Session = Depends(get_db)):
+@router.post("/", response_model=Certificado, status_code=status.HTTP_201_CREATED)
+def create_certificado(certificado: CertificadoCreate, db: Session = Depends(get_db)):
     """
-    Este endpoint inicia el proceso de emisión masiva para un producto educativo.
-    - ... (resto de la descripción)
+    Crea, emite y envía por correo una única constancia para una inscripción.
     """
     try:
-        resultado = certificate_service.issue_and_send_bulk_certificates_for_product(db, producto_id)
-        return resultado
+        return certificate_service.issue_single_certificate(db, certificado.inscripcion_id)
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        # Ahora 'logger' ya no estará en amarillo y funcionará correctamente
+        logger.error(f"Error inesperado al crear certificado para inscripción {certificado.inscripcion_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor al crear el certificado.")
+
+@router.post("/emitir-masivamente/{producto_id}/", response_model=dict)
+def emitir_constancias_masivas(producto_id: int, db: Session = Depends(get_db)):
+    """
+    Inicia el proceso de emisión masiva para un producto educativo.
+    """
+    try:
+        return certificate_service.issue_and_send_bulk_certificates_for_product(db, producto_id)
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
         logger.error(f"Error inesperado en la emisión masiva para el producto {producto_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ocurrió un error interno: {e}"
-        )
-
-# Se usan las clases importadas directamente
-@router.post("/", response_model=Certificado, status_code=201)
-def create_certificado(certificado: CertificadoCreate, db: Session = Depends(get_db)):
-    db_inscripcion = db.query(models.Inscripcion).filter(models.Inscripcion.id == certificado.inscripcion_id).first()
-    if not db_inscripcion:
-        raise HTTPException(status_code=404, detail="La inscripción asociada no existe.")
-    
-    if db_inscripcion.certificado:
-        raise HTTPException(status_code=400, detail="Esta inscripción ya tiene un certificado asociado.")
-
-    db_folio = db.query(models.Certificado).filter(models.Certificado.folio == certificado.folio).first()
-    if db_folio:
-        raise HTTPException(status_code=400, detail="El folio del certificado ya está en uso.")
-
-    # Aquí iría la llamada al servicio que genera el PDF y la URL
-    # pdf_url = generate_certificate_pdf(db_inscripcion)
-    # Por ahora, lo dejamos como un valor placeholder:
-    url_validacion_placeholder = f"https://tusitio.com/verificar/{certificado.folio}"
-
-    db_certificado = models.Certificado(
-        **certificado.dict(),
-        url_validacion=url_validacion_placeholder
-    )
-    db.add(db_certificado)
-    db.commit()
-    db.refresh(db_certificado)
-    return db_certificado
+        raise HTTPException(status_code=500, detail=f"Ocurrió un error interno durante la emisión masiva: {e}")
 
 @router.get("/", response_model=List[Certificado])
-def read_certificados(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    certificados = db.query(models.Certificado).order_by(models.Certificado.id.desc()).offset(skip).limit(limit).all()
-    return certificados
+def read_certificados(db: Session = Depends(get_db)):
+    return db.query(CertificadoModel).order_by(CertificadoModel.id.desc()).all()
 
-@router.get("/{certificado_id}", response_model=Certificado)
-def read_certificado(certificado_id: int, db: Session = Depends(get_db)):
-    db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
-    if db_certificado is None:
-        raise HTTPException(status_code=404, detail="Certificado no encontrado")
-    return db_certificado
-
-@router.delete("/{certificado_id}", status_code=204)
+@router.delete("/{certificado_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
-    db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
+    db_certificado = db.query(CertificadoModel).filter(CertificadoModel.id == certificado_id).first()
     if db_certificado is None:
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
-    
-    # Aquí también iría la lógica para borrar el archivo PDF del servidor
     
     db.delete(db_certificado)
     db.commit()

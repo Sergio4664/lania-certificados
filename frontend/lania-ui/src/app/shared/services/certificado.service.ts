@@ -15,7 +15,7 @@ export interface BulkIssuanceResponse {
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  // ✅ CORRECCIÓN: Se añade una barra al final de la URL base.
+  // ✅ CORRECCIÓN: Se añade una barra al final de la URL base para evitar redirecciones.
   private adminApiUrl = `${environment.apiUrl}/api/admin/certificados/`;
   private publicApiUrl = `${environment.apiUrl}/public`;
 
@@ -53,14 +53,16 @@ export class CertificadoService {
    * Solicita al backend que reenvíe un certificado por correo.
    */
   sendEmail(certificadoId: number): Observable<any> {
-    return this.http.post(`${this.adminApiUrl}send-email/${certificadoId}`, {});
+    // Esta ruta puede necesitar una barra al final dependiendo de tu router.
+    // La añadimos por consistencia.
+    return this.http.post(`${this.adminApiUrl}send-email/${certificadoId}/`, {});
   }
 
   /**
    * Llama al endpoint del backend para la emisión y envío masivo de constancias.
    */
   emitirYEnviarMasivamente(productoId: number): Observable<BulkIssuanceResponse> {
-    // ✅ CORRECCIÓN: Se añade una barra al final para ser consistentes.
+    // ✅ CORRECCIÓN: Ruta completa con barra al final para coincidir con el backend.
     return this.http.post<BulkIssuanceResponse>(`${this.adminApiUrl}emitir-masivamente/${productoId}/`, {});
   }
 }
