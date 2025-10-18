@@ -9,7 +9,7 @@ import { Certificado, CertificadoCreate } from '../interfaces/certificado.interf
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/v1/admin/certificados`;
+  private apiUrl = `${environment.apiUrl}/admin/certificados`;
 
   getAll(): Observable<Certificado[]> {
     return this.http.get<Certificado[]>(this.apiUrl);

@@ -9,28 +9,28 @@ import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } f
 })
 export class ProductoEducativoService {
   private http = inject(HttpClient);
-  // ✅ CORRECCIÓN: Se añadió el prefijo /api a la URL.
-  private apiUrl = `${environment.apiUrl}/api/admin/productos-educativos`;
+  // ✅ CORRECTION: The base URL for this service
+  private baseUrl = `${environment.apiUrl}/admin/productos-educativos`;
 
   getAll(): Observable<ProductoEducativo[]> {
-    return this.http.get<ProductoEducativo[]>(this.apiUrl);
+    return this.http.get<ProductoEducativo[]>(this.baseUrl);
   }
 
   create(producto: ProductoEducativoCreate): Observable<ProductoEducativo> {
-    return this.http.post<ProductoEducativo>(this.apiUrl, producto);
+    return this.http.post<ProductoEducativo>(this.baseUrl, producto);
   }
 
   update(id: number, producto: ProductoEducativoUpdate): Observable<ProductoEducativo> {
-    return this.http.put<ProductoEducativo>(`${this.apiUrl}/${id}`, producto);
+    return this.http.put<ProductoEducativo>(`${this.baseUrl}/${id}`, producto);
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
   
   uploadParticipants(id: number, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/${id}/upload-participants`, formData);
+    return this.http.post(`${this.baseUrl}/${id}/upload-participants`, formData);
   }
 }

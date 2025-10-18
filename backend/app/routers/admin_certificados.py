@@ -1,22 +1,46 @@
+# Ruta: backend/app/routers/admin_certificados.py
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from typing import List
+
 from app.database import get_db
-from app.models.certificado import Certificado as CertificadoModel
-from app.models.producto_educativo import ProductoEducativo as ProductoEducativoModel
-from app.models.participante import Participante as ParticipanteModel
-from app.models.docente import Docente as DocenteModel
-from app.schemas.certificado import CertificadoCreate, Certificado
+from app.models import Certificado as CertificadoModel
+from app.models import ProductoEducativo as ProductoEducativoModel
+from app.models import Participante as ParticipanteModel
+from app.models import Docente as DocenteModel
+from app.models import Inscripcion as InscripcionModel
+from app.schemas.certificado import Certificado, CertificadoCreate
 from app.services.certificate_service import generate_certificate
 from app.services.email_service import send_certificate_email
+from app.routers.dependencies import get_current_admin_user
 
-router = APIRouter()
+# --- ✅ CORRECCIÓN PRINCIPAL ---
+# Se define el router con su prefijo y dependencias, igual que los otros routers de admin.
+router = APIRouter(
+    prefix="/admin/certificados",
+    tags=["Admin - Certificados"],
+    dependencies=[Depends(get_current_admin_user)]
+)
 
-# ... (código existente)
+@router.get("/", response_model=List[Certificado])
+def read_all_certificados(db: Session = Depends(get_db)):
+    """
+    Obtiene todos los certificados con sus relaciones cargadas.
+    """
+    certificados = db.query(CertificadoModel).options(
+        joinedload(CertificadoModel.inscripcion)
+        .joinedload(InscripcionModel.participante),
+        joinedload(CertificadoModel.inscripcion)
+        .joinedload(InscripcionModel.producto_educativo),
+        joinedload(CertificadoModel.docente)
+    ).order_by(CertificadoModel.id.desc()).all()
+    return certificados
 
 @router.post("/participante", response_model=Certificado)
 def issue_certificate_to_participant(
     certificado_create: CertificadoCreate, db: Session = Depends(get_db)
 ):
+    # (El resto del código no necesita cambios, ya que la lógica es correcta)
     db_producto_educativo = (
         db.query(ProductoEducativoModel)
         .filter(ProductoEducativoModel.id == certificado_create.producto_educativo_id)
@@ -121,7 +145,6 @@ def send_certificate_to_docente(certificado_id: int, db: Session = Depends(get_d
     )
     return {"message": "Certificado enviado exitosamente"}
 
-# NUEVAS RUTAS
 @router.post("/participantes/producto/{producto_id}")
 def issue_certificates_for_product_participants(producto_id: int, db: Session = Depends(get_db)):
     db_producto_educativo = db.query(ProductoEducativoModel).filter(ProductoEducativoModel.id == producto_id).first()

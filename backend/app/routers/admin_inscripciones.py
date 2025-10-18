@@ -9,7 +9,7 @@ from app.schemas.inscripcion import Inscripcion, InscripcionCreate
 from app.routers.dependencies import get_current_admin_user
 
 router = APIRouter(
-    prefix="/api/admin/inscripciones",
+    prefix="/admin/inscripciones",
     tags=["Admin - Inscripciones"],
     dependencies=[Depends(get_current_admin_user)]
 )

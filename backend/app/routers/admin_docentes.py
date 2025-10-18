@@ -8,7 +8,7 @@ from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
 router = APIRouter(
-    prefix="/api/admin/docentes",
+    prefix="/admin/docentes",
     tags=["Admin - Docentes"],
     dependencies=[Depends(get_current_admin_user)]
 )
