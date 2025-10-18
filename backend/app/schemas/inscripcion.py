@@ -7,7 +7,7 @@ from .participante import Participante
 
 if TYPE_CHECKING:
     from .producto_educativo import ProductoEducativo
-    from .certificado import CertificadoInDB
+    from .certificado import Certificado
 
 class InscripcionBase(BaseModel):
     fecha_inscripcion: datetime
@@ -22,7 +22,7 @@ class Inscripcion(InscripcionBase):
     id: int
     participante: Participante
     producto_educativo: 'ProductoEducativo'
-    certificados: List['CertificadoInDB'] = []
+    certificados: List['Certificado'] = []
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -5,7 +5,7 @@ from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .inscripcion import Inscripcion
-    from .docente import DocenteOut
+    from .docente import Docente
 
 class CertificadoBase(BaseModel):
     # ... campos base ...
@@ -29,7 +29,7 @@ class Certificado(CertificadoBase):
     # --- ✅ CORRECCIÓN CRÍTICA ---
     # Ambas relaciones deben ser referencias a futuro
     inscripcion: Optional['Inscripcion'] = None
-    docente: Optional['DocenteOut'] = None
+    docente: Optional['Docente'] = None
 
     model_config = ConfigDict(from_attributes=True)
 

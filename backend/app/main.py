@@ -5,7 +5,6 @@ from starlette.staticfiles import StaticFiles
 from app.routers import (
     auth,
     public_verify,
-    dependencies,
     admin_administradores,
     admin_docentes,
     admin_participantes,
@@ -44,7 +43,6 @@ app.include_router(admin_participantes.router, prefix="/api/v1")
 app.include_router(admin_productos_educativos.router, prefix="/api/v1")
 app.include_router(admin_inscripciones.router, prefix="/api/v1")
 app.include_router(admin_certificados.router, prefix="/api/v1")
-app.include_router(dependencies.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
