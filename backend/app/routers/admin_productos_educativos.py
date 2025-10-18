@@ -11,7 +11,7 @@ from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
 
 router = APIRouter(
-    prefix="/api/admin/productos-educativos",
+    prefix="/admin/productos-educativos",
     tags=["Admin - Productos Educativos"],
     dependencies=[Depends(get_current_admin_user)]
 )

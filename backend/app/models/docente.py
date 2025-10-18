@@ -22,3 +22,7 @@ class Docente(Base):
         secondary="productos_educativos_docentes",
         back_populates="docentes"
     )
+
+    # --- ✅ CORRECCIÓN AQUÍ ---
+    # Se añade la relación inversa para que SQLAlchemy pueda encontrar los certificados de un docente.
+    certificados = relationship("Certificado", back_populates="docente")

@@ -1,4 +1,3 @@
-# backend/app/models/inscripciones.py
 from sqlalchemy import Column, Integer, ForeignKey, Date, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -24,4 +23,7 @@ class Inscripcion(Base):
     # Relaciones actualizadas
     participante = relationship("Participante", back_populates="inscripciones")
     producto_educativo = relationship("ProductoEducativo", back_populates="inscripciones")
-    certificado = relationship("Certificado", back_populates="inscripcion", uselist=False)
+
+    # --- ✅ CORRECCIÓN AQUÍ ---
+    # Renombramos la relación a plural y nos aseguramos de que coincida con el modelo Certificado.
+    certificados = relationship("Certificado", back_populates="inscripcion")

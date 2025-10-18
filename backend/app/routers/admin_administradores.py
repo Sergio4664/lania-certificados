@@ -10,7 +10,7 @@ from app.core.security import get_password_hash
 from app.routers.dependencies import get_current_admin_user
 
 router = APIRouter(
-    prefix="/api/admin/administradores",
+    prefix="/admin/administradores",
     tags=["Admin - Administradores"],
     dependencies=[Depends(get_current_admin_user)]
 )

@@ -42,6 +42,10 @@ class DocenteUpdate(BaseModel):
 class DocenteOut(DocenteBase):
     id: int
 
+class DocenteCertificadoCreate(BaseModel):
+    producto_id: int
+    docente_id: int
+
     class Config:
         # CORRECCIÓN: 'orm_mode' se renombra a 'from_attributes' en Pydantic v2
         from_attributes = True
