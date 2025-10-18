@@ -13,6 +13,7 @@ from app.core import security
 from app.services import email_service
 
 router = APIRouter(
+    prefix="/auth",
     tags=["Auth"]
 )
 

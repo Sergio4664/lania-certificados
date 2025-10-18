@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
-# --- CORRECCIÓN EN IMPORTACIONES ---
-# Se elimina 'dependencies' de esta lista. No es un router.
 from app.routers import (
     auth,
     public_verify,
@@ -17,8 +15,7 @@ from app.routers import (
 
 app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-
-# --- CONFIGURACIÓN DE CORS (SIN CAMBIOS) ---
+# --- CORS Configuration (No Changes) ---
 origins = [
     "http://localhost",
     "http://localhost:4200",
@@ -35,18 +32,17 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-
-# --- REGISTRO DE ROUTERS ---
-app.include_router(auth.router)
-app.include_router(public_verify.router)
-app.include_router(admin_administradores.router)
-app.include_router(admin_docentes.router)
-app.include_router(admin_participantes.router)
-app.include_router(admin_productos_educativos.router)
-app.include_router(admin_inscripciones.router)
-app.include_router(admin_certificados.router)
-# --- LÍNEA ELIMINADA ---
-# Se quita la línea 'app.include_router(dependencies.router)'
+# --- ✅ UNIFIED ROUTER REGISTRATION ---
+# All routers are now consistently included under the /api/v1 prefix.
+# This prevents path duplication and redirect errors.
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(public_verify.router, prefix="/api/v1")
+app.include_router(admin_administradores.router, prefix="/api/v1")
+app.include_router(admin_docentes.router, prefix="/api/v1")
+app.include_router(admin_participantes.router, prefix="/api/v1")
+app.include_router(admin_productos_educativos.router, prefix="/api/v1")
+app.include_router(admin_inscripciones.router, prefix="/api/v1")
+app.include_router(admin_certificados.router, prefix="/api/v1")
 
 
 @app.get("/")

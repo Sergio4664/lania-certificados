@@ -1,68 +1,60 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
-import { Certificado, CertificadoCreate, CertificadoPublic } from '@shared/interfaces/certificado.interface';
-
-// Interfaz para la respuesta de la emisión masiva
-export interface BulkIssuanceResponse {
-  success: { participante: string; folio: string }[];
-  errors: { participante: string; error: string }[];
-}
+import { environment } from '@environments/environment';
+import { Certificado, CertificadoCreate } from '../interfaces/certificado.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CertificadoService {
   private http = inject(HttpClient);
-  // ✅ CORRECCIÓN: Se añade una barra al final de la URL base para evitar redirecciones.
-  private adminApiUrl = `${environment.apiUrl}/api/admin/certificados/`;
-  private publicApiUrl = `${environment.apiUrl}/public`;
+  private apiUrl = `${environment.apiUrl}/admin/certificados`;
 
-  /**
-   * Obtiene una lista de todos los certificados (solo para admin).
-   */
   getAll(): Observable<Certificado[]> {
-    return this.http.get<Certificado[]>(this.adminApiUrl);
+    return this.http.get<Certificado[]>(this.apiUrl);
+  }
+  
+  // --- MÉTODOS INDIVIDUALES ---
+  emitirConstanciaParticipante(participanteId: number, productoEducativoId: number): Observable<Certificado> {
+    return this.http.post<Certificado>(`${this.apiUrl}/participante`, { producto_educativo_id: productoEducativoId, participante_id: participanteId });
   }
 
-  /**
-   * Crea un nuevo certificado para una inscripción existente.
-   */
-  create(certificado: CertificadoCreate): Observable<Certificado> {
-    // La URL base ya tiene la barra, por lo que la llamada POST es correcta.
-    return this.http.post<Certificado>(this.adminApiUrl, certificado);
+  emitirConstanciaDocente(docenteId: number, productoEducativoId: number): Observable<Certificado> {
+    return this.http.post<Certificado>(`${this.apiUrl}/docente`, { producto_educativo_id: productoEducativoId, docente_id: docenteId });
   }
 
-  /**
-   * Elimina un certificado por su ID.
-   */
+  enviarConstanciaParticipante(certificadoId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/enviar/participante/${certificadoId}`, {});
+  }
+
+  enviarConstanciaDocente(certificadoId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/enviar/docente/${certificadoId}`, {});
+  }
+
+  // --- MÉTODOS MASIVOS ---
+  emitirConstanciasParticipantes(productoId: number): Observable<{message: string}> {
+    return this.http.post<{message: string}>(`${this.apiUrl}/participantes/producto/${productoId}`, {});
+  }
+
+  emitirConstanciasDocentes(productoId: number): Observable<{message: string}> {
+    return this.http.post<{message: string}>(`${this.apiUrl}/docentes/producto/${productoId}`, {});
+  }
+
+  enviarConstanciasParticipantes(productoId: number): Observable<{message: string}> {
+    return this.http.post<{message: string}>(`${this.apiUrl}/enviar/participantes/producto/${productoId}`, {});
+  }
+
+  enviarConstanciasDocentes(productoId: number): Observable<{message: string}> {
+    return this.http.post<{message: string}>(`${this.apiUrl}/enviar/docentes/producto/${productoId}`, {});
+  }
+  
+  // --- OTROS MÉTODOS ---
+  create(data: CertificadoCreate): Observable<Certificado> {
+    return this.http.post<Certificado>(this.apiUrl, data);
+  }
+
   delete(id: number): Observable<void> {
-    // Se construye la URL como: .../certificados/123
-    return this.http.delete<void>(`${this.adminApiUrl}${id}`);
-  }
-
-  /**
-   * Llama al endpoint público para verificar un certificado por su folio.
-   */
-  verifyPublic(folio: string): Observable<CertificadoPublic> {
-    return this.http.get<CertificadoPublic>(`${this.publicApiUrl}/verificar/${folio}`);
-  }
-
-  /**
-   * Solicita al backend que reenvíe un certificado por correo.
-   */
-  sendEmail(certificadoId: number): Observable<any> {
-    // Esta ruta puede necesitar una barra al final dependiendo de tu router.
-    // La añadimos por consistencia.
-    return this.http.post(`${this.adminApiUrl}send-email/${certificadoId}/`, {});
-  }
-
-  /**
-   * Llama al endpoint del backend para la emisión y envío masivo de constancias.
-   */
-  emitirYEnviarMasivamente(productoId: number): Observable<BulkIssuanceResponse> {
-    // ✅ CORRECCIÓN: Ruta completa con barra al final para coincidir con el backend.
-    return this.http.post<BulkIssuanceResponse>(`${this.adminApiUrl}emitir-masivamente/${productoId}/`, {});
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

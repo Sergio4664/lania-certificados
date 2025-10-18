@@ -1,130 +1,74 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { NotificationService } from '@shared/services/notification.service';
+import { FormsModule } from '@angular/forms'; // No se necesita ReactiveFormsModule aquí
+import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '@environments/environment';
 
-// --- Nuevos Servicios e Interfaces ---
+import { Certificado } from '@shared/interfaces/certificado.interface';
 import { CertificadoService } from '@shared/services/certificado.service';
-import { InscripcionService } from '@shared/services/inscripcion.service';
-import { Certificado, CertificadoCreate } from '@shared/interfaces/certificado.interface';
-import { Inscripcion } from '@shared/interfaces/inscripcion.interface';
-
-/**
- * Interfaz extendida para mostrar datos combinados en la tabla de certificados.
- */
-interface CertificadoDetallado extends Certificado {
-  nombre_participante: string;
-  nombre_producto: string;
-}
+import { NotificationService } from '@shared/services/notification.service';
 
 @Component({
   selector: 'app-admin-certificados',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe], // DatePipe es necesario
   templateUrl: './admin-certificados.component.html',
   styleUrls: ['./admin-certificados.component.css']
 })
 export default class AdminCertificadosComponent implements OnInit {
-  private certificadoService = inject(CertificadoService);
-  private inscripcionService = inject(InscripcionService);
-  private fb = inject(FormBuilder);
-  private notificationService = inject(NotificationService);
+  private certificadoSvc = inject(CertificadoService);
+  private notificationSvc = inject(NotificationService);
 
-  certificados: CertificadoDetallado[] = [];
-  inscripcionesDisponibles: Inscripcion[] = [];
-  
-  certificadoForm: FormGroup;
+  certificados: Certificado[] = [];
+  filteredCertificados: Certificado[] = [];
   isLoading = true;
-  showForm = false;
-
-  constructor() {
-    this.certificadoForm = this.fb.group({
-      inscripcion_id: [null, Validators.required],
-      folio: ['', Validators.required],
-      fecha_emision: [this.getTodayDateString(), Validators.required],
-    });
-  }
+  searchTerm: string = '';
 
   ngOnInit(): void {
-    this.loadAllData();
+    this.loadCertificados();
   }
 
-  loadAllData(): void {
+  loadCertificados(): void {
     this.isLoading = true;
-    // Cargamos los certificados existentes y las inscripciones que aún no tienen certificado
-    this.certificadoService.getAll().subscribe({
+    this.certificadoSvc.getAll().subscribe({
       next: (certificados) => {
-        // Necesitamos más detalles para la tabla, por lo que cargamos las inscripciones
-        this.inscripcionService.getAll().subscribe(inscripciones => {
-            this.certificados = this.mapCertificadosToDetalles(certificados, inscripciones);
-            this.inscripcionesDisponibles = this.filterInscripcionesSinCertificado(inscripciones, certificados);
-            this.isLoading = false;
-        });
+        this.certificados = certificados;
+        this.filteredCertificados = certificados;
+        this.isLoading = false;
       },
-      error: () => this.handleError('Error al cargar los certificados')
+      error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al cargar los certificados')
     });
   }
 
-  onSubmit(): void {
-    if (this.certificadoForm.invalid) {
-      this.notificationService.showError('Por favor, complete todos los campos requeridos.');
-      return;
-    }
-
-    const newCertificado: CertificadoCreate = this.certificadoForm.value;
-    
-    this.certificadoService.create(newCertificado).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Certificado creado exitosamente.');
-        this.loadAllData();
-        this.toggleForm();
-      },
-      error: (err) => this.handleError(err.error?.detail || 'Error al crear el certificado')
-    });
+  filterCertificados(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredCertificados = this.certificados.filter(c =>
+      c.folio.toLowerCase().includes(term) ||
+      // ✅ CORRECCIÓN: El acceso a los datos anidados ahora es seguro
+      c.inscripcion?.participante.nombre_completo.toLowerCase().includes(term) ||
+      c.inscripcion?.producto_educativo.nombre.toLowerCase().includes(term)
+    );
   }
-  
-  deleteCertificado(certificado: CertificadoDetallado): void {
-    if (confirm(`¿Está seguro de que quiere eliminar el certificado con folio ${certificado.folio}?`)) {
-      this.certificadoService.delete(certificado.id).subscribe({
+
+  deleteCertificado(certificado: Certificado): void {
+    if (confirm(`¿Está seguro de eliminar el certificado con folio ${certificado.folio}?`)) {
+      this.certificadoSvc.delete(certificado.id).subscribe({
         next: () => {
-          this.notificationService.showSuccess('Certificado eliminado con éxito.');
-          this.loadAllData();
+          this.notificationSvc.showSuccess('Certificado eliminado.');
+          this.loadCertificados(); // Recargar la lista para reflejar el cambio
         },
-        error: () => this.handleError('Error al eliminar el certificado')
+        error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al eliminar')
       });
     }
   }
 
-  toggleForm(): void {
-    this.showForm = !this.showForm;
-    this.certificadoForm.reset({ fecha_emision: this.getTodayDateString() });
-  }
-
-  // --- Funciones Auxiliares ---
-
-  private mapCertificadosToDetalles(certificados: Certificado[], inscripciones: Inscripcion[]): CertificadoDetallado[] {
-    return certificados.map(cert => {
-        const inscripcion = inscripciones.find(i => i.id === cert.inscripcion_id);
-        return {
-            ...cert,
-            nombre_participante: inscripcion?.participante.nombre_completo || 'Desconocido',
-            nombre_producto: inscripcion?.producto_educativo.nombre || 'Desconocido',
-        };
-    });
-  }
-
-  private filterInscripcionesSinCertificado(inscripciones: Inscripcion[], certificados: Certificado[]): Inscripcion[] {
-      const idsDeInscripcionesConCertificado = new Set(certificados.map(c => c.inscripcion_id));
-      return inscripciones.filter(i => !idsDeInscripcionesConCertificado.has(i.id));
-  }
-
-  private getTodayDateString(): string {
-    const today = new Date();
-    return today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+  getVerificationUrl(folio: string): string {
+    // La variable 'frontendUrl' se debe añadir a los environments
+    return `${environment.frontendUrl || 'http://localhost:4200'}/verificacion/${folio}`;
   }
 
   private handleError(message: string): void {
-    this.notificationService.showError(message);
+    this.notificationSvc.showError(message);
     this.isLoading = false;
   }
 }

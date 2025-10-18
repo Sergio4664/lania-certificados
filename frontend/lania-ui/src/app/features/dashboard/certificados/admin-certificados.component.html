@@ -1,51 +1,20 @@
-<div class="container">
-  <header class="header">
-    <h1>Gestión de Certificados</h1>
-    <button class="primary-btn" (click)="toggleForm()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      {{ showForm ? 'Cancelar' : 'Crear Certificado' }}
-    </button>
-  </header>
-
-  <!-- Formulario de Creación -->
-  <div *ngIf="showForm" class="form-card">
-    <h3>Nuevo Certificado</h3>
-    <form [formGroup]="certificadoForm" (ngSubmit)="onSubmit()">
-      
-      <div class="form-group">
-        <label for="inscripcion_id">Inscripción (Participante - Producto) *</label>
-        <select id="inscripcion_id" formControlName="inscripcion_id" required>
-            <option [ngValue]="null" disabled>Seleccione una inscripción sin certificado...</option>
-            <option *ngFor="let inscripcion of inscripcionesDisponibles" [value]="inscripcion.id">
-              {{ inscripcion.participante.nombre_completo }} - {{ inscripcion.producto_educativo.nombre }}
-            </option>
-        </select>
-        <small *ngIf="inscripcionesDisponibles.length === 0">No hay inscripciones disponibles para certificar.</small>
+<div class="module-content">
+  <div class="module-header">
+    <h2>Gestión de Certificados</h2>
+    <div class="header-actions">
+      <div class="search-container">
+        <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificados()" placeholder="Buscar por folio, participante o curso...">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
       </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-            <label for="folio">Folio *</label>
-            <input id="folio" formControlName="folio" required placeholder="Ej: LANIA-2025-ABCD">
-        </div>
-        <div class="form-group">
-            <label for="fecha_emision">Fecha de Emisión *</label>
-            <input id="fecha_emision" type="date" formControlName="fecha_emision" required>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
-        <button type="submit" class="primary-btn" [disabled]="certificadoForm.invalid">Crear</button>
-      </div>
-    </form>
+    </div>
   </div>
 
-  <!-- Tabla de Certificados -->
-  <div class="data-table">
+  <div *ngIf="isLoading" class="loading-indicator">Cargando...</div>
+
+  <div *ngIf="!isLoading && filteredCertificados.length > 0" class="data-table">
     <table>
       <thead>
         <tr>
@@ -57,23 +26,20 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let cert of certificados">
-          <td><span class="folio-tag">{{ cert.folio }}</span></td>
-          <td>{{ cert.nombre_participante }}</td>
-          <td>{{ cert.nombre_producto }}</td>
-          <td>{{ cert.fecha_emision | date:'dd/MM/yyyy' }}</td>
-          <td class="actions">
-            <a class="icon-btn view" [href]="cert.url_validacion" target="_blank" title="Verificar Certificado">👁️</a>
-            <button class="icon-btn delete" (click)="deleteCertificado(cert)" title="Eliminar">🗑️</button>
+        <tr *ngFor="let certificado of filteredCertificados">
+          <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
+          <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
+          <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
+          <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+          <td class="actions-cell">
+            <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
           </td>
-        </tr>
-         <tr *ngIf="isLoading">
-          <td colspan="5">Cargando certificados...</td>
-        </tr>
-        <tr *ngIf="!isLoading && certificados.length === 0">
-          <td colspan="5">No hay certificados registrados.</td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div *ngIf="!isLoading && filteredCertificados.length === 0" class="no-data-card">
+    No se encontraron certificados que coincidan con la búsqueda.
   </div>
 </div>
