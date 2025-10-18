@@ -187,77 +187,169 @@
         <button class="close-btn" (click)="unselectCourse()">✖</button>
       </div>
       <div class="modal-body">
-        
-        <div class="modal-section">
-            <h4>Inscripción de Participantes</h4>
-            <div class="add-participant-section">
-              <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Inscribir Manualmente</button>
-              <div *ngIf="showAddParticipantForm" class="form-card nested-form">
-                <form (ngSubmit)="enrollParticipant()">
-                  <div class="form-group">
-                    <label>Seleccionar Participante</label>
-                    <select [(ngModel)]="participantToAdd" name="participant_id" required>
-                      <option [ngValue]="null" disabled>-- Elige un participante --</option>
-                      <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.nombre_completo }} ({{p.email_personal}})</option>
-                    </select>
-                  </div>
-                  <div class="form-actions">
-                    <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
-                    <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
-                  </div>
-                </form>
-              </div>
+         <div class="scrollable-content">
+            <div class="data-table" *ngIf="selectedCourse.docentes && selectedCourse.docentes.length > 0">
+              <h3 class="table-title">Docentes / Ponentes</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                             [checked]="areAllDocenteRecipientsSelected"
+                             (change)="toggleAllDocenteRecipients($event)"
+                             title="Seleccionar Todos los Docentes">
+                    </th>
+                    <th>Especialidad</th>
+                    <th>Nombre</th>
+                    <th>Email Institucional</th>
+                    <th>Email Personal</th>
+                    <th>Teléfono</th>
+                    <th>Whatsapp</th>
+                    <th>Emitir Constancia de Ponente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let docente of selectedCourse.docentes">
+                    <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                             [checked]="isDocenteRecipientSelected(docente.id)"
+                             (change)="toggleDocenteCompetencyRecipient(docente.id, $event)">
+                    </td>
+                    <td>{{ docente.especialidad || 'N/A' }}</td>
+                    <td>{{ docente.nombre_completo }}</td>
+                    <td>{{ docente.email_institucional }}</td>
+                    <td>{{ docente.email_personal }}</td>
+                    <td>{{ docente.telefono || 'N/A' }}</td>
+                    <td>{{ docente.whatsapp || 'N/A' }}</td>
+                    <td>
+                      <div class="send-actions">
+                        <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id, false)">Normal</button>
+                        <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueDocenteCertificate(docente.id, true)">Competencias</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="upload-section">
-              <button class="secondary-btn small-btn" (click)="descargarPlantilla()">Descargar Plantilla</button>
-              <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
-              <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
-              <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
-              <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
+
+            <div class="data-table">
+              <h3 class="table-title">Participantes</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                             [checked]="areAllCompetencyRecipientsSelected"
+                             (change)="toggleAllCompetencyRecipients($event)"
+                             title="Seleccionar Todos">
+                    </th>
+                    <th>Nombre</th>
+                    <th>Email Personal</th>
+                    <th>Email Institucional</th>
+                    <th>Teléfono</th>
+                    <th>WhatsApp</th>
+                    <th>Acciones</th>
+                    <th>Emitir Constancia Individual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of courseParticipants">
+                    <td *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                      <input type="checkbox"
+                             [checked]="isRecipientSelected(p.id)"
+                             (change)="toggleCompetencyRecipient(p.id, $event)">
+                    </td>
+                    <td>{{ p.full_name }}</td>
+                    <td>{{ p.personal_email }}</td>
+                    <td>{{ p.institutional_email }}</td>
+                    <td>{{ p.telefono || 'N/A' }}</td>
+                    <td>{{ p.whatsapp || 'N/A' }}</td>
+                    <td>
+                      <button class="icon-btn delete" (click)="removeParticipantFromCourse(p.id)" title="Eliminar del curso">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="send-actions">
+                        <button class="secondary-btn small-btn" (click)="issueCertificate(p.id, false)">Normal</button>
+                        <button *ngIf="selectedCourse.course_type === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(p.id, true)">Competencias</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="modal-section">
+                <h4>Inscripción de Participantes</h4>
+                <div class="add-participant-section">
+                  <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Inscribir Manualmente</button>
+                  <div *ngIf="showAddParticipantForm" class="form-card nested-form">
+                    <form (ngSubmit)="enrollParticipant()">
+                      <div class="form-group">
+                        <label>Seleccionar Participante</label>
+                        <select [(ngModel)]="participantToAdd" name="participant_id" required>
+                          <option [ngValue]="null" disabled>-- Elige un participante --</option>
+                          <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.nombre_completo }} ({{p.email_personal}})</option>
+                        </select>
+                      </div>
+                      <div class="form-actions">
+                        <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
+                        <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <div class="upload-section">
+                  <button class="secondary-btn small-btn" (click)="descargarPlantilla()">Descargar Plantilla</button>
+                  <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
+                  <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
+                  <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+                  <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
+                </div>
+            </div>
+
+            <div class="data-table">
+              <h3 class="table-title">Participantes Inscritos ({{ inscripcionesDelProducto.length }})</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Email Personal</th>
+                    <th>Estado Constancia</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let inscripcion of inscripcionesDelProducto">
+                    <td>{{ inscripcion.participante.nombre_completo }}</td>
+                    <td>{{ inscripcion.participante.email_personal }}</td>
+                    <td>
+                      <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else noCert">
+                        <span class="serial-tag">{{ cert.folio }}</span>
+                      </ng-container>
+                      <ng-template #noCert>
+                        <span class="no-docentes-small">No emitida</span>
+                      </ng-template>
+                    </td>
+                    <td class="actions-cell">
+                      <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar del curso">🗑️</button>
+                      <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else issueBtn">
+                        <button class="icon-btn email" (click)="sendCertificate(cert.id)" title="Reenviar por Correo">📧</button>
+                        <button class="icon-btn delete" (click)="deleteCertificate(cert)" title="Eliminar Constancia">🗑️</button>
+                      </ng-container>
+                      <ng-template #issueBtn>
+                        <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id)">Emitir</button>
+                      </ng-template>
+                    </td>
+                  </tr>
+                  <tr *ngIf="inscripcionesDelProducto.length === 0">
+                    <td colspan="4" class="no-data">No hay participantes inscritos.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
         </div>
-
-        <div class="data-table">
-          <h3 class="table-title">Participantes Inscritos ({{ inscripcionesDelProducto.length }})</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Email Personal</th>
-                <th>Estado Constancia</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let inscripcion of inscripcionesDelProducto">
-                <td>{{ inscripcion.participante.nombre_completo }}</td>
-                <td>{{ inscripcion.participante.email_personal }}</td>
-                <td>
-                  <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else noCert">
-                    <span class="serial-tag">{{ cert.folio }}</span>
-                  </ng-container>
-                  <ng-template #noCert>
-                    <span class="no-docentes-small">No emitida</span>
-                  </ng-template>
-                </td>
-                <td class="actions-cell">
-                  <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar del curso">🗑️</button>
-                  <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as cert; else issueBtn">
-                    <button class="icon-btn email" (click)="sendCertificate(cert.id)" title="Reenviar por Correo">📧</button>
-                    <button class="icon-btn delete" (click)="deleteCertificate(cert)" title="Eliminar Constancia">🗑️</button>
-                  </ng-container>
-                  <ng-template #issueBtn>
-                    <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id)">Emitir</button>
-                  </ng-template>
-                </td>
-              </tr>
-              <tr *ngIf="inscripcionesDelProducto.length === 0">
-                <td colspan="4" class="no-data">No hay participantes inscritos.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
       </div>
       <div class="modal-footer">
         <button type="button" class="secondary-btn" (click)="unselectCourse()">Cerrar</button>
