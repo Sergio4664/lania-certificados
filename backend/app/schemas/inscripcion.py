@@ -1,25 +1,29 @@
+# backend/app/schemas/inscripcion.py
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from typing import List, Optional, TYPE_CHECKING
 
-# Importa los esquemas que necesitas, pero sin anidarlos directamente
 from .participante import Participante
-from .producto_educativo import ProductoEducativo
+
+if TYPE_CHECKING:
+    from .producto_educativo import ProductoEducativo
+    from .certificado import CertificadoInDB
 
 class InscripcionBase(BaseModel):
-    producto_educativo_id: int
+    fecha_inscripcion: datetime
     participante_id: int
+    producto_educativo_id: int
 
-class InscripcionCreate(InscripcionBase):
-    pass
+class InscripcionCreate(BaseModel):
+    participante_id: int
+    producto_educativo_id: int
 
-# Este es el esquema principal para mostrar las inscripciones
 class Inscripcion(InscripcionBase):
     id: int
-    fecha_inscripcion: datetime
-    
-    # Anida los objetos completos aquí
     participante: Participante
-    producto_educativo: ProductoEducativo
+    producto_educativo: 'ProductoEducativo'
+    certificados: List['CertificadoInDB'] = []
 
-    # FIX: Reemplaza 'orm_mode' por 'from_attributes' para Pydantic v2
     model_config = ConfigDict(from_attributes=True)
+
+# La llamada a model_rebuild() se ha movido a schemas/__init__.py

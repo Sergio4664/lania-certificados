@@ -1,17 +1,21 @@
 # backend/app/schemas/producto_educativo.py
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
 from app.models.enums import TipoProductoEnum, ModalidadEnum
 from .docente import DocenteOut
+
+if TYPE_CHECKING:
+    from .inscripcion import Inscripcion
 
 class ProductoEducativoBase(BaseModel):
     nombre: str
     horas: int
     fecha_inicio: date
     fecha_fin: date
-    tipo_producto: Optional[TipoProductoEnum] = None
-    modalidad: Optional[ModalidadEnum] = None
+    tipo_producto: TipoProductoEnum
+    modalidad: ModalidadEnum
     competencias: Optional[str] = None
     
     @field_validator('nombre')
@@ -36,7 +40,6 @@ class ProductoEducativoBase(BaseModel):
         return v
 
 class ProductoEducativoCreate(ProductoEducativoBase):
-    # --- ✅ CORRECCIÓN AQUÍ ---
     docente_ids: List[int] = []
 
 class ProductoEducativoUpdate(BaseModel):
@@ -44,7 +47,6 @@ class ProductoEducativoUpdate(BaseModel):
     horas: Optional[int] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
-    # --- ✅ CORRECCIÓN AQUÍ ---
     docente_ids: Optional[List[int]] = None
     tipo_producto: Optional[TipoProductoEnum] = None
     modalidad: Optional[ModalidadEnum] = None
@@ -53,6 +55,8 @@ class ProductoEducativoUpdate(BaseModel):
 class ProductoEducativo(ProductoEducativoBase):
     id: int
     docentes: List[DocenteOut] = []
+    inscripciones: List['Inscripcion'] = []
+    
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+# La llamada a model_rebuild() se ha movido a schemas/__init__.py
