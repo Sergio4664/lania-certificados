@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .docente import DocenteDTO
 
 class CertificadoBase(BaseModel):
+    # ... campos base ...
     folio: str
     fecha_emision: datetime
     archivo_path: Optional[str] = None
@@ -16,6 +17,7 @@ class CertificadoBase(BaseModel):
     producto_educativo_id: Optional[int] = None
 
 class CertificadoCreate(BaseModel):
+    # ... campos de creación ...
     inscripcion_id: Optional[int] = None
     docente_id: Optional[int] = None
     producto_educativo_id: Optional[int] = None
@@ -23,11 +25,15 @@ class CertificadoCreate(BaseModel):
 
 class CertificadoInDB(CertificadoBase):
     id: int
+    
+    # --- ✅ CORRECCIÓN CRÍTICA ---
+    # Ambas relaciones deben ser referencias a futuro
     inscripcion: Optional['Inscripcion'] = None
     docente: Optional['DocenteDTO'] = None
 
     model_config = ConfigDict(from_attributes=True)
 
+# ... resto de esquemas (CertificadoPublic, etc.)
 class CertificadoPublic(BaseModel):
     folio: str
     fecha_emision: datetime
@@ -39,5 +45,3 @@ class CertificadoPublic(BaseModel):
 class EmisionMasivaResponse(BaseModel):
     success: list[dict]
     errors: list[dict]
-
-# La llamada a model_rebuild() se ha movido a schemas/__init__.py

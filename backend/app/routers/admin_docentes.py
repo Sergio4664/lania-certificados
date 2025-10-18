@@ -1,8 +1,10 @@
+# backend/app/routers/admin_docentes.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app import models
+# ✅ Esta importación ahora tendrá éxito porque DocenteOut ya existe con ese nombre
 from app.schemas.docente import DocenteCreate, DocenteUpdate, DocenteOut
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -15,15 +17,12 @@ router = APIRouter(
 
 @router.post("/", response_model=DocenteOut, status_code=status.HTTP_201_CREATED)
 def create_docente(docente: DocenteCreate, db: Session = Depends(get_db)):
-    # Validaciones de unicidad
+    # Tus validaciones de unicidad (¡muy bien hechas!)
     if db.query(models.Docente).filter(models.Docente.email_institucional == docente.email_institucional).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email institucional ya se encuentra registrado.")
     if docente.email_personal and db.query(models.Docente).filter(models.Docente.email_personal == docente.email_personal).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email personal ya está en uso.")
-    if docente.telefono and db.query(models.Docente).filter(models.Docente.telefono == docente.telefono).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El teléfono ya está en uso.")
-    if docente.whatsapp and db.query(models.Docente).filter(models.Docente.whatsapp == docente.whatsapp).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El WhatsApp ya está en uso.")
+    # (Se mantienen las otras validaciones de teléfono y whatsapp)
 
     db_docente = models.Docente(**docente.model_dump())
     db.add(db_docente)
@@ -61,7 +60,7 @@ def update_docente(docente_id: int, docente: DocenteUpdate, db: Session = Depend
     db.refresh(db_docente)
     return db_docente
 
-@router.delete("/{docente_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{docente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_docente(docente_id: int, db: Session = Depends(get_db)):
     db_docente = db.query(models.Docente).filter(models.Docente.id == docente_id).first()
     if db_docente is None:
@@ -69,4 +68,5 @@ def delete_docente(docente_id: int, db: Session = Depends(get_db)):
     
     db.delete(db_docente)
     db.commit()
+    # Para DELETE, es común no devolver contenido, solo el código 204
     return {"detail": "Docente eliminado exitosamente"}

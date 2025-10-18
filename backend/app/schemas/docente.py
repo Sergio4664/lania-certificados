@@ -1,51 +1,39 @@
-from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+# backend/app/schemas/docente.py
+from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import List, Optional, TYPE_CHECKING
 
-# Propiedades compartidas
+# Usar TYPE_CHECKING para evitar la importación circular en tiempo de ejecución
+if TYPE_CHECKING:
+    from .producto_educativo import ProductoEducativo
+
 class DocenteBase(BaseModel):
     nombre_completo: str
-    email_institucional: EmailStr
-    email_personal: Optional[EmailStr] = None
+    especialidad: Optional[str] = None
+    email_personal: EmailStr
+    email_institucional: Optional[EmailStr] = None
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
-    especialidad: Optional[str] = None
 
-    @field_validator('email_institucional')
-    @classmethod
-    def validate_email_domain(cls, v):
-        if not v.endswith('@lania.edu.mx'):
-            raise ValueError('El correo institucional debe tener el dominio @lania.edu.mx')
-        return v
-
-# Propiedades para la creación
 class DocenteCreate(DocenteBase):
     pass
 
-# Propiedades para la actualización
 class DocenteUpdate(BaseModel):
     nombre_completo: Optional[str] = None
-    email_institucional: Optional[EmailStr] = None
+    especialidad: Optional[str] = None
     email_personal: Optional[EmailStr] = None
+    email_institucional: Optional[EmailStr] = None
     telefono: Optional[str] = None
     whatsapp: Optional[str] = None
-    especialidad: Optional[str] = None
 
-    @field_validator('email_institucional')
-    @classmethod
-    def validate_email_domain_optional(cls, v):
-        if v and not v.endswith('@lania.edu.mx'):
-            raise ValueError('El correo institucional debe tener el dominio @lania.edu.mx')
-        return v
-
-# --- Esquema para la Salida (Respuesta de la API) ---
-# Hereda de DocenteBase y añade los campos que genera la base de datos.
+# --- ✅ NOMBRE CORRECTO ---
+# Esta es la clase que tu router necesita importar.
 class DocenteOut(DocenteBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
 
-class DocenteCertificadoCreate(BaseModel):
-    producto_id: int
-    docente_id: int
-
-    class Config:
-        # CORRECCIÓN: 'orm_mode' se renombra a 'from_attributes' en Pydantic v2
-        from_attributes = True
+# Esquema completo con sus relaciones (usado internamente para resolver dependencias)
+class Docente(DocenteOut):
+    # Referencia a Futuro para evitar bucles de importación
+    productos_educativos: List['ProductoEducativo'] = []
+    
+    model_config = ConfigDict(from_attributes=True)
