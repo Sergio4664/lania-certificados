@@ -4,68 +4,77 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from app.database import get_db
-from app.models import Certificado as CertificadoModel
-from app.models import ProductoEducativo as ProductoEducativoModel
-from app.models import Participante as ParticipanteModel
-from app.models import Docente as DocenteModel
-from app.models import Inscripcion as InscripcionModel
-from app.schemas.certificado import Certificado, CertificadoCreate
+from app import models
+from app.schemas.certificado import Certificado, CertificadoCreate, CertificadoOut
 from app.services.certificate_service import generate_certificate
 from app.services.email_service import send_certificate_email
 from app.routers.dependencies import get_current_admin_user
 
-# --- ✅ CORRECCIÓN PRINCIPAL ---
-# Se define el router con su prefijo y dependencias, igual que los otros routers de admin.
 router = APIRouter(
     prefix="/admin/certificados",
     tags=["Admin - Certificados"],
     dependencies=[Depends(get_current_admin_user)]
 )
 
-@router.get("/", response_model=List[Certificado])
+@router.get("/", response_model=List[CertificadoOut])
 def read_all_certificados(db: Session = Depends(get_db)):
     """
-    Obtiene todos los certificados con sus relaciones cargadas.
+    Obtiene todos los certificados.
+    Usa un response_model simple (CertificadoOut) para evitar ciclos de anidamiento en la lista.
     """
-    certificados = db.query(CertificadoModel).options(
-        joinedload(CertificadoModel.inscripcion)
-        .joinedload(InscripcionModel.participante),
-        joinedload(CertificadoModel.inscripcion)
-        .joinedload(InscripcionModel.producto_educativo),
-        joinedload(CertificadoModel.docente)
-    ).order_by(CertificadoModel.id.desc()).all()
+    certificados = db.query(models.Certificado).order_by(models.Certificado.id.desc()).all()
     return certificados
+
+@router.get("/{certificado_id}", response_model=Certificado)
+def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
+    """
+    Obtiene un certificado específico con todas sus relaciones cargadas.
+    Es seguro usar el response_model completo aquí porque es un solo objeto.
+    """
+    certificado = db.query(models.Certificado).options(
+        joinedload(models.Certificado.inscripcion)
+        .joinedload(models.Inscripcion.participante),
+        joinedload(models.Certificado.inscripcion)
+        .joinedload(models.Inscripcion.producto_educativo),
+        joinedload(models.Certificado.docente)
+    ).filter(models.Certificado.id == certificado_id).first()
+    
+    if not certificado:
+        raise HTTPException(status_code=404, detail="Certificado no encontrado")
+        
+    return certificado
 
 @router.post("/participante", response_model=Certificado)
 def issue_certificate_to_participant(
     certificado_create: CertificadoCreate, db: Session = Depends(get_db)
 ):
-    # (El resto del código no necesita cambios, ya que la lógica es correcta)
     db_producto_educativo = (
-        db.query(ProductoEducativoModel)
-        .filter(ProductoEducativoModel.id == certificado_create.producto_educativo_id)
+        db.query(models.ProductoEducativo)
+        .filter(models.ProductoEducativo.id == certificado_create.producto_educativo_id)
         .first()
     )
     if not db_producto_educativo:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
-    db_participante = (
-        db.query(ParticipanteModel)
-        .filter(ParticipanteModel.id == certificado_create.participante_id)
-        .first()
-    )
-    if not db_participante:
-        raise HTTPException(status_code=404, detail="Participante no encontrado")
+    # Corrección: El modelo de creación no tiene 'participante_id', se debe buscar en 'inscripcion_id'
+    if not certificado_create.inscripcion_id:
+        raise HTTPException(status_code=400, detail="Se requiere inscripcion_id para emitir un certificado a un participante.")
+
+    db_inscripcion = db.query(models.Inscripcion).filter(models.Inscripcion.id == certificado_create.inscripcion_id).first()
+    if not db_inscripcion:
+        raise HTTPException(status_code=404, detail="Inscripción no encontrada")
 
     file_path = generate_certificate(
-        db_participante.nombre,
+        db_inscripcion.participante.nombre_completo,
         db_producto_educativo.nombre,
-        db_producto_educativo.tipo.value,
+        db_producto_educativo.horas,
+        # Asumiendo que quieres el nombre del primer docente, si no, la lógica debe ajustarse.
+        db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
     )
-    nuevo_certificado = CertificadoModel(
-        participante_id=db_participante.id,
+    nuevo_certificado = models.Certificado(
+        inscripcion_id=db_inscripcion.id,
         producto_educativo_id=db_producto_educativo.id,
-        archivo_path=file_path,
+        archivo_path=str(file_path), # Asegurarse que el path se guarde como string
     )
     db.add(nuevo_certificado)
     db.commit()
@@ -78,31 +87,35 @@ def issue_certificate_to_docente(
     certificado_create: CertificadoCreate, db: Session = Depends(get_db)
 ):
     db_producto_educativo = (
-        db.query(ProductoEducativoModel)
-        .filter(ProductoEducativoModel.id == certificado_create.producto_educativo_id)
+        db.query(models.ProductoEducativo)
+        .filter(models.ProductoEducativo.id == certificado_create.producto_educativo_id)
         .first()
     )
     if not db_producto_educativo:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
+    if not certificado_create.docente_id:
+        raise HTTPException(status_code=400, detail="Se requiere docente_id para emitir un certificado a un docente.")
+
     db_docente = (
-        db.query(DocenteModel)
-        .filter(DocenteModel.id == certificado_create.docente_id)
+        db.query(models.Docente)
+        .filter(models.Docente.id == certificado_create.docente_id)
         .first()
     )
     if not db_docente:
         raise HTTPException(status_code=404, detail="Docente no encontrado")
 
     file_path = generate_certificate(
-        db_docente.nombre,
+        db_docente.nombre_completo,
         db_producto_educativo.nombre,
-        db_producto_educativo.tipo.value,
+        db_producto_educativo.horas,
+        db_docente.nombre_completo, # El docente es el mismo que recibe
         is_docente=True,
     )
-    nuevo_certificado = CertificadoModel(
+    nuevo_certificado = models.Certificado(
         docente_id=db_docente.id,
         producto_educativo_id=db_producto_educativo.id,
-        archivo_path=file_path,
+        archivo_path=str(file_path),
     )
     db.add(nuevo_certificado)
     db.commit()
@@ -110,112 +123,28 @@ def issue_certificate_to_docente(
     return nuevo_certificado
 
 
-@router.post("/enviar/participante/{certificado_id}")
-def send_certificate_to_participant(certificado_id: int, db: Session = Depends(get_db)):
-    db_certificado = (
-        db.query(CertificadoModel)
-        .filter(CertificadoModel.id == certificado_id)
-        .first()
-    )
+@router.post("/enviar/{certificado_id}")
+def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_db)):
+    db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
     if not db_certificado:
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
 
-    send_certificate_email(
-        db_certificado.participante.email,
-        db_certificado.participante.nombre,
-        db_certificado.producto_educativo.nombre,
-        db_certificado.archivo_path,
-    )
-    return {"message": "Certificado enviado exitosamente"}
-
-
-@router.post("/enviar/docente/{certificado_id}")
-def send_certificate_to_docente(certificado_id: int, db: Session = Depends(get_db)):
-    db_certificado = (
-        db.query(CertificadoModel).filter(CertificadoModel.id == certificado_id).first()
-    )
-    if not db_certificado:
-        raise HTTPException(status_code=404, detail="Certificado no encontrado")
+    recipient_email = ""
+    recipient_name = ""
+    
+    if db_certificado.inscripcion:
+        recipient_email = db_certificado.inscripcion.participante.email_personal
+        recipient_name = db_certificado.inscripcion.participante.nombre_completo
+    elif db_certificado.docente:
+        recipient_email = db_certificado.docente.email_personal
+        recipient_name = db_certificado.docente.nombre_completo
+    else:
+        raise HTTPException(status_code=400, detail="El certificado no está asociado a un participante o docente.")
 
     send_certificate_email(
-        db_certificado.docente.email,
-        db_certificado.docente.nombre,
-        db_certificado.producto_educativo.nombre,
-        db_certificado.archivo_path,
+        recipient_email=recipient_email,
+        user_name=recipient_name,
+        course_name=db_certificado.producto_educativo.nombre,
+        attachment_path=db_certificado.archivo_path,
     )
     return {"message": "Certificado enviado exitosamente"}
-
-@router.post("/participantes/producto/{producto_id}")
-def issue_certificates_for_product_participants(producto_id: int, db: Session = Depends(get_db)):
-    db_producto_educativo = db.query(ProductoEducativoModel).filter(ProductoEducativoModel.id == producto_id).first()
-    if not db_producto_educativo:
-        raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
-
-    for participante in db_producto_educativo.participantes:
-        file_path = generate_certificate(
-            participante.nombre,
-            db_producto_educativo.nombre,
-            db_producto_educativo.tipo.value,
-        )
-        nuevo_certificado = CertificadoModel(
-            participante_id=participante.id,
-            producto_educativo_id=db_producto_educativo.id,
-            archivo_path=file_path,
-        )
-        db.add(nuevo_certificado)
-    
-    db.commit()
-    return {"message": "Certificados para participantes emitidos exitosamente"}
-
-@router.post("/docentes/producto/{producto_id}")
-def issue_certificates_for_product_docentes(producto_id: int, db: Session = Depends(get_db)):
-    db_producto_educativo = db.query(ProductoEducativoModel).filter(ProductoEducativoModel.id == producto_id).first()
-    if not db_producto_educativo:
-        raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
-
-    for docente in db_producto_educativo.docentes:
-        file_path = generate_certificate(
-            docente.nombre,
-            db_producto_educativo.nombre,
-            db_producto_educativo.tipo.value,
-            is_docente=True,
-        )
-        nuevo_certificado = CertificadoModel(
-            docente_id=docente.id,
-            producto_educativo_id=db_producto_educativo.id,
-            archivo_path=file_path,
-        )
-        db.add(nuevo_certificado)
-    
-    db.commit()
-    return {"message": "Certificados para docentes emitidos exitosamente"}
-
-@router.post("/enviar/participantes/producto/{producto_id}")
-def send_certificates_for_product_participants(producto_id: int, db: Session = Depends(get_db)):
-    db_certificados = db.query(CertificadoModel).filter(CertificadoModel.producto_educativo_id == producto_id, CertificadoModel.participante_id != None).all()
-    if not db_certificados:
-        raise HTTPException(status_code=404, detail="No se encontraron certificados para los participantes de este producto")
-
-    for certificado in db_certificados:
-        send_certificate_email(
-            certificado.participante.email,
-            certificado.participante.nombre,
-            certificado.producto_educativo.nombre,
-            certificado.archivo_path,
-        )
-    return {"message": "Certificados enviados a todos los participantes exitosamente"}
-
-@router.post("/enviar/docentes/producto/{producto_id}")
-def send_certificates_for_product_docentes(producto_id: int, db: Session = Depends(get_db)):
-    db_certificados = db.query(CertificadoModel).filter(CertificadoModel.producto_educativo_id == producto_id, CertificadoModel.docente_id != None).all()
-    if not db_certificados:
-        raise HTTPException(status_code=404, detail="No se encontraron certificados para los docentes de este producto")
-
-    for certificado in db_certificados:
-        send_certificate_email(
-            certificado.docente.email,
-            certificado.docente.nombre,
-            certificado.producto_educativo.nombre,
-            certificado.archivo_path,
-        )
-    return {"message": "Certificados enviados a todos los docentes exitosamente"}

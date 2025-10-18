@@ -1,29 +1,34 @@
 # backend/app/schemas/inscripcion.py
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
-from .participante import Participante
-
+# Importa los nuevos esquemas de salida que no tienen ciclos
 if TYPE_CHECKING:
-    from .producto_educativo import ProductoEducativo
-    from .certificado import Certificado
+    from .participante import Participante
+    from .producto_educativo import ProductoEducativoOut # ✅ Usar el esquema sin ciclo
+    from .certificado import CertificadoOut # ✅ Usar un esquema simple para certificado
 
 class InscripcionBase(BaseModel):
-    fecha_inscripcion: datetime
     participante_id: int
     producto_educativo_id: int
 
-class InscripcionCreate(BaseModel):
-    participante_id: int
-    producto_educativo_id: int
+class InscripcionCreate(InscripcionBase):
+    pass
 
-class Inscripcion(InscripcionBase):
+# --- ✅ SOLUCIÓN: Esquema de salida sin recursión ---
+class InscripcionOut(InscripcionBase):
     id: int
-    participante: Participante
-    producto_educativo: 'ProductoEducativo'
-    certificados: List['Certificado'] = []
-
+    participante: 'Participante'
+    # Usamos el esquema 'ProductoEducativoOut' que no tiene la lista de inscripciones
+    producto_educativo: 'ProductoEducativoOut'
+    # Usamos un esquema simple 'CertificadoOut' que no vuelve a anidar la inscripción
+    certificados: list['CertificadoOut'] = []
     model_config = ConfigDict(from_attributes=True)
 
-# La llamada a model_rebuild() se ha movido a schemas/__init__.py
+# Esquema completo para vistas de detalle si fuera necesario
+class Inscripcion(InscripcionBase):
+    id: int
+    participante: 'Participante'
+    producto_educativo: 'ProductoEducativoOut' # Mantenemos el seguro aquí también
+    certificados: list['CertificadoOut'] = []
+    model_config = ConfigDict(from_attributes=True)
