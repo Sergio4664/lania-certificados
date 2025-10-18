@@ -28,7 +28,8 @@ import { ParticipanteService } from '@shared/services/participante.service';
   styleUrls: ['./admin-productos-educativos.component.css']
 })
 export default class AdminProductosEducativosComponent implements OnInit {
-  // Inyección de servicios
+  
+  // --- Inyección de Servicios ---
   private productoSvc = inject(ProductoEducativoService);
   private docenteSvc = inject(DocenteService);
   private participanteSvc = inject(ParticipanteService);
@@ -37,32 +38,34 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
 
-  // --- Listas de datos separadas por tipo de producto ---
-  cursos: ProductoEducativo[] = [];
-  pildoras: ProductoEducativo[] = [];
-  inyecciones: ProductoEducativo[] = [];
-
-  // Listas de datos
+  // --- Listas de Datos Principales ---
   private productos: ProductoEducativo[] = [];
   docentes: DocenteDTO[] = [];
   participantes: Participante[] = [];
-  inscripcionesDelProducto: Inscripcion[] = [];
   certificados: Certificado[] = [];
-
-  // Estados de la UI
+  
+  // --- Listas de Datos Filtrados para la Vista ---
+  cursos: ProductoEducativo[] = [];
+  pildoras: ProductoEducativo[] = [];
+  inyecciones: ProductoEducativo[] = [];
+  
+  // --- Datos del Producto Seleccionado ---
+  inscripcionesDelProducto: Inscripcion[] = [];
+  
+  // --- Propiedades de Estado de la UI ---
   showCourseForm = false;
   editingCourse: ProductoEducativo | null = null;
   selectedCourse: ProductoEducativo | null = null;
   showAddParticipantForm = false;
   showCompetenciesModal = false;
   searchTerm: string = '';
-
-  // Formularios
+  selectedFile: File | null = null;
+  
+  // --- Propiedades de Formularios ---
   courseForm: FormGroup;
   competenciesList: string[] = [];
   participantToAdd: number | null = null;
-  selectedFile: File | null = null;
-
+  
   constructor() {
     this.courseForm = this.fb.group({
       nombre: ['', Validators.required],
@@ -76,9 +79,25 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
+  // --- MÉTODOS DE CICLO DE VIDA ---
+
   ngOnInit() {
     this.loadInitialData();
   }
+
+  // --- GETTERS COMPUTADOS ---
+
+  get availableParticipants(): Participante[] {
+    if (!this.selectedCourse) return [];
+    const enrolledIds = new Set(this.inscripcionesDelProducto.map(i => i.participante.id));
+    return this.participantes.filter(p => !enrolledIds.has(p.id));
+  }
+
+  get courseParticipants(): Participante[] {
+    return this.inscripcionesDelProducto.map(inscripcion => inscripcion.participante);
+  }
+
+  // --- CARGA DE DATOS ---
 
   loadInitialData() {
     forkJoin({
@@ -95,13 +114,148 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  groupAndFilterProducts() {
-    const term = this.searchTerm.toLowerCase();
-    const filtered = this.productos.filter(p => p.nombre.toLowerCase().includes(term));
-    this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO');
-    this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA');
-    this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
+  loadParticipantsForCourse(courseId: number) {
+    this.inscripcionSvc.getByProductoId(courseId).subscribe(inscripciones => {
+      this.inscripcionesDelProducto = inscripciones;
+    });
   }
+
+  // --- GESTIÓN DE PRODUCTOS (CRUD) ---
+
+  onSubmitCourse() {
+    if (this.courseForm.invalid) {
+      this.notificationSvc.showError("Por favor, complete todos los campos requeridos.");
+      return;
+    }
+    const formValue = this.courseForm.getRawValue();
+    const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
+    const payload = { ...formValue, competencias: JSON.stringify(competenciasArray) };
+
+    if (this.editingCourse) {
+      this.updateCourse(payload);
+    } else {
+      this.createCourse(payload);
+    }
+  }
+  
+  private createCourse(payload: ProductoEducativoCreate) {
+    this.productoSvc.create(payload).subscribe({
+      next: (newProduct) => {
+        this.notificationSvc.showSuccess('Producto educativo creado.');
+        this.productos.unshift(newProduct);
+        this.productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
+        this.groupAndFilterProducts();
+        this.cancelCourseForm();
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
+    });
+  }
+  
+  private updateCourse(payload: ProductoEducativoUpdate) {
+    if (!this.editingCourse) return;
+    this.productoSvc.update(this.editingCourse.id, payload).subscribe({
+      next: (updatedProduct) => {
+        this.notificationSvc.showSuccess('Producto educativo actualizado.');
+        const index = this.productos.findIndex(p => p.id === updatedProduct.id);
+        if (index !== -1) {
+          this.productos[index] = updatedProduct;
+        }
+        this.groupAndFilterProducts();
+        this.cancelCourseForm();
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')
+    });
+  }
+
+  deleteCourse(courseId: number) {
+    if (confirm('¿Está seguro de eliminar este producto educativo?')) {
+      this.productoSvc.delete(courseId).subscribe({
+        next: () => {
+          this.notificationSvc.showSuccess('Producto educativo eliminado.');
+          this.productos = this.productos.filter(p => p.id !== courseId);
+          this.groupAndFilterProducts();
+          if (this.selectedCourse?.id === courseId) this.unselectCourse();
+        },
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al eliminar.')
+      });
+    }
+  }
+
+  // --- GESTIÓN DEL FORMULARIO DE PRODUCTO ---
+
+  editCourse(producto: ProductoEducativo) {
+    this.editingCourse = producto;
+    let competenciasStr = '';
+    try {
+      const competenciasArr = JSON.parse(producto.competencias || '[]');
+      competenciasStr = Array.isArray(competenciasArr) ? competenciasArr.join('\n') : producto.competencias || '';
+    } catch (e) {
+      competenciasStr = producto.competencias || '';
+    }
+    
+    this.courseForm.patchValue({ ...producto, competencias: competenciasStr });
+    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    formArray.clear();
+    producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
+    this.showCourseForm = true;
+  }
+
+  cancelCourseForm() {
+    this.showCourseForm = false;
+    this.resetCourseForm();
+  }
+  
+  resetCourseForm() {
+    this.courseForm.reset({
+      nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
+      tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL', competencias: ''
+    });
+    (this.courseForm.get('docente_ids') as FormArray).clear();
+    this.editingCourse = null;
+  }
+
+  toggleDocenteSelection(docenteId: number, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    if (isChecked) {
+      formArray.push(this.fb.control(docenteId));
+    } else {
+      const index = formArray.controls.findIndex(x => x.value === docenteId);
+      if (index > -1) formArray.removeAt(index);
+    }
+  }
+
+  // --- GESTIÓN DE PARTICIPANTES E INSCRIPCIONES ---
+
+  enrollParticipant() {
+    if (!this.participantToAdd || !this.selectedCourse) return;
+    const payload: InscripcionCreate = {
+      participante_id: this.participantToAdd,
+      producto_educativo_id: this.selectedCourse.id
+    };
+    this.inscripcionSvc.create(payload).subscribe({
+      next: (newInscripcion) => {
+        this.notificationSvc.showSuccess('Participante inscrito.');
+        this.inscripcionesDelProducto.push(newInscripcion); // Actualización local
+        this.showAddParticipantForm = false;
+        this.participantToAdd = null;
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo inscribir.')
+    });
+  }
+
+  removeParticipantFromCourse(inscripcionId: number) {
+    if (!confirm('¿Seguro que desea eliminar la inscripción de este participante?')) return;
+    this.inscripcionSvc.delete(inscripcionId).subscribe({
+      next: () => {
+        this.notificationSvc.showSuccess('Inscripción eliminada.');
+        this.inscripcionesDelProducto = this.inscripcionesDelProducto.filter(i => i.id !== inscripcionId);
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
+    });
+  }
+
+  // --- GESTIÓN DE ARCHIVOS (SUBIDA Y DESCARGA) ---
 
   descargarPlantilla(): void {
     const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
@@ -116,11 +270,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.selectedFile = input.files[0];
-    } else {
-      this.selectedFile = null;
-    }
+    this.selectedFile = (input.files && input.files.length > 0) ? input.files[0] : null;
   }
 
   uploadParticipants(): void {
@@ -134,176 +284,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
         this.notificationSvc.showSuccess(
           `Carga completada: ${nuevas_inscripciones_realizadas} inscripciones y ${nuevos_participantes_creados} nuevos participantes.`
         );
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
+        this.loadParticipantsForCourse(this.selectedCourse!.id); // Recargar participantes para este curso
+        this.loadInitialData(); // Recargar todo por si hay nuevos participantes a nivel global
         this.selectedFile = null;
       },
-      error: (err: HttpErrorResponse) => {
-        const detail = err.error?.detail || 'Ocurrió un error al subir el archivo.';
-        this.notificationSvc.showError(detail);
-      }
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Ocurrió un error al subir el archivo.')
     });
   }
 
-  toggleDocenteSelection(docenteId: number, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
-    if (isChecked) {
-      formArray.push(this.fb.control(docenteId));
-    } else {
-      const index = formArray.controls.findIndex(x => x.value === docenteId);
-      formArray.removeAt(index);
-    }
-  }
-
-  getCourseColor(id: number): string {
-    const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C'];
-    return colors[id % colors.length];
-  }
-
-  resetCourseForm() {
-    this.courseForm.reset({
-      nombre: '',
-      horas: 8,
-      fecha_inicio: '',
-      fecha_fin: '',
-      tipo_producto: 'CURSO_EDUCATIVO',
-      modalidad: 'PRESENCIAL',
-      competencias: ''
-    });
-    (this.courseForm.get('docente_ids') as FormArray).clear();
-    this.editingCourse = null;
-  }
-
-  cancelCourseForm() {
-    this.showCourseForm = false;
-    this.resetCourseForm();
-  }
-  
-  editCourse(producto: ProductoEducativo) {
-    this.editingCourse = producto;
-    let competenciasStr = '';
-    try {
-      const competenciasArr = JSON.parse(producto.competencias || '[]');
-      competenciasStr = competenciasArr.join('\n');
-    } catch (e) {
-      competenciasStr = producto.competencias || '';
-    }
-    this.courseForm.patchValue({ ...producto, competencias: competenciasStr });
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
-    formArray.clear();
-    producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
-    this.showCourseForm = true;
-  }
-
-  onSubmitCourse() {
-    if (this.courseForm.invalid) {
-      this.notificationSvc.showError("Por favor, complete todos los campos requeridos.");
-      return;
-    }
-    const formValue = this.courseForm.getRawValue();
-    const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
-    const payload = { ...formValue, competencias: JSON.stringify(competenciasArray) };
-    if (this.editingCourse) {
-      this.updateCourse(payload);
-    } else {
-      this.createCourse(payload);
-    }
-  }
-  
-  createCourse(payload: ProductoEducativoCreate) {
-    this.productoSvc.create(payload).subscribe({
-      next: (newProduct) => {
-        this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.productos.unshift(newProduct);
-        this.productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
-        this.groupAndFilterProducts();
-        this.cancelCourseForm();
-      },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
-    });
-  }
-  
-  updateCourse(payload: ProductoEducativoUpdate) {
-    if (!this.editingCourse) return;
-    this.productoSvc.update(this.editingCourse.id, payload).subscribe({
-      next: (updatedProduct) => {
-        this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        const index = this.productos.findIndex(p => p.id === updatedProduct.id);
-        if (index !== -1) {
-          this.productos[index] = updatedProduct;
-        }
-        this.productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
-        this.groupAndFilterProducts();
-        this.cancelCourseForm();
-      },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')
-    });
-  }
-
-  deleteCourse(courseId: number) {
-    if (confirm('¿Está seguro de eliminar este producto educativo?')) {
-      this.productoSvc.delete(courseId).subscribe({
-        next: () => {
-          this.notificationSvc.showSuccess('Producto educativo eliminado.');
-          this.loadInitialData();
-          if (this.selectedCourse?.id === courseId) this.unselectCourse();
-        },
-        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al eliminar.')
-      });
-    }
-  }
-  
-  selectCourse(course: ProductoEducativo) {
-    this.selectedCourse = course;
-    this.loadParticipantsForCourse(course.id);
-  }
-
-  unselectCourse() {
-    this.selectedCourse = null;
-    this.inscripcionesDelProducto = [];
-    this.showAddParticipantForm = false;
-    this.participantToAdd = null;
-  }
-
-  loadParticipantsForCourse(courseId: number) {
-    this.inscripcionSvc.getByProductoId(courseId).subscribe(inscripciones => {
-      this.inscripcionesDelProducto = inscripciones;
-    });
-  }
-  
-  get availableParticipants(): Participante[] {
-    if (!this.selectedCourse) return [];
-    const enrolledIds = this.inscripcionesDelProducto.map(i => i.participante.id);
-    return this.participantes.filter(p => !enrolledIds.includes(p.id));
-  }
-
-  enrollParticipant() {
-    if (!this.participantToAdd || !this.selectedCourse) return;
-    const payload: InscripcionCreate = {
-      participante_id: this.participantToAdd,
-      producto_educativo_id: this.selectedCourse.id
-    };
-    this.inscripcionSvc.create(payload).subscribe({
-      next: () => {
-        this.notificationSvc.showSuccess('Participante inscrito.');
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
-        this.showAddParticipantForm = false;
-        this.participantToAdd = null;
-      },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo inscribir.')
-    });
-  }
-
-  removeParticipantFromCourse(inscripcionId: number) {
-    if (!confirm('¿Seguro que desea eliminar la inscripción?')) return;
-    this.inscripcionSvc.delete(inscripcionId).subscribe({
-      next: () => {
-        this.notificationSvc.showSuccess('Inscripción eliminada.');
-        if (this.selectedCourse) this.loadParticipantsForCourse(this.selectedCourse.id);
-      },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
-    });
-  }
+  // --- GESTIÓN DE CERTIFICADOS ---
   
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
@@ -345,51 +334,65 @@ export default class AdminProductosEducativosComponent implements OnInit {
       return;
     }
   
-    const unissuedCount = this.inscripcionesDelProducto.filter(
-      insc => !this.getCertificadoForInscripcion(insc.id)
-    ).length;
+    const unissuedCount = this.inscripcionesDelProducto.filter(insc => !this.getCertificadoForInscripcion(insc.id)).length;
   
     if (unissuedCount === 0) {
       this.notificationSvc.showInfo('Todas las constancias para los participantes actuales ya han sido emitidas.');
       return;
     }
   
-    const confirmationMessage = `Se intentará emitir y enviar por correo ${unissuedCount} constancia(s) para el producto "${this.selectedCourse.nombre}". ¿Desea continuar?`;
-  
-    if (confirm(confirmationMessage)) {
-      this.notificationSvc.showInfo('Iniciando proceso... Esto puede tardar unos momentos.');
+    if (confirm(`Se emitirán y enviarán ${unissuedCount} constancia(s) para "${this.selectedCourse.nombre}". ¿Desea continuar?`)) {
+      this.notificationSvc.showInfo('Iniciando proceso masivo...');
   
       this.certificadoSvc.emitirYEnviarMasivamente(this.selectedCourse.id).subscribe({
         next: (response) => {
-          const successCount = response.success.length;
-          const errorCount = response.errors.length;
-  
-          this.notificationSvc.showSuccess(`Proceso completado: ${successCount} constancias emitidas y enviadas.`);
-  
-          if (errorCount > 0) {
-            console.error('Errores durante la emisión masiva:', response.errors);
-            this.notificationSvc.showError(`${errorCount} constancias no pudieron ser emitidas. Revisa la consola para más detalles.`);
+          this.notificationSvc.showSuccess(`Proceso completado: ${response.success.length} constancias emitidas y enviadas.`);
+          if (response.errors.length > 0) {
+            console.error('Errores en emisión masiva:', response.errors);
+            this.notificationSvc.showError(`${response.errors.length} constancias fallaron. Revisa la consola.`);
           }
-  
-          this.loadInitialData(); 
+          this.loadInitialData(); // Recarga todo para tener los nuevos certificados
           if(this.selectedCourse) {
             this.loadParticipantsForCourse(this.selectedCourse.id);
           }
         },
-        error: (err: HttpErrorResponse) => {
-          this.notificationSvc.showError(err.error?.detail || 'Ocurrió un error inesperado en el servidor.');
-        }
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error inesperado en el servidor.')
       });
     }
   }
 
+  // --- MÉTODOS DE LA UI (MODALES Y FILTROS) ---
+
+  selectCourse(course: ProductoEducativo) {
+    this.selectedCourse = course;
+    this.loadParticipantsForCourse(course.id);
+  }
+
+  unselectCourse() {
+    this.selectedCourse = null;
+    this.inscripcionesDelProducto = [];
+    this.showAddParticipantForm = false;
+    this.participantToAdd = null;
+  }
+
+  groupAndFilterProducts() {
+    const term = this.searchTerm.toLowerCase();
+    const filtered = this.searchTerm ? this.productos.filter(p => p.nombre.toLowerCase().includes(term)) : this.productos;
+    this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO');
+    this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA');
+    this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
+  }
+
+  getCourseColor(id: number): string {
+    const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C'];
+    return colors[id % colors.length];
+  }
+
+  // --- GESTIÓN DE MODAL DE COMPETENCIAS ---
+
   openCompetenciesModal() {
     let competenciasValue = this.courseForm.value.competencias || '';
-    try {
-        const parsed = JSON.parse(competenciasValue);
-        if (Array.isArray(parsed)) competenciasValue = parsed.join('\n');
-    } catch (e) { /* No es JSON */ }
-    this.competenciesList = competenciasValue.split('\n').filter((c:string) => c.trim()) || [''];
+    this.competenciesList = competenciasValue.split('\n').filter((c:string) => c.trim());
     if (this.competenciesList.length === 0) this.competenciesList.push('');
     this.showCompetenciesModal = true;
   }
