@@ -1,17 +1,15 @@
 # backend/app/schemas/__init__.py
 
-# 1. Importar TODOS los esquemas que se usan en las referencias a futuro.
-# Esto los pone en el mismo "ámbito" para que Pydantic los encuentre.
-from .docente import Docente
+# 1. Importar todos los esquemas que se usan en las referencias a futuro.
+from .docente import Docente, DocenteOut
 from .participante import Participante
 from .producto_educativo import ProductoEducativo
-from .certificado import CertificadoInDB
+from .certificado import Certificado
 from .inscripcion import Inscripcion
 
-# 2. Reconstruir los modelos que contienen las referencias.
-# El orden aquí ya no es tan crítico porque todos los nombres ya fueron importados.
+# 2. Reconstruir los modelos para resolver las referencias.
+# Esto conecta los strings (ej. 'DocenteOut') con las clases reales.
 Docente.model_rebuild()
 ProductoEducativo.model_rebuild()
 Inscripcion.model_rebuild()
-CertificadoInDB.model_rebuild()
-Participante.model_rebuild()
+Certificado.model_rebuild()
