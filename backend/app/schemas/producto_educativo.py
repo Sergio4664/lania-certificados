@@ -2,11 +2,12 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional, TYPE_CHECKING
 from datetime import date
+from app.models.enums import TipoProductoEnum, ModalidadEnum
 
 # Importa los esquemas necesarios para las referencias
 if TYPE_CHECKING:
     from .docente import DocenteOut
-    from .inscripcion import Inscripcion  # Asegúrate de importar Inscripcion
+    from .inscripcion import InscripcionOut  # Asegúrate de importar Inscripcion
 
 class ProductoEducativoBase(BaseModel):
     nombre: str
@@ -14,16 +15,21 @@ class ProductoEducativoBase(BaseModel):
     horas: int
     fecha_inicio: date
     fecha_fin: date
+    tipo_producto: TipoProductoEnum
+    modalidad: ModalidadEnum
+    competencias: Optional[str] = None
 
 class ProductoEducativoCreate(ProductoEducativoBase):
     docentes_ids: List[int] = []
 
 class ProductoEducativoUpdate(BaseModel):
     nombre: Optional[str] = None
-    descripcion: Optional[str] = None
     horas: Optional[int] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
+    tipo_producto: Optional[TipoProductoEnum] = None
+    modalidad: Optional[ModalidadEnum] = None
+    competencias: Optional[str] = None
     docentes_ids: Optional[List[int]] = None
 
 # --- ✅ SOLUCIÓN: Esquema de salida sin recursión ---
@@ -38,5 +44,5 @@ class ProductoEducativo(ProductoEducativoBase):
     id: int
     docentes: List['DocenteOut'] = []
     # La relación a 'Inscripcion' causa el ciclo, por eso la separamos.
-    inscripciones: List['Inscripcion'] = []
+    inscripciones: List['InscripcionOut'] = []
     model_config = ConfigDict(from_attributes=True)
