@@ -85,7 +85,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   selectedParticipantIds = new Set<number>();
   selectedDocenteIds = new Set<number>();
   
-  public docenteEmailSelection: { [docenteId: number]: 'institucional' | 'personal' } = {};
+  public docenteEmailSelection: { [docenteId: number]: 'institucional' | 'personal' | null } = {}; // Permitimos null
 
   courseForm!: FormGroup;
   competenciesList: string[] = [];
@@ -291,7 +291,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   // GESTIÓN DE ARCHIVOS
   descargarPlantilla(): void {
-    const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?${new Date().getTime()}`;
+    const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
     const anchor = document.createElement('a');
     anchor.href = fileUrl;
     anchor.download = 'plantilla_participantes.xlsx';
@@ -380,7 +380,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
   
   enviarConstanciaDocente(certificadoId: number, docenteId: number) {
-    const emailType = this.docenteEmailSelection[docenteId] || 'institucional';
+    // Si no se ha seleccionado nada aún, asumimos 'institucional' para el envío
+    const emailType = this.docenteEmailSelection[docenteId] || 'institucional'; 
     this.notificationSvc.showInfo(`Enviando constancia al email ${emailType}...`);
     
     this.certificadoSvc.sendEmail(certificadoId, emailType).subscribe({
@@ -436,11 +437,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.selectedDocenteIds.clear();
     this.loadParticipantsForCourse(course.id);
   
+    // ✅ CORRECCIÓN: Se elimina la inicialización por defecto
     this.docenteEmailSelection = {};
     if (course.docentes) {
-      course.docentes.forEach(docente => {
-        this.docenteEmailSelection[docente.id] = 'institucional';
-      });
+       course.docentes.forEach(docente => {
+         // Ya no se establece un valor por defecto aquí
+         if (!this.docenteEmailSelection[docente.id]) {
+            this.docenteEmailSelection[docente.id] = null; // O dejarlo undefined si prefieres
+         }
+       });
     }
   }
 
@@ -501,7 +506,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   isDocenteRecipientSelected = (id: number) => this.selectedDocenteIds.has(id);
   
-  // ✅ NUEVA FUNCIÓN: trackBy para optimizar el bucle de docentes
   trackByDocenteId(index: number, docente: DocenteDTO): number {
     return docente.id;
   }

@@ -72,7 +72,7 @@
         <div class="docentes-selection">
           <div class="docentes-checkboxes">
               <div class="checkbox-item" *ngFor="let docente of docentes">
-                <input type="checkbox" [id]="'docente-' + docente.id" [checked]="courseForm.value.docente_ids.includes(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
+                <input type="checkbox" [id]="'docente-' + docente.id" [checked]="courseForm.value.docente_ids?.includes(docente.id)" (change)="toggleDocenteSelection(docente.id, $event)">
                 <label [for]="'docente-' + docente.id">
                   <strong *ngIf="docente.especialidad" style="color: #667eea; display: block; font-size: 0.9em; margin-bottom: 2px;">{{docente.especialidad}}</strong>
                     {{docente.nombre_completo}}
@@ -234,7 +234,7 @@
                                    title="Seleccionar Todos los Docentes">
                         </th>
                         <th>Nombre del Ponente</th>
-                        <th>Email a Enviar</th>
+                        <th>Email Institucional</th> 
                         <th>Constancia</th>
                         <th>Acciones</th>
                     </tr>
@@ -252,17 +252,7 @@
                           {{ docente.nombre_completo }}
                         </td>
 
-                        <td>
-                            <select class="form-control form-control-sm" 
-                                    style="margin-bottom: 4px;"
-                                    [(ngModel)]="docenteEmailSelection[docente.id]">
-                                <option value="institucional">Institucional</option>
-                                <option value="personal">Personal</option>
-                            </select>
-                            <small class="text-muted d-block">
-                                {{ docenteEmailSelection[docente.id] === 'institucional' ? (docente.email_institucional || 'N/A') : (docente.email_personal || 'N/A') }}
-                            </small>
-                        </td>
+                        <td>{{ docente.email_institucional || 'N/A' }}</td> 
                         
                         <td>
                           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else noConstanciaDocente">
@@ -275,7 +265,7 @@
 
                         <td class="actions-cell">
                           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
-                            <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Enviar Constancia">📧</button>
+                            <button class="icon-btn email" (click)="reenviarCertificado(cert.id)" title="Reenviar Constancia">📧</button>
                             <button class="icon-btn delete" (click)="eliminarCertificado(cert.id)" title="Eliminar Constancia">✖️</button>
                           </ng-container>
                           <ng-template #emitirConstanciaDocente>
