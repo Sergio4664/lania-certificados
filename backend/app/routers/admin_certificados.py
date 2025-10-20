@@ -63,13 +63,16 @@ def issue_certificate_to_participant(
     if not db_inscripcion:
         raise HTTPException(status_code=404, detail="Inscripción no encontrada")
 
+    # ✅ --- CORRECCIÓN APLICADA AQUÍ ---
+    # Usamos 'modalidad' en lugar de 'tipo' y pasamos todos los parámetros requeridos.
     file_path = generate_certificate(
-    db_inscripcion.participante.nombre_completo,
-    db_producto_educativo.nombre,
-    db_producto_educativo.tipo.value, # <-- ESTA ES LA LÍNEA CORRECTA
-    db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
+        participant_name=db_inscripcion.participante.nombre_completo,
+        course_name=db_producto_educativo.nombre,
+        course_type=db_producto_educativo.modalidad.value, # Se usa 'modalidad'
+        course_hours=db_producto_educativo.horas,
+        instructor_name=db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
     )
-
+    
     nuevo_certificado = models.Certificado(
         inscripcion_id=db_inscripcion.id,
         producto_educativo_id=db_producto_educativo.id,
@@ -105,12 +108,12 @@ def issue_certificate_to_docente(
         raise HTTPException(status_code=404, detail="Docente no encontrado")
 
     # ✅ --- CORRECCIÓN APLICADA AQUÍ ---
-    # Se eliminó el argumento extra 'db_docente.nombre_completo' que causaba el TypeError.
     file_path = generate_certificate(
-    db_docente.nombre_completo,
-    db_producto_educativo.nombre,
-    db_producto_educativo.tipo.value, # <-- ESTA ES LA LÍNEA CORRECTA
-    is_docente=True,
+        participant_name=db_docente.nombre_completo,
+        course_name=db_producto_educativo.nombre,
+        course_type=db_producto_educativo.modalidad.value, # Se usa 'modalidad'
+        course_hours=db_producto_educativo.horas,
+        is_docente=True,
     )
     
     nuevo_certificado = models.Certificado(
@@ -150,7 +153,7 @@ def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_
     )
     return {"message": "Certificado enviado exitosamente"}
 
-# ✅ --- RUTA DE ELIMINACIÓN AÑADIDA AQUÍ ---
+
 @router.delete("/{certificado_id}", status_code=204)
 def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     """

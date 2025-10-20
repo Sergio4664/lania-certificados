@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+# Ruta: backend/app/main.py
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
@@ -15,7 +16,7 @@ from app.routers import (
 
 app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-# --- CORS Configuration (No Changes) ---
+# --- Configuración de CORS (sin cambios) ---
 origins = [
     "http://localhost",
     "http://localhost:4200",
@@ -32,17 +33,25 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# --- ✅ UNIFIED ROUTER REGISTRATION ---
-# All routers are now consistently included under the /api/v1 prefix.
-# This prevents path duplication and redirect errors.
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(public_verify.router, prefix="/api/v1")
-app.include_router(admin_administradores.router, prefix="/api/v1")
-app.include_router(admin_docentes.router, prefix="/api/v1")
-app.include_router(admin_participantes.router, prefix="/api/v1")
-app.include_router(admin_productos_educativos.router, prefix="/api/v1")
-app.include_router(admin_inscripciones.router, prefix="/api/v1")
-app.include_router(admin_certificados.router, prefix="/api/v1")
+# --- ✅ REGISTRO DE RUTAS UNIFICADO Y LIMPIO ---
+# 1. Creamos un router principal que agrupará todas las demás rutas.
+api_router = APIRouter()
+
+# 2. Incluimos cada router específico DENTRO del router principal.
+#    Nota: Estos no llevan prefijo aquí.
+api_router.include_router(auth.router)
+api_router.include_router(public_verify.router)
+api_router.include_router(admin_administradores.router)
+api_router.include_router(admin_docentes.router)
+api_router.include_router(admin_participantes.router)
+api_router.include_router(admin_productos_educativos.router)
+api_router.include_router(admin_inscripciones.router)
+api_router.include_router(admin_certificados.router)
+
+# 3. Incluimos el router principal en la app con el prefijo global /api/v1.
+#    Esto aplica el prefijo a todas las rutas de una sola vez.
+app.include_router(api_router, prefix="/api/v1")
+
 
 @app.get("/")
 def read_root():

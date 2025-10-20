@@ -9,9 +9,6 @@ from app.core.config import get_settings
 # Cargar la configuración aquí
 settings = get_settings()
 
-# ✅ --- FUNCIÓN CORREGIDA ---
-# 1. Se añade 'course_hours' para manejar la duración del curso.
-# 2. Se añade 'instructor_name' para los certificados de participantes.
 def generate_certificate(
     participant_name: str,
     course_name: str,
@@ -34,20 +31,21 @@ def generate_certificate(
     pdf.set_font('Arial', '', 16)
     otorga_a = "Al Docente:" if is_docente else "Al Participante:"
     pdf.cell(0, 10, otorga_a, 0, 1, 'C')
-    
+
     pdf.set_font('Arial', 'B', 20)
     pdf.cell(0, 20, participant_name.upper(), 0, 1, 'C')
-    
+
     pdf.set_font('Arial', '', 16)
     accion = "impartir" if is_docente else "cursar y aprobar"
     # La variable 'course_type' ahora es un texto (ej. "Curso") y no causará error.
     pdf.multi_cell(0, 10, f'Por {accion} el {course_type.replace("_", " ").title()} "{course_name}".', 0, 'C')
-    
-    # ✅ --- LÍNEA AÑADIDA ---
+
     # Se muestra la duración del curso usando el nuevo parámetro 'course_hours'.
+  # Se muestra la duración del curso usando el nuevo parámetro 'course_hours'.
     if course_hours and course_hours > 0:
+        pdf.ln(10) # <-- AÑADE ESTA LÍNEA para asegurar un salto de línea
         pdf.multi_cell(0, 10, f'Con una duración de {course_hours} horas.', 0, 'C')
-    
+
     pdf.ln(15)
 
     fecha_emision = datetime.now().strftime("%d de %B de %Y")
@@ -58,16 +56,16 @@ def generate_certificate(
     folio = f"LANIA-{datetime.now().year}-{str(uuid.uuid4().hex[:8]).upper()}"
     pdf.set_font('Arial', 'I', 10)
     pdf.cell(0, 10, f'Folio: {folio}', 0, 0, 'L')
-    
+
     # --- Lógica de QR ---
     verification_url = f"{settings.FRONTEND_URL}/verificacion/{folio}"
     qr_bytes = generate_qr_png(verification_url)
-    
+
     # Guardar los bytes en un archivo temporal para que FPDF pueda usarlo
     qr_path = f"temp_qr_{folio}.png"
     with open(qr_path, "wb") as qr_file:
         qr_file.write(qr_bytes)
-        
+
     if os.path.exists(qr_path):
         pdf.image(qr_path, x=240, y=160, w=30)
         os.remove(qr_path)
@@ -75,8 +73,8 @@ def generate_certificate(
     output_dir = 'certificates'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
+
     file_path = os.path.join(output_dir, f"{folio}.pdf")
     pdf.output(file_path)
-    
+
     return file_path
