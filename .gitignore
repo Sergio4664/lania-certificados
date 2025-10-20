@@ -4,3 +4,4 @@ dist/
 .env
 .angular/
 .gitignore/
+.backend/certificates/

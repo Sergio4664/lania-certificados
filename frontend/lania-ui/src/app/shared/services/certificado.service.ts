@@ -49,7 +49,8 @@ export class CertificadoService {
    * @param certificadoId - El ID del certificado a enviar.
    */
   sendEmail(certificadoId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/enviar/${certificadoId}`, {});
+    // ✅ CORRECCIÓN: La URL ahora es más limpia y consistente con el backend.
+    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, {});
   }
 
   /**
@@ -57,6 +58,7 @@ export class CertificadoService {
    * @param productoId - El ID del producto educativo.
    */
   emitirYEnviarMasivamente(productoId: number): Observable<EmisionMasivaResponse> {
+    // Nota: Asegúrate de que este endpoint exista en tu backend si planeas usarlo.
     const url = `${this.apiUrl}/emitir-enviar-masivo/producto/${productoId}`;
     return this.http.post<EmisionMasivaResponse>(url, {});
   }
