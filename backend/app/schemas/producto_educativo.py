@@ -1,5 +1,5 @@
 # backend/app/schemas/producto_educativo.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import List, Optional, TYPE_CHECKING
 from datetime import date
 from app.models.enums import TipoProductoEnum, ModalidadEnum
@@ -19,6 +19,15 @@ class ProductoEducativoBase(BaseModel):
     modalidad: ModalidadEnum
     competencias: Optional[str] = None
 
+    @model_validator(mode='after')
+    def check_dates(self) -> 'ProductoEducativoBase':
+        # Se asegura de que ambas fechas existan antes de comparar
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin < self.fecha_inicio:
+                # Si la fecha de fin es anterior, lanza un error claro.
+                raise ValueError('La fecha de finalización no puede ser anterior a la fecha de inicio.')
+        return self
+
 class ProductoEducativoCreate(ProductoEducativoBase):
     docentes_ids: List[int] = []
 
@@ -31,6 +40,14 @@ class ProductoEducativoUpdate(BaseModel):
     modalidad: Optional[ModalidadEnum] = None
     competencias: Optional[str] = None
     docentes_ids: Optional[List[int]] = None
+
+    @model_validator(mode='after')
+    def check_update_dates(self) -> 'ProductoEducativoUpdate':
+        # Compara las fechas solo si ambas están presentes en la petición de actualización
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin < self.fecha_inicio:
+                raise ValueError('La fecha de finalización no puede ser anterior a la fecha de inicio.')
+        return self
 
 # --- ✅ SOLUCIÓN: Esquema de salida sin recursión ---
 # Este esquema muestra los docentes, pero NO las inscripciones para romper el ciclo.

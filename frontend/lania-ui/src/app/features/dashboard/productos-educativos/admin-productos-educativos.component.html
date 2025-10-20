@@ -36,7 +36,10 @@
         <label>Fecha de Fin</label>
         <input type="date" formControlName="fecha_fin" required>
       </div>
-      
+
+      <div *ngIf="courseForm.hasError('dateRangeInvalid') && (courseForm.get('fecha_fin')?.touched || courseForm.get('fecha_inicio')?.touched)" class="form-error full-width">
+        <p>Error: La fecha de finalización no puede ser anterior a la fecha de inicio.</p>
+      </div>
       <div class="form-group">
         <label>Tipo de Producto</label>
         <select formControlName="tipo_producto" required>
@@ -186,8 +189,39 @@
         <h2>Detalles de: {{ selectedCourse.nombre }}</h2>
         <button class="close-btn" (click)="unselectCourse()">✖</button>
       </div>
+
       <div class="modal-body">
         <div class="scrollable-content">
+
+          <div class="modal-section">
+            <h4>Inscripción de Participantes</h4>
+            <div class="add-participant-section">
+              <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Inscribir Manualmente</button>
+              <div *ngIf="showAddParticipantForm" class="form-card nested-form">
+                <form (ngSubmit)="enrollParticipant()">
+                  <div class="form-group">
+                    <label>Seleccionar Participante</label>
+                    <select [(ngModel)]="participantToAdd" name="participant_id" required>
+                      <option [ngValue]="null" disabled>-- Elige un participante --</option>
+                      <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.nombre_completo }} ({{p.email_personal}})</option>
+                    </select>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
+                    <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="upload-section">
+              <button class="secondary-btn small-btn" (click)="descargarPlantilla()">Descargar Plantilla</button>
+              <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
+              <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
+              <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+              <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
+            </div>
+          </div>
+
           <div class="data-table" *ngIf="selectedCourse.docentes && selectedCourse.docentes.length > 0">
             <h3 class="table-title">Docentes / Ponentes</h3>
             <table>
@@ -230,41 +264,12 @@
             </table>
           </div>
 
-          <div class="modal-section">
-            <h4>Inscripción de Participantes</h4>
-            <div class="add-participant-section">
-              <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Inscribir Manualmente</button>
-              <div *ngIf="showAddParticipantForm" class="form-card nested-form">
-                <form (ngSubmit)="enrollParticipant()">
-                  <div class="form-group">
-                    <label>Seleccionar Participante</label>
-                    <select [(ngModel)]="participantToAdd" name="participant_id" required>
-                      <option [ngValue]="null" disabled>-- Elige un participante --</option>
-                      <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.nombre_completo }} ({{p.email_personal}})</option>
-                    </select>
-                  </div>
-                  <div class="form-actions">
-                    <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
-                    <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-            <div class="upload-section">
-              <button class="secondary-btn small-btn" (click)="descargarPlantilla()">Descargar Plantilla</button>
-              <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
-              <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
-              <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
-              <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
-            </div>
-          </div>
-
           <div class="data-table">
             <h3 class="table-title">Participantes Inscritos ({{ inscripcionesDelProducto.length }})</h3>
             <table>
               <thead>
                 <tr>
-                   <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
+                    <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
                     <input type="checkbox"
                            [checked]="areAllCompetencyRecipientsSelected"
                            (change)="toggleAllCompetencyRecipients($event)"
@@ -299,7 +304,7 @@
                       <button class="icon-btn delete" (click)="deleteCertificate(cert)" title="Eliminar Constancia">🗑️</button>
                     </ng-container>
                   </td>
-                   <td>
+                    <td>
                     <div class="send-actions" *ngIf="!getCertificadoForInscripcion(inscripcion.id)">
                       <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id, false)">Normal</button>
                       <button *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(inscripcion.id, true)">Competencias</button>
@@ -312,6 +317,7 @@
               </tbody>
             </table>
           </div>
+          
         </div>
       </div>
       <div class="modal-footer">

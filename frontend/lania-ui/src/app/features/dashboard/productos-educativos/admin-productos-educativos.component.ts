@@ -1,6 +1,16 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule, FormArray } from '@angular/forms';
+import { 
+  ReactiveFormsModule, 
+  FormBuilder, 
+  FormGroup, 
+  Validators, 
+  FormsModule, 
+  FormArray, 
+  AbstractControl, 
+  ValidationErrors, 
+  ValidatorFn 
+} from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { environment } from '@environments/environment';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -20,6 +30,23 @@ import { InscripcionService } from '@shared/services/inscripcion.service';
 import { CertificadoService } from '@shared/services/certificado.service';
 import { ParticipanteService } from '@shared/services/participante.service';
 
+
+/**
+ * Validador personalizado para un FormGroup que comprueba si la fecha de fin
+ * es anterior a la fecha de inicio.
+ */
+export const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const group = control as FormGroup;
+  const startDate = group.get('fecha_inicio')?.value;
+  const endDate = group.get('fecha_fin')?.value;
+
+  if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+    return { dateRangeInvalid: true };
+  }
+  return null;
+};
+
+
 @Component({
   selector: 'app-admin-productos-educativos',
   standalone: true,
@@ -29,7 +56,6 @@ import { ParticipanteService } from '@shared/services/participante.service';
 })
 export default class AdminProductosEducativosComponent implements OnInit {
   
-  // --- Inyección de Servicios ---
   private productoSvc = inject(ProductoEducativoService);
   private docenteSvc = inject(DocenteService);
   private participanteSvc = inject(ParticipanteService);
@@ -38,21 +64,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
 
-  // --- Listas de Datos Principales ---
   private productos: ProductoEducativo[] = [];
   docentes: DocenteDTO[] = [];
   participantes: Participante[] = [];
   certificados: Certificado[] = [];
-  
-  // --- Listas de Datos Filtrados para la Vista ---
   cursos: ProductoEducativo[] = [];
   pildoras: ProductoEducativo[] = [];
   inyecciones: ProductoEducativo[] = [];
-  
-  // --- Datos del Producto Seleccionado ---
   inscripcionesDelProducto: Inscripcion[] = [];
   
-  // --- Propiedades de Estado de la UI ---
   showCourseForm = false;
   editingCourse: ProductoEducativo | null = null;
   selectedCourse: ProductoEducativo | null = null;
@@ -61,16 +81,21 @@ export default class AdminProductosEducativosComponent implements OnInit {
   searchTerm: string = '';
   selectedFile: File | null = null;
 
-  // --- Listas para gestionar selección de checkboxes ---
   selectedParticipantIds = new Set<number>();
   selectedDocenteIds = new Set<number>();
   
-  // --- Propiedades de Formularios ---
-  courseForm: FormGroup;
+  courseForm!: FormGroup;
   competenciesList: string[] = [];
   participantToAdd: number | null = null;
   
-  constructor() {
+  constructor() { }
+
+  ngOnInit() {
+    this.initializeForm();
+    this.loadInitialData();
+  }
+
+  initializeForm(): void {
     this.courseForm = this.fb.group({
       nombre: ['', Validators.required],
       horas: [8, [Validators.required, Validators.min(1)]],
@@ -78,17 +103,14 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: this.fb.array([]),
+      docentes_ids: this.fb.array([]),
       competencias: ['']
+    }, { 
+      validators: dateRangeValidator 
     });
   }
 
-  // --- MÉTODOS DE CICLO DE VIDA ---
-  ngOnInit() {
-    this.loadInitialData();
-  }
-
-  // --- GETTERS COMPUTADOS PARA LA PLANTILLA HTML ---
+  // --- GETTERS ---
   get availableParticipants(): Participante[] {
     if (!this.selectedCourse) return [];
     const enrolledIds = new Set(this.inscripcionesDelProducto.map(i => i.participante.id));
@@ -135,12 +157,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- GESTIÓN DE PRODUCTOS (CRUD) ---
   onSubmitCourse() {
     if (this.courseForm.invalid) {
-      this.notificationSvc.showError("Por favor, complete todos los campos requeridos.");
+      this.notificationSvc.showError("Por favor, complete todos los campos requeridos y corrija los errores.");
       return;
     }
     const formValue = this.courseForm.getRawValue();
-    const competenciasArray = (formValue.competencias || '').split('\n').filter((c: string) => c.trim() !== '');
-    const payload = { ...formValue, competencias: JSON.stringify(competenciasArray) };
+    const payload = { ...formValue };
 
     if (this.editingCourse) {
       this.updateCourse(payload);
@@ -190,21 +211,24 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
-  // --- GESTIÓN DEL FORMULARIO DE PRODUCTO ---
+  // --- GESTIÓN DEL FORMULARIO ---
   editCourse(producto: ProductoEducativo) {
     this.editingCourse = producto;
-    let competenciasStr = '';
-    try {
-      const competenciasArr = JSON.parse(producto.competencias || '[]');
-      competenciasStr = Array.isArray(competenciasArr) ? competenciasArr.join('\n') : producto.competencias || '';
-    } catch (e) {
-      competenciasStr = producto.competencias || '';
-    }
     
-    this.courseForm.patchValue({ ...producto, competencias: competenciasStr });
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    this.courseForm.patchValue({
+      nombre: producto.nombre,
+      horas: producto.horas,
+      fecha_inicio: producto.fecha_inicio,
+      fecha_fin: producto.fecha_fin,
+      tipo_producto: producto.tipo_producto,
+      modalidad: producto.modalidad,
+      competencias: producto.competencias
+    });
+  
+    const formArray = this.courseForm.get('docentes_ids') as FormArray;
     formArray.clear();
     producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
+  
     this.showCourseForm = true;
   }
 
@@ -218,13 +242,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
       nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
       tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL', competencias: ''
     });
-    (this.courseForm.get('docente_ids') as FormArray).clear();
+    (this.courseForm.get('docentes_ids') as FormArray).clear();
     this.editingCourse = null;
   }
 
   toggleDocenteSelection(docenteId: number, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    const formArray = this.courseForm.get('docentes_ids') as FormArray;
     if (isChecked) {
       formArray.push(this.fb.control(docenteId));
     } else {
@@ -233,7 +257,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
-  // --- GESTIÓN DE PARTICIPANTES E INSCRIPCIONES ---
+  // GESTIÓN DE PARTICIPANTES E INSCRIPCIONES
   enrollParticipant() {
     if (!this.participantToAdd || !this.selectedCourse) return;
     const payload: InscripcionCreate = {
@@ -262,7 +286,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // --- GESTIÓN DE ARCHIVOS ---
+  // GESTIÓN DE ARCHIVOS
   descargarPlantilla(): void {
     const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
     const anchor = document.createElement('a');
@@ -298,7 +322,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // --- GESTIÓN DE CERTIFICADOS ---
+  // GESTIÓN DE CERTIFICADOS
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
     return this.certificados.find(c => c.inscripcion_id === inscripcionId);
   }
@@ -308,8 +332,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
       inscripcion_id: inscripcionId,
       con_competencias: con_competencias
     };
-    this.certificadoSvc.create(payload).subscribe({
-      next: (newCert) => {
+    // ✅ CORRECCIÓN: Usa el método específico para participantes
+    this.certificadoSvc.createForParticipant(payload).subscribe({
+      next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
         this.certificados.push(newCert);
       },
@@ -319,10 +344,20 @@ export default class AdminProductosEducativosComponent implements OnInit {
   
   issueDocenteCertificate(docenteId: number, con_competencias: boolean = false) {
     if (!this.selectedCourse) return;
-    // NOTA: Se necesita un endpoint y servicio para crear certificados de docentes.
-    // Esto es un placeholder de la lógica.
-    this.notificationSvc.showInfo(`Emitiendo constancia para docente ${docenteId} (Competencias: ${con_competencias})...`);
-    // Lógica para llamar a this.certificadoSvc.createForDocente(...)
+    this.notificationSvc.showInfo(`Emitiendo constancia para docente ${docenteId}...`);
+    const payload: CertificadoCreate = {
+      docente_id: docenteId,
+      producto_educativo_id: this.selectedCourse.id,
+      con_competencias
+    };
+    // ✅ CORRECCIÓN: Usa el método específico para docentes
+    this.certificadoSvc.createForDocente(payload).subscribe({
+      next: (newCert: Certificado) => {
+        this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
+        this.certificados.push(newCert);
+      },
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de ponente.')
+    });
   }
 
   sendCertificate(certificadoId: number) {
@@ -371,7 +406,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
-  // --- MÉTODOS DE LA UI (MODALES, FILTROS Y SELECCIONES) ---
+  // MÉTODOS DE LA UI
   selectCourse(course: ProductoEducativo) {
     this.selectedCourse = course;
     this.selectedParticipantIds.clear();
@@ -399,7 +434,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return colors[id % colors.length];
   }
 
-  // --- Métodos para Checkboxes de Participantes ---
   toggleCompetencyRecipient(participantId: number, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     if (isChecked) this.selectedParticipantIds.add(participantId);
@@ -418,7 +452,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   isRecipientSelected = (id: number) => this.selectedParticipantIds.has(id);
 
-  // --- Métodos para Checkboxes de Docentes ---
   toggleDocenteCompetencyRecipient(docenteId: number, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     if (isChecked) this.selectedDocenteIds.add(docenteId);
@@ -438,7 +471,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   
   isDocenteRecipientSelected = (id: number) => this.selectedDocenteIds.has(id);
 
-  // --- GESTIÓN DE MODAL DE COMPETENCIAS ---
+  // GESTIÓN DE MODAL DE COMPETENCIAS
   openCompetenciesModal() {
     let competenciasValue = this.courseForm.value.competencias || '';
     this.competenciesList = competenciasValue.split('\n').filter((c:string) => c.trim());
