@@ -16,21 +16,14 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
+# ... (las funciones GET no cambian) ...
 @router.get("/", response_model=List[CertificadoOut])
 def read_all_certificados(db: Session = Depends(get_db)):
-    """
-    Obtiene todos los certificados.
-    Usa un response_model simple (CertificadoOut) para evitar ciclos de anidamiento en la lista.
-    """
     certificados = db.query(models.Certificado).order_by(models.Certificado.id.desc()).all()
     return certificados
 
 @router.get("/{certificado_id}", response_model=Certificado)
 def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
-    """
-    Obtiene un certificado específico con todas sus relaciones cargadas.
-    Es seguro usar el response_model completo aquí porque es un solo objeto.
-    """
     certificado = db.query(models.Certificado).options(
         joinedload(models.Certificado.inscripcion)
         .joinedload(models.Inscripcion.participante),
@@ -63,12 +56,11 @@ def issue_certificate_to_participant(
     if not db_inscripcion:
         raise HTTPException(status_code=404, detail="Inscripción no encontrada")
 
-    # ✅ --- CORRECCIÓN APLICADA AQUÍ ---
-    # Usamos 'modalidad' en lugar de 'tipo' y pasamos todos los parámetros requeridos.
+    # ✅ CORRECCIÓN: Se usa 'instructor_name' para que coincida con el servicio.
     file_path = generate_certificate(
         participant_name=db_inscripcion.participante.nombre_completo,
         course_name=db_producto_educativo.nombre,
-        course_type=db_producto_educativo.modalidad.value, # Se usa 'modalidad'
+        course_type=db_producto_educativo.modalidad.value,
         course_hours=db_producto_educativo.horas,
         instructor_name=db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
     )
@@ -76,11 +68,14 @@ def issue_certificate_to_participant(
     nuevo_certificado = models.Certificado(
         inscripcion_id=db_inscripcion.id,
         producto_educativo_id=db_producto_educativo.id,
-        archivo_path=str(file_path), # Asegurarse que el path se guarde como string
+        archivo_path=str(file_path),
     )
     db.add(nuevo_certificado)
     db.commit()
     db.refresh(nuevo_certificado)
+    
+    print(f"✅ Certificado de PARTICIPANTE creado. ID: {nuevo_certificado.id}, Folio: {nuevo_certificado.folio}")
+    
     return nuevo_certificado
 
 
@@ -107,11 +102,12 @@ def issue_certificate_to_docente(
     if not db_docente:
         raise HTTPException(status_code=404, detail="Docente no encontrado")
 
-    # ✅ --- CORRECCIÓN APLICADA AQUÍ ---
+    # ✅ CORRECCIÓN: La llamada ahora es correcta y consistente con la función.
+    # No se pasa 'instructor_name' porque el certificado es para el propio instructor.
     file_path = generate_certificate(
         participant_name=db_docente.nombre_completo,
         course_name=db_producto_educativo.nombre,
-        course_type=db_producto_educativo.modalidad.value, # Se usa 'modalidad'
+        course_type=db_producto_educativo.modalidad.value,
         course_hours=db_producto_educativo.horas,
         is_docente=True,
     )
@@ -124,9 +120,12 @@ def issue_certificate_to_docente(
     db.add(nuevo_certificado)
     db.commit()
     db.refresh(nuevo_certificado)
+
+    print(f"✅ Certificado de DOCENTE creado. ID: {nuevo_certificado.id}, Folio: {nuevo_certificado.folio}")
+
     return nuevo_certificado
 
-
+# ... (las funciones de enviar email y eliminar no cambian) ...
 @router.post("/enviar/{certificado_id}")
 def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_db)):
     db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
@@ -156,17 +155,9 @@ def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_
 
 @router.delete("/{certificado_id}", status_code=204)
 def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
-    """
-    Elimina un certificado por su ID.
-    """
     db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
     if not db_certificado:
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
-    
-    # Opcional: podrías querer eliminar el archivo físico también
-    # import os
-    # if os.path.exists(db_certificado.archivo_path):
-    #     os.remove(db_certificado.archivo_path)
         
     db.delete(db_certificado)
     db.commit()
