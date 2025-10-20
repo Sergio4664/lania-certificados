@@ -1,3 +1,4 @@
+// ruta: frontend/lania-ui/src/app/shared/services/certificado.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -9,6 +10,7 @@ import { Certificado, CertificadoCreate, EmisionMasivaResponse } from '../interf
 })
 export class CertificadoService {
   private http = inject(HttpClient);
+  // La URL base para todas las operaciones de certificados.
   private apiUrl = `${environment.apiUrl}/admin/certificados`;
 
   /**
@@ -19,8 +21,8 @@ export class CertificadoService {
   }
   
   /**
-   * Crea un nuevo certificado para un participante a través de su inscripción.
-   * @param data - El payload que incluye el 'inscripcion_id'.
+   * Crea un nuevo certificado para un participante (constancia normal).
+   * @param data - El payload que incluye el 'inscripcion_id' y 'producto_educativo_id'.
    */
   createForParticipant(data: CertificadoCreate): Observable<Certificado> {
     return this.http.post<Certificado>(`${this.apiUrl}/participante`, data);
@@ -28,7 +30,7 @@ export class CertificadoService {
 
   /**
    * Crea un nuevo certificado para un docente (ponente).
-   * @param data - El payload que incluye el 'docente_id'.
+   * @param data - El payload que incluye el 'docente_id' y 'producto_educativo_id'.
    */
   createForDocente(data: CertificadoCreate): Observable<Certificado> {
     return this.http.post<Certificado>(`${this.apiUrl}/docente`, data);
@@ -47,16 +49,14 @@ export class CertificadoService {
    * @param certificadoId - El ID del certificado a enviar.
    */
   sendEmail(certificadoId: number): Observable<any> {
-    // ✅ --- CORRECCIÓN DE SINTAXIS ---
     return this.http.post(`${this.apiUrl}/enviar/${certificadoId}`, {});
   }
 
   /**
-   * Inicia el proceso de emisión y envío masivo para un producto educativo.
+   * Inicia el proceso de emisión y envío masivo para todos los participantes de un producto educativo.
    * @param productoId - El ID del producto educativo.
    */
   emitirYEnviarMasivamente(productoId: number): Observable<EmisionMasivaResponse> {
-    // ✅ --- CORRECCIÓN DE SINTAXIS ---
     const url = `${this.apiUrl}/emitir-enviar-masivo/producto/${productoId}`;
     return this.http.post<EmisionMasivaResponse>(url, {});
   }

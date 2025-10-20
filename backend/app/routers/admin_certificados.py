@@ -56,7 +56,6 @@ def issue_certificate_to_participant(
     if not db_producto_educativo:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
-    # Corrección: El modelo de creación no tiene 'participante_id', se debe buscar en 'inscripcion_id'
     if not certificado_create.inscripcion_id:
         raise HTTPException(status_code=400, detail="Se requiere inscripcion_id para emitir un certificado a un participante.")
 
@@ -65,12 +64,12 @@ def issue_certificate_to_participant(
         raise HTTPException(status_code=404, detail="Inscripción no encontrada")
 
     file_path = generate_certificate(
-        db_inscripcion.participante.nombre_completo,
-        db_producto_educativo.nombre,
-        db_producto_educativo.horas,
-        # Asumiendo que quieres el nombre del primer docente, si no, la lógica debe ajustarse.
-        db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
+    db_inscripcion.participante.nombre_completo,
+    db_producto_educativo.nombre,
+    db_producto_educativo.tipo.value, # <-- ESTA ES LA LÍNEA CORRECTA
+    db_producto_educativo.docentes[0].nombre_completo if db_producto_educativo.docentes else "Docente no asignado",
     )
+
     nuevo_certificado = models.Certificado(
         inscripcion_id=db_inscripcion.id,
         producto_educativo_id=db_producto_educativo.id,
@@ -105,13 +104,15 @@ def issue_certificate_to_docente(
     if not db_docente:
         raise HTTPException(status_code=404, detail="Docente no encontrado")
 
+    # ✅ --- CORRECCIÓN APLICADA AQUÍ ---
+    # Se eliminó el argumento extra 'db_docente.nombre_completo' que causaba el TypeError.
     file_path = generate_certificate(
-        db_docente.nombre_completo,
-        db_producto_educativo.nombre,
-        db_producto_educativo.horas,
-        db_docente.nombre_completo, # El docente es el mismo que recibe
-        is_docente=True,
+    db_docente.nombre_completo,
+    db_producto_educativo.nombre,
+    db_producto_educativo.tipo.value, # <-- ESTA ES LA LÍNEA CORRECTA
+    is_docente=True,
     )
+    
     nuevo_certificado = models.Certificado(
         docente_id=db_docente.id,
         producto_educativo_id=db_producto_educativo.id,
@@ -148,3 +149,22 @@ def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_
         attachment_path=db_certificado.archivo_path,
     )
     return {"message": "Certificado enviado exitosamente"}
+
+# ✅ --- RUTA DE ELIMINACIÓN AÑADIDA AQUÍ ---
+@router.delete("/{certificado_id}", status_code=204)
+def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un certificado por su ID.
+    """
+    db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
+    if not db_certificado:
+        raise HTTPException(status_code=404, detail="Certificado no encontrado")
+    
+    # Opcional: podrías querer eliminar el archivo físico también
+    # import os
+    # if os.path.exists(db_certificado.archivo_path):
+    #     os.remove(db_certificado.archivo_path)
+        
+    db.delete(db_certificado)
+    db.commit()
+    return {"ok": True}
