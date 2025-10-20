@@ -41,6 +41,8 @@ def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
 def issue_certificate_to_participant(
     certificado_create: CertificadoCreate, db: Session = Depends(get_db)
 ):
+    print(f"➡️ Datos recibidos para certificado de participante: {certificado_create.model_dump_json()}")
+    
     db_producto_educativo = (
         db.query(models.ProductoEducativo)
         .filter(models.ProductoEducativo.id == certificado_create.producto_educativo_id)

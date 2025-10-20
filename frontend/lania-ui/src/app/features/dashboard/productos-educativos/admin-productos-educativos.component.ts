@@ -1,3 +1,4 @@
+// Ruta: frontend/lania-ui/src/app/features/dashboard/productos-educativos/admin-productos-educativos.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { 
@@ -328,11 +329,21 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   issueCertificate(inscripcionId: number, con_competencias: boolean = false) {
+    // ✅ --- CORRECCIÓN APLICADA AQUÍ ---
+    // Nos aseguramos de que haya un curso seleccionado antes de continuar.
+    if (!this.selectedCourse) {
+        this.notificationSvc.showError("Error: No se ha seleccionado un producto educativo.");
+        return;
+    }
+    
+    // Creamos el payload incluyendo el ID del producto educativo.
     const payload: CertificadoCreate = { 
       inscripcion_id: inscripcionId,
+      // Se añade el ID del producto que faltaba.
+      producto_educativo_id: this.selectedCourse.id, 
       con_competencias: con_competencias
     };
-    // ✅ CORRECCIÓN: Usa el método específico para participantes
+    
     this.certificadoSvc.createForParticipant(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
@@ -350,7 +361,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       producto_educativo_id: this.selectedCourse.id,
       con_competencias
     };
-    // ✅ CORRECCIÓN: Usa el método específico para docentes
+    
     this.certificadoSvc.createForDocente(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
