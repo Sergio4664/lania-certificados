@@ -47,10 +47,12 @@ export class CertificadoService {
   /**
    * Solicita al backend que envíe un certificado por correo electrónico.
    * @param certificadoId - El ID del certificado a enviar.
+   * @param emailType - El tipo de email al que se enviará ('institucional' o 'personal').
    */
-  sendEmail(certificadoId: number): Observable<any> {
-    // ✅ CORRECCIÓN: La URL ahora es más limpia y consistente con el backend.
-    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, {});
+  // ✅ CORRECCIÓN APLICADA AQUÍ
+  sendEmail(certificadoId: number, emailType: 'institucional' | 'personal'): Observable<any> {
+    const body = { email_type: emailType };
+    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, body);
   }
 
   /**
@@ -59,7 +61,7 @@ export class CertificadoService {
    */
   emitirYEnviarMasivamente(productoId: number): Observable<EmisionMasivaResponse> {
     // Nota: Asegúrate de que este endpoint exista en tu backend si planeas usarlo.
-    const url = `${this.apiUrl}/emitir-enviar-masivo/producto/${productoId}`;
+    const url = `${environment.apiUrl}/admin/certificados/emitir-enviar-masivo/producto/${productoId}`;
     return this.http.post<EmisionMasivaResponse>(url, {});
   }
 }
