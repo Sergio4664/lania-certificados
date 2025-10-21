@@ -28,7 +28,10 @@ class InscripcionOut(InscripcionBase):
 # Esquema completo para vistas de detalle si fuera necesario
 class Inscripcion(InscripcionBase):
     id: int
+    
     participante: 'Participante'
     producto_educativo: 'ProductoEducativoOut' # Mantenemos el seguro aquí también
     certificados: list['CertificadoOut'] = []
+
+
     model_config = ConfigDict(from_attributes=True)

@@ -13,10 +13,17 @@ class CertificadoBase(BaseModel):
     fecha_emision: datetime
     archivo_path: Optional[str] = None
 
+    # Añadimos los IDs base para que estén disponibles
+    inscripcion_id: Optional[int] = None
+    docente_id: Optional[int] = None
+    producto_educativo_id: Optional[int] = None
+
 # --- ✅ SOLUCIÓN: Esquema de salida sin recursión ---
 # Este es el esquema que usaremos en las listas para evitar ciclos
 class CertificadoOut(CertificadoBase):
     id: int
+    folio: str
+    fecha_emision: datetime
     model_config = ConfigDict(from_attributes=True)
 
 # Esquema completo para cuando necesites todos los detalles
@@ -25,6 +32,7 @@ class Certificado(CertificadoBase):
     inscripcion: Optional['InscripcionOut'] = None
     docente: Optional['DocenteOut'] = None
     producto_educativo: 'ProductoEducativoOut'
+
     model_config = ConfigDict(from_attributes=True)
 
 # ... resto de esquemas (Create, Public, etc.)
@@ -36,7 +44,11 @@ class CertificadoCreate(BaseModel):
 
 class CertificadoPublic(BaseModel):
     folio: str
-    # ... otros campos
+    fecha_emision: datetime
+    participante_nombre: str
+    producto_nombre: str
+    # ... otros campos que necesites en la página pública
+    model_config = ConfigDict(from_attributes=True)
     
 class EmisionMasivaResponse(BaseModel):
     success: list[dict]

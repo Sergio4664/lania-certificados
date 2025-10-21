@@ -107,7 +107,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_inicio: ['', Validators.required],
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
-      modalidad: ['PRESENCIAL', Validators.required],
+      modalidad: ['PRESENSICAL', Validators.required],
       docente_ids: this.fb.array([]),
       competencias: ['']
     }, {
@@ -382,14 +382,23 @@ export default class AdminProductosEducativosComponent implements OnInit {
       producto_educativo_id: this.selectedCourse.id,
       con_competencias // El valor se pasa directamente
     };
+    
+    // ############### INICIO DE LA CORRECCIÓN ###############
     this.certificadoSvc.createForDocente(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
-        this.certificados = [...this.certificados, newCert]; // Crear nuevo array
-        this.cdr.markForCheck(); // 👈 Marca para revisión
+        
+        // En lugar de añadir el 'newCert' (que puede estar incompleto),
+        // volvemos a pedir todos los certificados al servidor.
+        this.certificadoSvc.getAll().subscribe(todosLosCertificados => {
+          this.certificados = todosLosCertificados;
+          this.cdr.markForCheck(); // 👈 Marca para revisión
+        });
+
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de ponente.')
     });
+    // ############### FIN DE LA CORRECCIÓN ###############
   }
 
 

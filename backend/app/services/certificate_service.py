@@ -1,44 +1,57 @@
 # backend/app/services/certificate_service.py
-from http.client import HTTPException
 import os
 import uuid
 from datetime import datetime
 from fpdf import FPDF
 from PyPDF2 import PdfReader, PdfWriter
 import io
+import re
+from pathlib import Path
+from fastapi import HTTPException
 
 from app.services.qr_service import generate_qr_png
 from app.core.config import get_settings
 
+# ❌ LÍNEA ELIMINADA: from app.services.certificate_service import generate_certificate
+
 settings = get_settings()
+
+
+def sanitize_foldername(name: str) -> str:
+    """Limpia un string para usarlo como nombre de carpeta seguro."""
+    name = re.sub(r'[^\w\s-]', '', name).strip()
+    name = re.sub(r'\s+', '_', name)
+    return name[:100]
+
 
 def generate_certificate(
     participant_name: str,
     course_name: str,
     course_type: str,
     course_hours: int,
-    # ✅ CORRECCIÓN: Renombrado a instructor_name para mayor claridad
-    instructor_name: str = "Docente no asignado", 
+    instructor_name: str = "Docente no asignado",
     is_docente: bool = False
-) -> str:
+) -> tuple[str, str]:
     """
-    Genera un certificado en PDF usando una plantilla y lo guarda en el servidor.
+    Genera un certificado en PDF, lo guarda en una subcarpeta
+    basada en el nombre del curso, y devuelve el folio y la ruta.
     """
-    template_path = os.path.join("app", "static", "Formato constancias.pdf")
-    output_dir = 'certificates'
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        
+    template_path = Path("app") / "static" / "Formato constancias.pdf"
+    base_output_dir = Path('certificates')
+
+    course_folder_name = sanitize_foldername(course_name)
+    output_dir = base_output_dir / course_folder_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     folio = f"LANIA-{datetime.now().year}-{str(uuid.uuid4().hex[:8]).upper()}"
     verification_url = f"{settings.FRONTEND_URL}/verificacion/{folio}"
+    file_path = output_dir / f"{folio}.pdf"
 
     packet = io.BytesIO()
     pdf_text = FPDF('L', 'mm', 'A4')
     pdf_text.add_page()
     pdf_text.set_auto_page_break(auto=False)
 
-    # --- Ajusta las coordenadas (x, y) para que coincidan con tu plantilla ---
-    
     # Nombre del participante/docente
     pdf_text.set_font('Arial', 'B', 20)
     pdf_text.set_xy(10, 80)
@@ -57,33 +70,36 @@ def generate_certificate(
         pdf_text.set_xy(10, 120)
         pdf_text.cell(277, 10, f'Con una duración de {course_hours} horas.', 0, 1, 'C')
 
-    # ✅ NUEVO: Mostrar el nombre del instructor (si no es el certificado del propio docente)
+    # Nombre del instructor
     if not is_docente and instructor_name:
         pdf_text.set_font('Arial', '', 14)
-        pdf_text.set_xy(10, 130) # Ajusta la posición Y
+        pdf_text.set_xy(10, 130)
         pdf_text.cell(277, 10, f'Impartido por: {instructor_name}', 0, 1, 'C')
-    
+
     # Folio
     pdf_text.set_font('Arial', 'I', 10)
     pdf_text.set_xy(15, 180)
     pdf_text.cell(100, 10, f'Folio: {folio}', 0, 0, 'L')
 
+    # Generar y añadir QR
     qr_bytes = generate_qr_png(verification_url)
     qr_path_temp = f"temp_qr_{folio}.png"
     with open(qr_path_temp, "wb") as qr_file:
         qr_file.write(qr_bytes)
 
     if os.path.exists(qr_path_temp):
-        pdf_text.image(qr_path_temp, x=240, y=160, w=30)
-        os.remove(qr_path_temp)
+        try:
+             pdf_text.image(qr_path_temp, x=240, y=160, w=30)
+        finally:
+             if os.path.exists(qr_path_temp):
+                 os.remove(qr_path_temp)
 
     pdf_text_bytes = pdf_text.output(dest='S')
     packet.write(pdf_text_bytes)
     packet.seek(0)
-    
+
     new_pdf = PdfReader(packet)
-    
-    # Manejo de error si no se encuentra la plantilla
+
     try:
         existing_pdf = PdfReader(open(template_path, "rb"))
     except FileNotFoundError:
@@ -94,8 +110,7 @@ def generate_certificate(
     page.merge_page(new_pdf.pages[0])
     output.add_page(page)
 
-    file_path = os.path.join(output_dir, f"{folio}.pdf")
     with open(file_path, "wb") as output_stream:
         output.write(output_stream)
 
-    return file_path
+    return folio, str(file_path)
