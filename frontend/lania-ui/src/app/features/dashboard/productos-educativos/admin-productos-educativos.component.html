@@ -234,7 +234,8 @@
                                    title="Seleccionar Todos los Docentes">
                         </th>
                         <th>Nombre del Ponente</th>
-                        <th>Email Institucional</th> 
+                        <th>Email Institucional</th>
+                        <th>WhatsApp</th>
                         <th>Constancia</th>
                         <th>Acciones</th>
                     </tr>
@@ -252,7 +253,8 @@
                           {{ docente.nombre_completo }}
                         </td>
 
-                        <td>{{ docente.email_institucional || 'N/A' }}</td> 
+                        <td>{{ docente.email_institucional || 'N/A' }}</td>
+                        <td>{{ docente.telefono || 'N/A' }}</td> 
                         
                         <td>
                           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else noConstanciaDocente">
@@ -265,13 +267,12 @@
 
                         <td class="actions-cell">
                           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
-                            <button class="icon-btn email" (click)="reenviarCertificado(cert.id)" title="Reenviar Constancia">📧</button>
+                            <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Reenviar Constancia">📧</button>
                             <button class="icon-btn delete" (click)="eliminarCertificado(cert.id)" title="Eliminar Constancia">✖️</button>
                           </ng-container>
                           <ng-template #emitirConstanciaDocente>
                             <div class="send-actions">
                               <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id, false)">Emitir</button>
-                              <button *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueDocenteCertificate(docente.id, true)">+ Comp.</button>
                             </div>
                           </ng-template>
                         </td>

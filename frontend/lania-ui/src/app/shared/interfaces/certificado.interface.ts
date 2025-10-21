@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/app/shared/interfaces/certificado.interface.ts
 import { Inscripcion } from "./inscripcion.interface";
 import { DocenteDTO } from "./docente.interfaces";
 
