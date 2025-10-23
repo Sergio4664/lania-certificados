@@ -9,18 +9,15 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
+# --- ✅ 1. AÑADIR 'TA_LEFT' para la lista ---
+from reportlab.lib.enums import TA_CENTER, TA_LEFT 
 from datetime import date
 import locale
 from app.services.qr_service import generate_qr_png
 from typing import Optional, List
-
-# --- ⬇️ AQUÍ ESTÁ LA CORRECCIÓN ⬇️ ---
-# Se importa desde 'producto_educativo', no 'enums'
 from app.models.producto_educativo import TipoProductoEnum
-# --- ⬆️ FIN DE LA CORRECCIÓN ⬆️ ---
 
-# --- Registro de Fuentes y Configuración de Idioma (sin cambios) ---
+# --- Registro de Fuentes y Configuración (sin cambios) ---
 try:
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'app/fonts/DancingScript-Bold.ttf'))
 except Exception:
@@ -32,14 +29,24 @@ except locale.Error:
     try:
         locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')
     except locale.Error:
-        pass # Mantener locale por defecto si falla
+        pass
 
+# --- ✅ 2. MODIFICAR 'draw_multiline_text' para aceptar alineación izquierda ---
 def draw_multiline_text(c, text, x, y, max_width, style):
     p = Paragraph(text, style)
     p.wrapOn(c, max_width, 10 * cm)
     p_height = p.height
-    p.drawOn(c, x - (max_width / 2), y - p_height)
+    
+    if style.alignment == TA_LEFT:
+        p.drawOn(c, x, y - p_height) # Dibuja desde la 'x' dada (para listas)
+    else:
+        p.drawOn(c, x - (max_width / 2), y - p_height) # Centra (para títulos)
+        
     return p_height
+
+# --- ========================================================= ---
+# --- FUNCIÓN 1: CONSTANCIAS (La que ya tenías)
+# --- ========================================================= ---
 
 def generate_certificate_pdf(
     participant_name: str,
@@ -49,18 +56,14 @@ def generate_certificate_pdf(
     template_path: str,
     serial: str,
     qr_token: str,
-    course_date: str, # (Usado para docentes)
-    entity_type: str, # 'participante' o 'docente'
-    
-    # --- ✅ 2. Argumentos modificados y añadidos ---
-    tipo_producto: TipoProductoEnum, # CAMBIADO: de product_type_str a enum
-    modalidad: str,             # AÑADIDO: para incluir la modalidad
-    
-    docente_specialty: Optional[str] = None,
-    competencies: Optional[List[str]] = None
+    course_date: str, 
+    entity_type: str, 
+    tipo_producto: TipoProductoEnum,
+    modalidad: str,
+    docente_specialty: Optional[str] = None
 ) -> bytes:
     """
-    Genera un PDF de certificado con texto dinámico para participantes o docentes.
+    Genera un PDF de CONSTANCIA (normal o docente).
     """
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
@@ -71,65 +74,148 @@ def generate_certificate_pdf(
     style_bold = ParagraphStyle(name='Bold', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER)
     style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
 
-    # --- Elementos Estáticos (sin cambios) ---
+    # --- Elementos Estáticos (CONSTANCIA) ---
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
     c.setFont("Helvetica-Bold", 36)
     c.setFillColorRGB(0.8, 0.2, 0.2)
-    c.drawCentredString(center_x, 20.2 * cm, "CONSTANCIA")
+    c.drawCentredString(center_x, 20.2 * cm, "CONSTANCIA") # <-- TÍTULO
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0, 0, 0)
     label = "al:" if entity_type == 'docente' else "a:"
     c.drawCentredString(center_x, 18.8 * cm, label)
 
-    # --- Nombre (Participante o Docente con su grado) (sin cambios) ---
+    # --- Nombre (Participante o Docente) (sin cambios) ---
     y_position = 18.2 * cm
     display_name = f"{docente_specialty} {participant_name}" if docente_specialty else participant_name
     participant_height = draw_multiline_text(c, display_name, center_x, y_position, 18 * cm, style_participant_name)
     y_position -= (participant_height + 1.2 * cm)
 
-    # --- ✅ 3. Lógica de Texto Dinámico (MODIFICADA) ---
+    # --- Lógica de Texto Dinámico (CONSTANCIA) (sin cambios) ---
     text_width = 18 * cm
     if entity_type == 'participante':
-        
-        # Mapa de texto según el tipo de producto (basado en tus ejemplos)
         TIPO_PRODUCTO_MAP = {
-            tipo_producto.CURSO_EDUCATIVO: "Por su participación en el curso",
-            tipo_producto.PILDORA_EDUCATIVA: "Por su asistencia a la píldora educativa",
-            tipo_producto.INYECCION_EDUCATIVA: "Por su participación en la Inyección Educativa"
+            TipoProductoEnum.CURSO_EDUCATIVO: "Por su participación en el curso",
+            TipoProductoEnum.PILDORA_EDUCATIVA: "Por su asistencia a la píldora educativa",
+            TipoProductoEnum.INYECCION_EDUCATIVA: "Por su participación en la Inyección Educativa"
         }
-        
-        # Obtener el texto correcto
         line1 = TIPO_PRODUCTO_MAP.get(
             tipo_producto, 
-            "Por su participación en el producto educativo" # Fallback genérico
+            "Por su participación en el producto educativo"
         )
-        
-        # Dibujar la primera línea
         height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
         y_position -= (height1 + 0.2 * cm)
-        
-        # Dibujar el nombre del curso/producto
         height2 = draw_multiline_text(c, f'"{course_name}"', center_x, y_position, text_width, style_bold)
         y_position -= (height2 + 0.2 * cm)
-
-        # --- ✅ 4. Texto de Detalles (MODIFICADO para incluir modalidad) ---
-        # .lower() para que se lea "modalidad remota"
         details_text = f"con duración de {hours} horas, modalidad {modalidad.lower()}."
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
     elif entity_type == 'docente':
-        # Texto para el docente/instructor (sin cambios)
         line1 = "Por su participación como ponente en el producto educativo"
         height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
         y_position -= (height1 + 0.2 * cm)
-
         height2 = draw_multiline_text(c, f'"{course_name}"', center_x, y_position, text_width, style_bold)
         y_position -= (height2 + 0.2 * cm)
-        
         details_text = f"impartido el {course_date}."
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
+
+    # --- Firma, Fecha y QR (sin cambios) ---
+    c.setFont("Helvetica", 11)
+    c.drawCentredString(center_x, 6.0 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.line(center_x - 3.5 * cm, 5.8 * cm, center_x + 3.5 * cm, 5.8 * cm)
+    c.drawCentredString(center_x, 5.3 * cm, "Director de Proyectos")
+
+    issue_date_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
+    
+    qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificar/{qr_token}")
+    qr_image = ImageReader(BytesIO(qr_png_bytes))
+    c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
+    c.setFont("Helvetica", 7)
+    c.drawString(1.5 * cm, 1.0 * cm, f"Folio: {serial}")
+
+    c.save()
+    packet.seek(0)
+
+    # --- Combinar con la plantilla (sin cambios) ---
+    new_pdf = PdfReader(packet)
+    with open(template_path, "rb") as f:
+        existing_pdf = PdfReader(f)
+        output = PdfWriter()
+        page = existing_pdf.pages[0]
+        page.merge_page(new_pdf.pages[0])
+        output.add_page(page)
+        with BytesIO() as final_buffer:
+            output.write(final_buffer)
+            pdf_bytes = final_buffer.getvalue()
+    
+    return pdf_bytes
+
+# --- ========================================================= ---
+# --- FUNCIÓN 2: RECONOCIMIENTO (NUEVA)
+# --- ========================================================= ---
+
+def generate_recognition_pdf(
+    participant_name: str,
+    course_name: str,
+    hours: int,
+    issue_date: date,
+    template_path: str,
+    serial: str,
+    qr_token: str,
+    competencies: List[str] # <-- Requiere competencias
+) -> bytes:
+    """
+    Genera un PDF de RECONOCIMIENTO (solo para cursos con competencias).
+    """
+    packet = BytesIO()
+    c = canvas.Canvas(packet, pagesize=letter)
+    center_x = letter[0] / 2
+
+    # --- Estilos ---
+    style_normal = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
+    # style_bold = ParagraphStyle(name='Bold', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER) # No se usa en reconocimiento
+    style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
+    
+    # --- ✅ 3. ESTILO PARA LA LISTA ---
+    style_competency = ParagraphStyle(name='Competency', fontName='Helvetica', fontSize=10, leading=12, alignment=TA_LEFT)
+
+    # --- Elementos Estáticos (RECONOCIMIENTO) ---
+    c.setFont("Helvetica", 14)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+    c.drawCentredString(center_x, 21.3 * cm, "Otorga el presente") # <-- CAMBIO
+    c.setFont("Helvetica-Bold", 36)
+    c.setFillColorRGB(0.8, 0.2, 0.2)
+    c.drawCentredString(center_x, 20.2 * cm, "RECONOCIMIENTO") # <-- CAMBIO
+    c.setFont("Helvetica", 14)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawCentredString(center_x, 18.8 * cm, "a:") # Siempre es 'a:'
+
+    # --- Nombre (Participante) (sin cambios) ---
+    y_position = 18.2 * cm
+    participant_height = draw_multiline_text(c, participant_name, center_x, y_position, 18 * cm, style_participant_name)
+    y_position -= (participant_height + 1.2 * cm)
+
+    # --- Lógica de Texto (RECONOCIMIENTO) ---
+    text_width = 18 * cm
+    
+    # Texto basado en "Ejemplo curso comptenecias (1).pdf"
+    line1 = f'Por haber acreditado en el curso "{course_name}" ({hours} horas de trabajo), la evaluación de las competencias:'
+    
+    height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
+    y_position -= (height1 + 0.5 * cm) # Más espacio
+    
+    # --- Dibujar la lista de competencias ---
+    list_left_margin = 3.5 * cm 
+    list_max_width = 16 * cm 
+    
+    if competencies:
+        for item in competencies:
+            item_text = f"• {item}"
+            item_height = draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
+            y_position -= (item_height + 0.1 * cm) # Espacio entre items
 
     # --- Firma, Fecha y QR (sin cambios) ---
     c.setFont("Helvetica", 11)
