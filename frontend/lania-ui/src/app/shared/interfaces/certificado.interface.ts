@@ -19,6 +19,10 @@ export interface Certificado {
   // Datos anidados para facilitar el acceso en la UI
   inscripcion?: Inscripcion;
   docente?: DocenteDTO;
+
+  // --- ⬇️ AQUÍ ESTÁ LA CORRECCIÓN ⬇️ ---
+  /** Indica si este certificado fue emitido con competencias. */
+  con_competencias: boolean;
 }
 
 /**

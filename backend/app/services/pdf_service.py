@@ -1,3 +1,4 @@
+#Ruta: backend/app/services/pdf_service.py
 from io import BytesIO
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
@@ -13,6 +14,11 @@ from datetime import date
 import locale
 from app.services.qr_service import generate_qr_png
 from typing import Optional, List
+
+# --- ⬇️ AQUÍ ESTÁ LA CORRECCIÓN ⬇️ ---
+# Se importa desde 'producto_educativo', no 'enums'
+from app.models.producto_educativo import TipoProductoEnum
+# --- ⬆️ FIN DE LA CORRECCIÓN ⬆️ ---
 
 # --- Registro de Fuentes y Configuración de Idioma (sin cambios) ---
 try:
@@ -43,10 +49,13 @@ def generate_certificate_pdf(
     template_path: str,
     serial: str,
     qr_token: str,
-    course_date: str,
-    # --- ✅ Argumentos Nuevos y Corregidos ---
+    course_date: str, # (Usado para docentes)
     entity_type: str, # 'participante' o 'docente'
-    product_type_str: str, # 'Píldora Educativa', 'Curso Educativo', etc.
+    
+    # --- ✅ 2. Argumentos modificados y añadidos ---
+    tipo_producto: TipoProductoEnum, # CAMBIADO: de product_type_str a enum
+    modalidad: str,             # AÑADIDO: para incluir la modalidad
+    
     docente_specialty: Optional[str] = None,
     competencies: Optional[List[str]] = None
 ) -> bytes:
@@ -57,12 +66,12 @@ def generate_certificate_pdf(
     c = canvas.Canvas(packet, pagesize=letter)
     center_x = letter[0] / 2
 
-    # --- Estilos ---
+    # --- Estilos (sin cambios) ---
     style_normal = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
     style_bold = ParagraphStyle(name='Bold', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER)
     style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
 
-    # --- Elementos Estáticos ---
+    # --- Elementos Estáticos (sin cambios) ---
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
@@ -74,28 +83,44 @@ def generate_certificate_pdf(
     label = "al:" if entity_type == 'docente' else "a:"
     c.drawCentredString(center_x, 18.8 * cm, label)
 
-    # --- Nombre (Participante o Docente con su grado) ---
+    # --- Nombre (Participante o Docente con su grado) (sin cambios) ---
     y_position = 18.2 * cm
     display_name = f"{docente_specialty} {participant_name}" if docente_specialty else participant_name
     participant_height = draw_multiline_text(c, display_name, center_x, y_position, 18 * cm, style_participant_name)
     y_position -= (participant_height + 1.2 * cm)
 
-    # --- ✅ Lógica de Texto Dinámico ---
+    # --- ✅ 3. Lógica de Texto Dinámico (MODIFICADA) ---
     text_width = 18 * cm
     if entity_type == 'participante':
-        # Texto para el participante
-        line1 = f"Por su asistencia a la <b>{product_type_str.lower()}</b>"
+        
+        # Mapa de texto según el tipo de producto (basado en tus ejemplos)
+        TIPO_PRODUCTO_MAP = {
+            tipo_producto.CURSO_EDUCATIVO: "Por su participación en el curso",
+            tipo_producto.PILDORA_EDUCATIVA: "Por su asistencia a la píldora educativa",
+            tipo_producto.INYECCION_EDUCATIVA: "Por su participación en la Inyección Educativa"
+        }
+        
+        # Obtener el texto correcto
+        line1 = TIPO_PRODUCTO_MAP.get(
+            tipo_producto, 
+            "Por su participación en el producto educativo" # Fallback genérico
+        )
+        
+        # Dibujar la primera línea
         height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
         y_position -= (height1 + 0.2 * cm)
         
+        # Dibujar el nombre del curso/producto
         height2 = draw_multiline_text(c, f'"{course_name}"', center_x, y_position, text_width, style_bold)
         y_position -= (height2 + 0.2 * cm)
 
-        details_text = f"con una duración de {hours} horas."
+        # --- ✅ 4. Texto de Detalles (MODIFICADO para incluir modalidad) ---
+        # .lower() para que se lea "modalidad remota"
+        details_text = f"con duración de {hours} horas, modalidad {modalidad.lower()}."
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
     elif entity_type == 'docente':
-        # Texto para el docente/instructor
+        # Texto para el docente/instructor (sin cambios)
         line1 = "Por su participación como ponente en el producto educativo"
         height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
         y_position -= (height1 + 0.2 * cm)

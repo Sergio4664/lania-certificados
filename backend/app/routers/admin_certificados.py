@@ -78,45 +78,56 @@ def issue_certificate_to_participant(
     db_inscripcion = db.query(models.Inscripcion).options(
         joinedload(models.Inscripcion.participante),
         joinedload(models.Inscripcion.producto_educativo)
-            .selectinload(models.ProductoEducativo.docentes)
+            .selectinload(models.ProductoEducativo.docentes) # Cargar docentes para obtener instructor_name
     ).filter(models.Inscripcion.id == certificado_create.inscripcion_id).first()
 
     if not db_inscripcion:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inscripción no encontrada")
 
+    # --- ✅ MODIFICACIÓN: Comprobar existencia considerando 'con_competencias' ---
     existing_cert = db.query(models.Certificado).filter(
         models.Certificado.inscripcion_id == db_inscripcion.id,
-        models.Certificado.producto_educativo_id == db_inscripcion.producto_educativo_id
+        models.Certificado.producto_educativo_id == db_inscripcion.producto_educativo_id,
+        # Si no viene 'con_competencias' en el payload, asumimos False (constancia normal)
+        models.Certificado.con_competencias == (certificado_create.con_competencias or False)
     ).first()
     if existing_cert:
+        tipo_constancia = "con competencias" if (certificado_create.con_competencias or False) else "normal"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe un certificado (ID: {existing_cert.id}, Folio: {existing_cert.folio}) para esta inscripción."
+            detail=f"Ya existe un certificado {tipo_constancia} (ID: {existing_cert.id}, Folio: {existing_cert.folio}) para esta inscripción."
         )
 
     producto = db_inscripcion.producto_educativo
+    # Tomar el nombre del primer docente como instructor
     instructor_name = producto.docentes[0].nombre_completo if producto.docentes else "Equipo de Instructores LANIA"
 
+    # --- ✅ MODIFICACIÓN: Pasar argumentos correctos a generate_certificate ---
     try:
-        folio, file_path_obj = generate_certificate( # Asumiendo que devuelve Path object
+        folio, file_path_obj = generate_certificate(
             participant_name=db_inscripcion.participante.nombre_completo,
             course_name=producto.nombre,
-            course_type=producto.modalidad.value if producto.modalidad else 'No especificada',
+            # course_type=producto.modalidad.value if producto.modalidad else 'No especificada', # <-- Eliminado
+            tipo_producto=producto.tipo_producto, # <-- Añadido
+            modalidad=producto.modalidad.value if producto.modalidad else 'No especificada', # <-- Añadido
             course_hours=producto.horas,
-            instructor_name=instructor_name,
-            is_docente=False
+            instructor_name=instructor_name, # Para participantes, esto no se usa como especialidad
+            is_docente=False,
+            # course_date_str = ... # No es necesario para participantes
         )
         file_path = str(file_path_obj) # Convertir a string para DB
     except Exception as e:
-         print(f"Error generando certificado PDF: {e}")
-         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al generar el archivo PDF del certificado: {e}")
+        print(f"Error generando certificado PDF: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al generar el archivo PDF del certificado: {e}")
 
+    # --- ✅ MODIFICACIÓN: Guardar 'con_competencias' ---
     nuevo_certificado = models.Certificado(
         inscripcion_id=db_inscripcion.id,
         producto_educativo_id=producto.id,
         archivo_path=file_path,
         folio=folio,
-        fecha_emision=datetime.datetime.now(datetime.timezone.utc)
+        fecha_emision=datetime.datetime.now(datetime.timezone.utc),
+        con_competencias=(certificado_create.con_competencias or False) # Guardar si es con competencias
     )
 
     try:
@@ -151,35 +162,46 @@ def issue_certificate_to_docente(
     if not db_producto:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto educativo no encontrado")
 
+    # Comprobar si ya existe constancia para este docente en este producto
     existing_cert = db.query(models.Certificado).filter(
         models.Certificado.docente_id == db_docente.id,
         models.Certificado.producto_educativo_id == db_producto.id
     ).first()
     if existing_cert:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Ya existe un certificado (ID: {existing_cert.id}, Folio: {existing_cert.folio}) para este docente en este producto."
         )
 
+    # --- ✅ MODIFICACIÓN: Pasar argumentos correctos a generate_certificate ---
+    # Crear string de fecha para docentes
+    course_date_str = f"{db_producto.fecha_inicio.strftime('%d/%m/%Y')} al {db_producto.fecha_fin.strftime('%d/%m/%Y')}" if db_producto.fecha_inicio and db_producto.fecha_fin else "Fecha no especificada"
+
     try:
-        folio, file_path_obj = generate_certificate( # Asumiendo que devuelve Path object
+        folio, file_path_obj = generate_certificate(
             participant_name=db_docente.nombre_completo,
             course_name=db_producto.nombre,
-            course_type=db_producto.modalidad.value if db_producto.modalidad else 'No especificada',
+            # course_type=db_producto.modalidad.value if db_producto.modalidad else 'No especificada', # <-- Eliminado
+            tipo_producto=db_producto.tipo_producto, # <-- Añadido
+            modalidad=db_producto.modalidad.value if db_producto.modalidad else 'No especificada', # <-- Añadido
             course_hours=db_producto.horas,
+            instructor_name=db_docente.especialidad, # <-- Para docentes, pasar especialidad
             is_docente=True,
+            course_date_str=course_date_str # <-- Añadido
         )
         file_path = str(file_path_obj) # Convertir a string para DB
     except Exception as e:
-         print(f"Error generando constancia PDF para docente: {e}")
-         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al generar el archivo PDF de la constancia: {e}")
+        print(f"Error generando constancia PDF para docente: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al generar el archivo PDF de la constancia: {e}")
 
+    # --- ✅ MODIFICACIÓN: Los certificados de docente NO tienen 'con_competencias' ---
     nuevo_certificado = models.Certificado(
         docente_id=db_docente.id,
         producto_educativo_id=db_producto.id,
         archivo_path=file_path,
         folio=folio,
-        fecha_emision=datetime.datetime.now(datetime.timezone.utc)
+        fecha_emision=datetime.datetime.now(datetime.timezone.utc),
+        con_competencias=False # Los docentes no tienen constancia de competencias
     )
 
     try:
@@ -195,6 +217,7 @@ def issue_certificate_to_docente(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al guardar la constancia en la base de datos: {e}")
 
     return nuevo_certificado
+
 
 @router.post("/{certificado_id}/enviar", status_code=status.HTTP_200_OK)
 async def send_certificate_email_by_id(certificado_id: int, db: Session = Depends(get_db)):
@@ -220,43 +243,41 @@ async def send_certificate_email_by_id(certificado_id: int, db: Session = Depend
     serial = db_certificado.folio
 
     if db_certificado.inscripcion and db_certificado.inscripcion.participante:
-        recipient_email = db_certificado.inscripcion.participante.email_personal or db_certificado.inscripcion.participante.email_institucional
+        recipient_email = db_certificado.inscripcion.participante.email_personal
         recipient_name = db_certificado.inscripcion.participante.nombre_completo
     elif db_certificado.docente:
-        recipient_email = db_certificado.docente.email_personal or db_certificado.docente.email_institucional
+        # Priorizar email institucional para docentes si existe
+        recipient_email = db_certificado.docente.email_institucional or db_certificado.docente.email_personal
         recipient_name = db_certificado.docente.nombre_completo
 
     if not recipient_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El destinatario del certificado no tiene email.")
 
     if not pdf_path_str or not os.path.exists(pdf_path_str):
-         print(f"Archivo PDF no encontrado para certificado ID {certificado_id}: {pdf_path_str}")
-         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El archivo PDF del certificado no fue encontrado.")
+        print(f"Archivo PDF no encontrado para certificado ID {certificado_id}: {pdf_path_str}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El archivo PDF del certificado no fue encontrado.")
 
-    # --- CORRECCIÓN: Leer contenido del PDF ---
     try:
         pdf_path = Path(pdf_path_str)
         pdf_content_bytes = pdf_path.read_bytes()
     except Exception as read_err:
         print(f"Error leyendo el archivo PDF {pdf_path_str}: {read_err}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo leer el archivo PDF del certificado.")
-    # --- FIN CORRECCIÓN ---
 
     try:
-        # --- CORRECCIÓN: Pasar parámetros correctos ---
         send_certificate_email(
             recipient_email=recipient_email,
-            recipient_name=recipient_name, # <-- Nombre correcto
+            recipient_name=recipient_name,
             course_name=producto_nombre,
-            pdf_content=pdf_content_bytes, # <-- Contenido correcto
-            serial=serial                # <-- Serial añadido
+            pdf_content=pdf_content_bytes,
+            serial=serial
         )
-        # --- FIN CORRECCIÓN ---
     except Exception as e:
         print(f"Error enviando email para certificado ID {certificado_id}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Ocurrió un error al enviar el correo: {e}")
 
     return {"message": "Certificado enviado exitosamente"}
+
 
 @router.delete("/{certificado_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
@@ -289,26 +310,27 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
 
     return None
 
-# --- RUTA DE EMISIÓN Y ENVÍO MASIVO (INCLUYE DOCENTES Y CORRECCIONES EMAIL) ---
+# --- RUTA DE EMISIÓN Y ENVÍO MASIVO (CORREGIDA) ---
 @router.post("/emitir-enviar-masivo/producto/{producto_id}", status_code=status.HTTP_200_OK)
 async def issue_and_send_certificates_massively(
     producto_id: int,
     db: Session = Depends(get_db)
 ):
     """
-    Emite (si no existen) y envía masivamente certificados a participantes
+    Emite (si no existen) y envía masivamente certificados NORMALES a participantes
     Y constancias a docentes de un producto educativo específico.
     """
+    # Cargar producto con relaciones necesarias
     db_producto = db.query(models.ProductoEducativo).options(
         selectinload(models.ProductoEducativo.inscripciones).selectinload(models.Inscripcion.participante),
-        selectinload(models.ProductoEducativo.inscripciones).selectinload(models.Inscripcion.certificados),
-        selectinload(models.ProductoEducativo.docentes).selectinload(models.Docente.certificados)
+        selectinload(models.ProductoEducativo.inscripciones).selectinload(models.Inscripcion.certificados), # Para verificar existencia
+        selectinload(models.ProductoEducativo.docentes).selectinload(models.Docente.certificados) # Para docentes
     ).filter(models.ProductoEducativo.id == producto_id).first()
 
     if not db_producto:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto educativo no encontrado")
 
-    # ... (contadores igual que antes) ...
+    # Contadores
     issued_participant_count = 0
     sent_participant_count = 0
     skipped_participant_count = 0
@@ -320,7 +342,9 @@ async def issue_and_send_certificates_massively(
     # --- Lógica para Participantes ---
     print(f"\n--- Iniciando proceso masivo para PARTICIPANTES del producto ID: {producto_id} ---")
     for inscripcion in db_producto.inscripciones:
-        certificado_existente = next((cert for cert in inscripcion.certificados if cert.producto_educativo_id == producto_id), None)
+        # Busca específicamente certificado NORMAL (con_competencias=False)
+        certificado_existente = next((cert for cert in inscripcion.certificados
+                                       if cert.producto_educativo_id == producto_id and not cert.con_competencias), None)
         certificado_a_enviar = None
         participante = inscripcion.participante
         participante_id = participante.id
@@ -331,70 +355,79 @@ async def issue_and_send_certificates_massively(
             print(msg); errors.append(msg); continue
 
         if certificado_existente:
-            print(f"PARTICIPANTE {participante_id}: Certificado ya existe (Folio: {certificado_existente.folio}). Saltando emisión.")
+            print(f"PARTICIPANTE {participante_id}: Certificado normal ya existe (Folio: {certificado_existente.folio}). Saltando emisión.")
             certificado_a_enviar = certificado_existente
             skipped_participant_count += 1
         else:
-            print(f"PARTICIPANTE {participante_id}: Emitiendo certificado...")
+            print(f"PARTICIPANTE {participante_id}: Emitiendo certificado normal...")
             try:
                 instructor_name = db_producto.docentes[0].nombre_completo if db_producto.docentes else "Equipo LANIA"
-                folio, file_path_obj = generate_certificate( # Asume Path object
-                    participant_name=participante.nombre_completo, course_name=db_producto.nombre,
-                    course_type=db_producto.modalidad.value if db_producto.modalidad else 'N/E',
-                    course_hours=db_producto.horas, instructor_name=instructor_name, is_docente=False
+                # --- ⬇️ CORRECCIÓN EN LA LLAMADA ⬇️ ---
+                folio, file_path_obj = generate_certificate(
+                    participant_name=participante.nombre_completo,
+                    course_name=db_producto.nombre,
+                    # course_type=..., <-- Eliminado
+                    tipo_producto=db_producto.tipo_producto, # <-- Añadido
+                    modalidad=db_producto.modalidad.value if db_producto.modalidad else 'No especificada', # <-- Añadido
+                    course_hours=db_producto.horas,
+                    instructor_name=instructor_name, # Para participantes, esto no afecta especialidad
+                    is_docente=False
                 )
-                file_path = str(file_path_obj) # Guardar como string
+                # --- ⬆️ FIN CORRECCIÓN ⬆️ ---
+                file_path = str(file_path_obj)
                 nuevo_certificado = models.Certificado(
                     inscripcion_id=inscripcion.id, producto_educativo_id=producto_id,
                     archivo_path=file_path, folio=folio,
-                    fecha_emision=datetime.datetime.now(datetime.timezone.utc)
+                    fecha_emision=datetime.datetime.now(datetime.timezone.utc),
+                    con_competencias=False # Certificado normal
                 )
                 db.add(nuevo_certificado)
-                db.flush()
+                db.flush() # Para obtener el ID si es necesario antes del commit
                 certificado_a_enviar = nuevo_certificado
                 issued_participant_count += 1
-                print(f"PARTICIPANTE {participante_id}: Certificado emitido (Folio: {folio}).")
+                print(f"PARTICIPANTE {participante_id}: Certificado normal emitido (Folio: {folio}).")
             except Exception as e:
                 msg = f"PARTICIPANTE {participante_id}: Error emitiendo certificado: {str(e)}"
-                print(msg); errors.append(msg); db.rollback(); continue
+                print(msg); errors.append(msg); db.rollback(); continue # Rollback parcial y continuar
 
-        # --- CORRECCIÓN ENVÍO EMAIL PARTICIPANTE ---
+        # Envío de Email para Participante (lógica sin cambios, ya estaba corregida)
         if certificado_a_enviar and certificado_a_enviar.archivo_path:
             pdf_path_str = certificado_a_enviar.archivo_path
             pdf_serial = certificado_a_enviar.folio
             pdf_content_bytes = None
             try:
                 if os.path.exists(pdf_path_str):
-                     pdf_path = Path(pdf_path_str)
-                     pdf_content_bytes = pdf_path.read_bytes()
+                    pdf_path = Path(pdf_path_str)
+                    pdf_content_bytes = pdf_path.read_bytes()
                 else:
-                     raise FileNotFoundError(f"Archivo no encontrado en la ruta: {pdf_path_str}")
+                    raise FileNotFoundError(f"Archivo no encontrado en la ruta: {pdf_path_str}")
 
                 print(f"PARTICIPANTE {participante_id}: Enviando a {participante_email}...")
                 send_certificate_email(
                     recipient_email=participante_email,
-                    recipient_name=participante.nombre_completo, # <-- Nombre correcto
+                    recipient_name=participante.nombre_completo,
                     course_name=db_producto.nombre,
-                    pdf_content=pdf_content_bytes,             # <-- Contenido correcto
-                    serial=pdf_serial                          # <-- Serial añadido
+                    pdf_content=pdf_content_bytes,
+                    serial=pdf_serial
                 )
                 sent_participant_count += 1
                 print(f"PARTICIPANTE {participante_id}: Correo enviado.")
             except FileNotFoundError as fnf_err:
-                 msg = f"PARTICIPANTE {participante_id}: No se envió correo, {str(fnf_err)}."
-                 print(msg); errors.append(msg)
+                msg = f"PARTICIPANTE {participante_id}: No se envió correo, {str(fnf_err)}."
+                print(msg); errors.append(msg)
             except Exception as e:
                 msg = f"PARTICIPANTE {participante_id}: Error enviando correo: {str(e)}"
                 print(msg); errors.append(msg)
-        # --- FIN CORRECCIÓN ---
 
     # --- Lógica para Docentes ---
     print(f"\n--- Iniciando proceso masivo para DOCENTES del producto ID: {producto_id} ---")
     for docente in db_producto.docentes:
-        constancia_existente = next((cert for cert in docente.certificados if cert.producto_educativo_id == producto_id), None)
+        # Busca si ya existe constancia para este docente en este producto
+        constancia_existente = next((cert for cert in docente.certificados
+                                      if cert.producto_educativo_id == producto_id), None)
         constancia_a_enviar = None
         docente_id = docente.id
-        docente_email = docente.email_personal or docente.email_institucional
+        docente_email = docente.email_institucional or docente.email_personal # Priorizar institucional
 
         if not docente_email:
             msg = f"DOCENTE {docente_id} ({docente.nombre_completo}) no tiene email registrado. Saltando."
@@ -407,27 +440,37 @@ async def issue_and_send_certificates_massively(
         else:
             print(f"DOCENTE {docente_id}: Emitiendo constancia...")
             try:
-                folio, file_path_obj = generate_certificate( # Asume Path object
-                    participant_name=docente.nombre_completo, course_name=db_producto.nombre,
-                    course_type=db_producto.modalidad.value if db_producto.modalidad else 'N/E',
-                    course_hours=db_producto.horas, is_docente=True
+                # --- ⬇️ CORRECCIÓN EN LA LLAMADA ⬇️ ---
+                course_date_str = f"{db_producto.fecha_inicio.strftime('%d/%m/%Y')} al {db_producto.fecha_fin.strftime('%d/%m/%Y')}" if db_producto.fecha_inicio and db_producto.fecha_fin else "Fecha no especificada"
+                folio, file_path_obj = generate_certificate(
+                    participant_name=docente.nombre_completo,
+                    course_name=db_producto.nombre,
+                    # course_type=..., <-- Eliminado
+                    tipo_producto=db_producto.tipo_producto, # <-- Añadido
+                    modalidad=db_producto.modalidad.value if db_producto.modalidad else 'No especificada', # <-- Añadido
+                    course_hours=db_producto.horas,
+                    instructor_name=docente.especialidad, # <-- Pasar especialidad para docentes
+                    is_docente=True,
+                    course_date_str=course_date_str # <-- Añadido
                 )
-                file_path = str(file_path_obj) # Guardar como string
+                # --- ⬆️ FIN CORRECCIÓN ⬆️ ---
+                file_path = str(file_path_obj)
                 nueva_constancia = models.Certificado(
                     docente_id=docente.id, producto_educativo_id=producto_id,
                     archivo_path=file_path, folio=folio,
-                    fecha_emision=datetime.datetime.now(datetime.timezone.utc)
+                    fecha_emision=datetime.datetime.now(datetime.timezone.utc),
+                    con_competencias=False # Constancia de docente es siempre False
                 )
                 db.add(nueva_constancia)
-                db.flush()
+                db.flush() # Para obtener ID si es necesario
                 constancia_a_enviar = nueva_constancia
                 issued_docente_count += 1
                 print(f"DOCENTE {docente_id}: Constancia emitida (Folio: {folio}).")
             except Exception as e:
                 msg = f"DOCENTE {docente_id}: Error emitiendo constancia: {str(e)}"
-                print(msg); errors.append(msg); db.rollback(); continue
+                print(msg); errors.append(msg); db.rollback(); continue # Rollback parcial y continuar
 
-        # --- CORRECCIÓN ENVÍO EMAIL DOCENTE ---
+        # Envío de Email para Docente (lógica sin cambios, ya estaba corregida)
         if constancia_a_enviar and constancia_a_enviar.archivo_path:
             pdf_path_str = constancia_a_enviar.archivo_path
             pdf_serial = constancia_a_enviar.folio
@@ -442,21 +485,19 @@ async def issue_and_send_certificates_massively(
                 print(f"DOCENTE {docente_id}: Enviando a {docente_email}...")
                 send_certificate_email(
                     recipient_email=docente_email,
-                    recipient_name=docente.nombre_completo, # <-- Nombre correcto
+                    recipient_name=docente.nombre_completo,
                     course_name=db_producto.nombre,
-                    pdf_content=pdf_content_bytes,         # <-- Contenido correcto
-                    serial=pdf_serial                      # <-- Serial añadido
+                    pdf_content=pdf_content_bytes,
+                    serial=pdf_serial
                 )
                 sent_docente_count += 1
                 print(f"DOCENTE {docente_id}: Correo enviado.")
             except FileNotFoundError as fnf_err:
-                 msg = f"DOCENTE {docente_id}: No se envió correo, {str(fnf_err)}."
-                 print(msg); errors.append(msg)
+                msg = f"DOCENTE {docente_id}: No se envió correo, {str(fnf_err)}."
+                print(msg); errors.append(msg)
             except Exception as e:
                 msg = f"DOCENTE {docente_id}: Error enviando correo: {str(e)}"
                 print(msg); errors.append(msg)
-        # --- FIN CORRECCIÓN ---
-
 
     # --- Commit final y respuesta ---
     try:
@@ -465,8 +506,11 @@ async def issue_and_send_certificates_massively(
     except Exception as e:
         db.rollback()
         print(f"\nError en el commit final: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error Crítico: No se pudieron guardar los cambios en la BD: {str(e)}")
+        # Considera no levantar HTTPException aquí si quieres que la API responda con los errores parciales
+        errors.append(f"Error Crítico: No se pudieron guardar los cambios en la BD: {str(e)}")
+        # raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error Crítico: No se pudieron guardar los cambios en la BD: {str(e)}")
 
+    # Construir mensaje de resumen
     summary_parts = [
         f"Proceso masivo completado para producto {producto_id}.",
         f"Participantes: {issued_participant_count} emitidos, {skipped_participant_count} omitidos, {sent_participant_count} enviados.",

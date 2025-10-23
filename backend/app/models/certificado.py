@@ -1,4 +1,5 @@
 # backend/app/models/certificado.py
+from xmlrpc.client import Boolean
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -16,6 +17,8 @@ class Certificado(Base):
     fecha_emision = Column(DateTime(timezone=True), server_default=func.now())
     
     archivo_path = Column(String)
+
+    con_competencias = Column(Boolean, default=False, nullable=False)
 
     # --- Foreign Keys ---
     inscripcion_id = Column(Integer, ForeignKey("inscripciones.id"), nullable=True)

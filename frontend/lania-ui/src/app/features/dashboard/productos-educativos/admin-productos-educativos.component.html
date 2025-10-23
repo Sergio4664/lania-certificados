@@ -314,8 +314,8 @@
                       <ng-template #emitirConstanciaParticipante>
                         <div class="send-actions">
                           <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id, false)">Normal</button>
-                          <button *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="primary-btn small-btn" (click)="issueCertificate(inscripcion.id, true)">Competencias</button>
-                        </div>
+                          
+                          </div>
                       </ng-template>
                   </td>
                 </tr>
@@ -328,11 +328,27 @@
 
         </div>
       </div>
+
       <div class="modal-footer">
         <button type="button" class="secondary-btn" (click)="unselectCourse()">Cerrar</button>
-        <button type="button" class="primary-btn" (click)="emitAndSendCertificates()">Emisión y Envío Masivo</button>
+        
+        <button 
+          type="button" 
+          class="primary-btn" 
+          (click)="emitAndSendCertificates()">
+          Envío Masivo (Normal)
+        </button>
+        
+        <button 
+          type="button" 
+          class="primary-btn" 
+          *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'"
+          (click)="emitAndSendCompetenciesSelected()"
+          [disabled]="competencyRecipients.size === 0">
+          Emitir y Enviar Competencias ({{ competencyRecipients.size }} seleccionados)
+        </button>
       </div>
-    </div>
+      </div>
   </div>
 
   <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">

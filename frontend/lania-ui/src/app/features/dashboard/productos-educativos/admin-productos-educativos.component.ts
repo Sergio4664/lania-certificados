@@ -12,7 +12,9 @@ import {
   ValidationErrors,
   ValidatorFn
 } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+// --- ✅ MODIFICACIÓN: Importar lo necesario para la nueva función ---
+import { forkJoin, of, Observable } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 import { environment } from '@environments/environment';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -78,7 +80,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   searchTerm: string = '';
   selectedFile: File | null = null;
 
-  selectedParticipantIds = new Set<number>();
+  competencyRecipients = new Set<number>();
   selectedDocenteIds = new Set<number>();
 
   public docenteEmailSelection: { [docenteId: number]: 'institucional' | 'personal' | null } = {};
@@ -123,7 +125,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   get areAllCompetencyRecipientsSelected(): boolean {
     const participantIds = this.courseParticipants.map(p => p.id);
-    return participantIds.length > 0 && participantIds.every(id => this.selectedParticipantIds.has(id));
+    return participantIds.length > 0 && participantIds.every(id => this.competencyRecipients.has(id));
   }
 
   get areAllDocenteRecipientsSelected(): boolean {
@@ -309,21 +311,16 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   // GESTIÓN DE ARCHIVOS
-  // *** FUNCIÓN CORREGIDA ***
   descargarPlantilla(): void {
-    // Construir la URL base SIN /api/v1 para los archivos estáticos
-    const baseUrl = environment.apiUrl.replace('/api/v1', ''); // Quita el prefijo de la API
+    const baseUrl = environment.apiUrl.replace('/api/v1', '');
     const fileUrl = `${baseUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
-
-    console.log('Descargando desde:', fileUrl); // Log para verificar
-
+    console.log('Descargando desde:', fileUrl);
     const anchor = document.createElement('a');
     anchor.href = fileUrl;
     anchor.download = 'plantilla_participantes.xlsx';
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
-    // No mostrar notificación aquí, el navegador maneja la descarga/error.
   }
 
   onFileSelected(event: Event): void {
@@ -360,9 +357,27 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   // GESTIÓN DE CERTIFICADOS
+  
+  /**
+   * Busca el *primer* certificado (normalmente el 'normal') para mostrar en la tabla.
+   */
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
+    // Asume que la API devuelve los certificados ordenados (o simplemente toma el primero que encuentra)
     return this.certificados.find(c => c.inscripcion?.id === inscripcionId || c.inscripcion_id === inscripcionId);
   }
+
+  // --- ⬇️ NUEVA FUNCIÓN DE AYUDA ⬇️ ---
+  /**
+   * Busca un certificado específico para una inscripción, diferenciando entre normal y con competencias.
+   */
+  private findCertificate(inscripcionId: number, conCompetencias: boolean): Certificado | undefined {
+    return this.certificados.find(c => 
+      (c.inscripcion_id === inscripcionId || c.inscripcion?.id === inscripcionId) && 
+      c.con_competencias === conCompetencias
+    );
+  }
+  // --- ⬆️ FIN DE NUEVA FUNCIÓN DE AYUDA ⬆️ ---
+
 
   getCertificadoForDocente(docenteId: number): Certificado | undefined {
     return this.certificados.find(c =>
@@ -385,7 +400,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.certificadoSvc.createForParticipant(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
-        this.loadCertificados();
+        this.loadCertificados(); // Recargar la lista
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia.')
     });
@@ -454,8 +469,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.notificationSvc.showError('No se ha seleccionado un producto.');
       return;
     }
-    if (confirm(`Se intentarán emitir (si faltan) y enviar todas las constancias para participantes y docentes de "${this.selectedCourse.nombre}". ¿Continuar?`)) {
-      this.notificationSvc.showInfo('Iniciando proceso masivo...');
+    if (confirm(`Se intentarán emitir (si faltan) y enviar todas las constancias (NORMALES) para participantes y docentes de "${this.selectedCourse.nombre}". ¿Continuar?`)) {
+      this.notificationSvc.showInfo('Iniciando proceso masivo (Normal)...');
       this.certificadoSvc.emitirYEnviarMasivamente(this.selectedCourse.id).subscribe({
         next: (response: EmisionMasivaResponse | any) => {
           this.notificationSvc.showSuccess(response.message || 'Proceso masivo completado.');
@@ -474,11 +489,94 @@ export default class AdminProductosEducativosComponent implements OnInit {
     }
   }
 
+  // --- ⬇️ AQUÍ ESTÁ LA FUNCIÓN CORREGIDA ⬇️ ---
+  emitAndSendCompetenciesSelected() {
+    if (!this.selectedCourse) {
+      this.notificationSvc.showError('No se ha seleccionado un producto.');
+      return;
+    }
+
+    const selectedParticipantIds = this.competencyRecipients;
+    if (selectedParticipantIds.size === 0) {
+      this.notificationSvc.showError('No hay participantes seleccionados.');
+      return;
+    }
+
+    const inscripcionesAProcesar = this.inscripcionesDelProducto.filter(inscripcion => 
+      selectedParticipantIds.has(inscripcion.participante.id)
+    );
+
+    if (!confirm(`Se emitirán y/o enviarán constancias CON COMPETENCIAS para los ${inscripcionesAProcesar.length} participantes seleccionados. ¿Continuar?`)) {
+      return;
+    }
+
+    this.notificationSvc.showInfo(`Iniciando proceso para ${inscripcionesAProcesar.length} constancias de competencias...`);
+
+    const observables: Observable<any>[] = inscripcionesAProcesar.map(inscripcion => {
+      
+      // --- ✅ LÓGICA CORREGIDA ---
+      // 1. Buscar si ya existe un certificado CON COMPETENCIAS
+      const existingCert = this.findCertificate(inscripcion.id, true);
+
+      if (existingCert) {
+        // --- A. SI YA EXISTE: SOLO ENVIAR ---
+        this.notificationSvc.showInfo(`Reenviando constancia ${existingCert.folio} para ${inscripcion.participante.nombre_completo}...`);
+        return this.certificadoSvc.sendEmail(existingCert.id, 'personal').pipe(
+          catchError(err => {
+            this.notificationSvc.showError(`Error reenviando a ${inscripcion.participante.nombre_completo}`);
+            return of(null); // Continuar con los demás aunque uno falle
+          })
+        );
+
+      } else {
+        // --- B. SI NO EXISTE: CREAR Y LUEGO ENVIAR ---
+        const payload: CertificadoCreate = {
+          inscripcion_id: inscripcion.id,
+          producto_educativo_id: this.selectedCourse!.id,
+          con_competencias: true
+        };
+        
+        return this.certificadoSvc.createForParticipant(payload).pipe(
+          switchMap((newCert: Certificado) => {
+            this.notificationSvc.showInfo(`Constancia ${newCert.folio} creada para ${inscripcion.participante.nombre_completo}, enviando...`);
+            return this.certificadoSvc.sendEmail(newCert.id, 'personal');
+          }),
+          catchError(err => {
+            // Esto captura errores tanto en la creación como en el envío
+            this.notificationSvc.showError(`Error procesando a ${inscripcion.participante.nombre_completo}: ${err.error?.detail || 'Error'}`);
+            return of(null); // Continuar con los demás
+          })
+        );
+      }
+      // --- ✅ FIN DE LÓGICA CORREGIDA ---
+    });
+
+    forkJoin(observables).subscribe({
+      next: (results) => {
+        const successes = results.filter(r => r !== null).length;
+        const failures = results.length - successes;
+        
+        this.notificationSvc.showSuccess(`Proceso completado: ${successes} constancias procesadas. ${failures} errores.`);
+        
+        this.loadCertificados(); // Recargar la lista de certificados
+        this.competencyRecipients.clear(); // Limpiar la selección
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        // Este error 'padre' no debería ocurrir por el catchError individual, pero por si acaso.
+        this.notificationSvc.showError('Ocurrió un error general durante el proceso.');
+        console.error("Error en el forkJoin de competencias:", err);
+        this.loadCertificados(); // Recargar de todos modos
+      }
+    });
+  }
+  // --- ⬆️ AQUÍ TERMINA LA FUNCIÓN CORREGIDA ⬆️ ---
+
 
   // MÉTODOS DE LA UI
   selectCourse(course: ProductoEducativo) {
     this.selectedCourse = course;
-    this.selectedParticipantIds.clear();
+    this.competencyRecipients.clear();
     this.selectedDocenteIds.clear();
     this.loadParticipantsForCourse(course.id);
     this.docenteEmailSelection = {};
@@ -509,21 +607,21 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   toggleCompetencyRecipient(participantId: number, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked) this.selectedParticipantIds.add(participantId);
-    else this.selectedParticipantIds.delete(participantId);
+    if (isChecked) this.competencyRecipients.add(participantId);
+    else this.competencyRecipients.delete(participantId);
   }
 
   toggleAllCompetencyRecipients(event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
     const participantIds = this.courseParticipants.map(p => p.id);
     if (isChecked) {
-      participantIds.forEach(id => this.selectedParticipantIds.add(id));
+      participantIds.forEach(id => this.competencyRecipients.add(id));
     } else {
-      this.selectedParticipantIds.clear();
+      this.competencyRecipients.clear();
     }
   }
 
-  isRecipientSelected = (id: number) => this.selectedParticipantIds.has(id);
+  isRecipientSelected = (id: number) => this.competencyRecipients.has(id);
 
   toggleDocenteCompetencyRecipient(docenteId: number, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
