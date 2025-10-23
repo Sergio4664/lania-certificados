@@ -1,5 +1,5 @@
 // Ruta: frontend/lania-ui/src/app/features/dashboard/productos-educativos/admin-productos-educativos.component.ts
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core'; // 👈 Importa ChangeDetectorRef
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -32,11 +32,6 @@ import { InscripcionService } from '@shared/services/inscripcion.service';
 import { CertificadoService } from '@shared/services/certificado.service';
 import { ParticipanteService } from '@shared/services/participante.service';
 
-
-/**
- * Validador personalizado para un FormGroup que comprueba si la fecha de fin
- * es anterior a la fecha de inicio.
- */
 export const dateRangeValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const group = control as FormGroup;
   const startDate = group.get('fecha_inicio')?.value;
@@ -47,7 +42,6 @@ export const dateRangeValidator: ValidatorFn = (control: AbstractControl): Valid
   }
   return null;
 };
-
 
 @Component({
   selector: 'app-admin-productos-educativos',
@@ -65,7 +59,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private certificadoSvc = inject(CertificadoService);
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
-  private cdr = inject(ChangeDetectorRef); // 👈 Inyecta ChangeDetectorRef
+  private cdr = inject(ChangeDetectorRef);
 
   private productos: ProductoEducativo[] = [];
   docentes: DocenteDTO[] = [];
@@ -98,6 +92,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   ngOnInit() {
     this.initializeForm();
     this.loadInitialData();
+    this.loadCertificados();
   }
 
   initializeForm(): void {
@@ -107,7 +102,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_inicio: ['', Validators.required],
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
-      modalidad: ['PRESENSICAL', Validators.required],
+      modalidad: ['PRESENCIAL', Validators.required],
       docente_ids: this.fb.array([]),
       competencias: ['']
     }, {
@@ -142,27 +137,39 @@ export default class AdminProductosEducativosComponent implements OnInit {
     forkJoin({
       productos: this.productoSvc.getAll(),
       docentes: this.docenteSvc.getAll(),
-      participantes: this.participanteSvc.getAll(),
-      certificados: this.certificadoSvc.getAll()
-    }).subscribe(({ productos, docentes, participantes, certificados }) => {
+      participantes: this.participanteSvc.getAll()
+    }).subscribe(({ productos, docentes, participantes }) => {
       this.productos = productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
       this.docentes = docentes;
       this.participantes = participantes;
-      this.certificados = certificados;
       this.groupAndFilterProducts();
-
       if (this.selectedCourse) {
         this.loadParticipantsForCourse(this.selectedCourse.id);
       }
-      this.cdr.markForCheck(); // 👈 Marca para revisión después de cargar datos iniciales
+      this.cdr.markForCheck();
     });
   }
 
+  loadCertificados() {
+    this.certificadoSvc.getAll().subscribe({
+        next: (certificadosData) => {
+            this.certificados = certificadosData;
+            console.log('Certificados recargados:', this.certificados.length);
+            if (this.selectedCourse) {
+                this.cdr.markForCheck();
+            }
+        },
+        error: (err) => {
+            this.notificationSvc.showError('Error al recargar la lista de certificados.');
+            console.error("Error cargando certificados:", err);
+        }
+    });
+  }
 
   loadParticipantsForCourse(courseId: number) {
     this.inscripcionSvc.getByProductoId(courseId).subscribe(inscripciones => {
       this.inscripcionesDelProducto = inscripciones;
-      this.cdr.markForCheck(); // 👈 Marca para revisión después de cargar participantes
+      this.cdr.markForCheck();
     });
   }
 
@@ -186,12 +193,12 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.create(payload).subscribe({
       next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.productos = [newProduct, ...this.productos].sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()); // Crear nuevo array
+        this.productos = [newProduct, ...this.productos].sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
         this.groupAndFilterProducts();
         this.cancelCourseForm();
         this.cdr.markForCheck();
       },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al crear.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al crear.')
     });
   }
 
@@ -201,7 +208,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
         const index = this.productos.findIndex(p => p.id === updatedProduct.id);
-        // Crear nuevo array al actualizar
         this.productos = this.productos.map((p, i) => i === index ? updatedProduct : p);
         this.groupAndFilterProducts();
         this.cancelCourseForm();
@@ -210,7 +216,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
         }
         this.cdr.markForCheck();
       },
-      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al actualizar.')
+      error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al actualizar.')
     });
   }
 
@@ -219,12 +225,12 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.productoSvc.delete(courseId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Producto educativo eliminado.');
-          this.productos = this.productos.filter(p => p.id !== courseId); // filter crea nuevo array
+          this.productos = this.productos.filter(p => p.id !== courseId);
           this.groupAndFilterProducts();
           if (this.selectedCourse?.id === courseId) this.unselectCourse();
           this.cdr.markForCheck();
         },
-        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error.detail || 'Error al eliminar.')
+        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar.')
       });
     }
   }
@@ -243,7 +249,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
     const formArray = this.courseForm.get('docente_ids') as FormArray;
     formArray.clear();
-    producto.docentes.forEach(docente => formArray.push(this.fb.control(docente.id)));
+    (producto.docentes || []).forEach(docente => formArray.push(this.fb.control(docente.id)));
     this.showCourseForm = true;
   }
 
@@ -282,10 +288,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.inscripcionSvc.create(payload).subscribe({
       next: (newInscripcion) => {
         this.notificationSvc.showSuccess('Participante inscrito.');
-        this.inscripcionesDelProducto = [...this.inscripcionesDelProducto, newInscripcion]; // Crear nuevo array
+        this.loadParticipantsForCourse(this.selectedCourse!.id);
         this.showAddParticipantForm = false;
         this.participantToAdd = null;
-        this.cdr.markForCheck(); // 👈 Marca para revisión
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo inscribir.')
     });
@@ -296,8 +301,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.inscripcionSvc.delete(inscripcionId).subscribe({
       next: () => {
         this.notificationSvc.showSuccess('Inscripción eliminada.');
-        this.inscripcionesDelProducto = this.inscripcionesDelProducto.filter(i => i.id !== inscripcionId); // filter crea nuevo array
-        this.cdr.markForCheck(); // 👈 Marca para revisión
+        this.inscripcionesDelProducto = this.inscripcionesDelProducto.filter(i => i.id !== inscripcionId);
+        this.cdr.markForCheck();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
     });
@@ -331,11 +336,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
         this.notificationSvc.showSuccess(
           `Carga completada: ${nuevas_inscripciones_realizadas} inscripciones y ${nuevos_participantes_creados} nuevos participantes.`
         );
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
-        this.participanteSvc.getAll().subscribe(p => {
-            this.participantes = p; // Actualiza participantes
-            this.cdr.markForCheck(); // 👈 Marca para revisión
+        forkJoin({
+            participantes: this.participanteSvc.getAll(),
+            inscripciones: this.inscripcionSvc.getByProductoId(this.selectedCourse!.id)
+        }).subscribe(({participantes, inscripciones}) => {
+            this.participantes = participantes;
+            this.inscripcionesDelProducto = inscripciones;
+            this.cdr.markForCheck();
         });
+
         this.selectedFile = null;
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
@@ -346,11 +355,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   // GESTIÓN DE CERTIFICADOS
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
-    return this.certificados.find(c => c.inscripcion_id === inscripcionId);
+    return this.certificados.find(c => c.inscripcion?.id === inscripcionId || c.inscripcion_id === inscripcionId);
   }
 
+  // *** CORRECCIÓN AQUÍ: Usar solo producto_educativo_id ***
   getCertificadoForDocente(docenteId: number): Certificado | undefined {
-    return this.certificados.find(c => c.docente_id === docenteId && c.producto_educativo_id === this.selectedCourse?.id);
+    return this.certificados.find(c =>
+        (c.docente?.id === docenteId || c.docente_id === docenteId) &&
+        c.producto_educativo_id === this.selectedCourse?.id // Solo comparar con ID
+    );
   }
 
 
@@ -367,8 +380,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.certificadoSvc.createForParticipant(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia emitida: ${newCert.folio}`);
-        this.certificados = [...this.certificados, newCert]; // Crear nuevo array
-        this.cdr.markForCheck(); // 👈 Marca para revisión
+        this.loadCertificados();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia.')
     });
@@ -380,41 +392,34 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const payload: CertificadoCreate = {
       docente_id: docenteId,
       producto_educativo_id: this.selectedCourse.id,
-      con_competencias // El valor se pasa directamente
     };
-    
-    // ############### INICIO DE LA CORRECCIÓN ###############
+
     this.certificadoSvc.createForDocente(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
-        
-        // En lugar de añadir el 'newCert' (que puede estar incompleto),
-        // volvemos a pedir todos los certificados al servidor.
-        this.certificadoSvc.getAll().subscribe(todosLosCertificados => {
-          this.certificados = todosLosCertificados;
-          this.cdr.markForCheck(); // 👈 Marca para revisión
-        });
-
+        this.loadCertificados();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de ponente.')
     });
-    // ############### FIN DE LA CORRECCIÓN ###############
   }
 
-
+  // *** CORRECCIÓN AQUÍ: Añadir emailType = 'personal' ***
   sendCertificate(certificadoId: number) {
+    // Asume que siempre se envía al email personal del participante
     this.certificadoSvc.sendEmail(certificadoId, 'personal').subscribe({
-      next: () => this.notificationSvc.showSuccess('Enviando constancia por correo...'),
+      next: (res) => this.notificationSvc.showSuccess(res.message || 'Enviando constancia por correo...'),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar correo.')
     });
   }
 
+  // *** CORRECCIÓN AQUÍ: Usar emailType determinado ***
   enviarConstanciaDocente(certificadoId: number, docenteId: number) {
     const docente = this.docentes.find(d => d.id === docenteId);
     if (!docente) {
       this.notificationSvc.showError("No se encontró al docente.");
       return;
     }
+    // Determina el tipo basado en la selección o default
     const emailType = this.docenteEmailSelection[docenteId] || 'institucional';
     const targetEmail = emailType === 'personal' ? docente.email_personal : docente.email_institucional;
 
@@ -425,8 +430,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
     this.notificationSvc.showInfo(`Enviando constancia al email ${emailType} (${targetEmail})...`);
 
+    // Pasa el emailType determinado al servicio
     this.certificadoSvc.sendEmail(certificadoId, emailType).subscribe({
-      next: () => this.notificationSvc.showSuccess('Constancia enviada correctamente.'),
+      next: (res) => this.notificationSvc.showSuccess(res.message || 'Constancia enviada correctamente.'),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar la constancia.')
     });
   }
@@ -436,8 +442,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.certificadoSvc.delete(certificadoId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Constancia eliminada.');
-          this.certificados = this.certificados.filter(c => c.id !== certificadoId); // filter crea nuevo array
-          this.cdr.markForCheck(); // 👈 Marca para revisión
+          this.loadCertificados();
         },
         error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar la constancia.')
       });
@@ -449,36 +454,23 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.notificationSvc.showError('No se ha seleccionado un producto.');
       return;
     }
-    const participantsWithoutCert = this.inscripcionesDelProducto.filter(insc =>
-        !this.certificados.some(cert => cert.inscripcion_id === insc.id)
-    );
-    const unissuedCount = participantsWithoutCert.length;
-
-    if (unissuedCount === 0) {
-      this.notificationSvc.showInfo('Todas las constancias para los participantes actuales ya fueron emitidas.');
-      return;
-    }
-
-    if (confirm(`Se intentarán emitir y enviar ${unissuedCount} constancia(s) para los participantes sin constancia en "${this.selectedCourse.nombre}". ¿Continuar?`)) {
+    if (confirm(`Se intentarán emitir (si faltan) y enviar todas las constancias para participantes y docentes de "${this.selectedCourse.nombre}". ¿Continuar?`)) {
       this.notificationSvc.showInfo('Iniciando proceso masivo...');
       this.certificadoSvc.emitirYEnviarMasivamente(this.selectedCourse.id).subscribe({
-        next: (response: EmisionMasivaResponse) => {
-          this.notificationSvc.showSuccess(`Proceso completado: ${response.success.length} constancias emitidas y enviadas.`);
+        next: (response: EmisionMasivaResponse | any) => {
+          this.notificationSvc.showSuccess(response.message || 'Proceso masivo completado.');
 
-          if (response.errors.length > 0) {
+          if (response.errors && response.errors.length > 0) {
             console.error('Errores en emisión masiva:', response.errors);
-            const errorDetails = response.errors.map((e: { inscripcion_id: number; error: string; }) => {
-                return `Inscripción ID ${e.inscripcion_id}: ${e.error}`;
-            }).join('; ');
-            this.notificationSvc.showError(`${response.errors.length} constancias fallaron. Detalles: ${errorDetails}`);
+            // *** CORRECCIÓN AQUÍ: Usar showInfo o showError en lugar de showWarning ***
+            this.notificationSvc.showInfo(`Se encontraron ${response.errors.length} errores durante el proceso. Revise la consola.`);
           }
-          // Recargar los certificados para obtener los objetos completos
-          this.certificadoSvc.getAll().subscribe(certs => {
-              this.certificados = certs;
-              this.cdr.markForCheck(); // 👈 Marca para revisión después de recargar
-          });
+          this.loadCertificados();
         },
-        error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error inesperado durante el proceso masivo.')
+        error: (err: HttpErrorResponse) => {
+            this.notificationSvc.showError(err.error?.detail || 'Error inesperado durante el proceso masivo.');
+            this.loadCertificados();
+        }
       });
     }
   }
@@ -492,7 +484,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.loadParticipantsForCourse(course.id);
     this.docenteEmailSelection = {};
   }
-
 
   unselectCourse() {
     this.selectedCourse = null;
@@ -511,7 +502,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA');
     this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
   }
-
 
   getCourseColor(id: number): string {
     const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C'];
@@ -575,7 +565,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   saveCompetencies() {
     this.courseForm.patchValue({
-      competencias: this.competenciesList.map(c => c.trim()).filter(c => c).join('\n')
+      competencias: this.competenciesList.map((c: string) => c.trim()).filter((c: string) => c).join('\n')
     });
     this.showCompetenciesModal = false;
   }
