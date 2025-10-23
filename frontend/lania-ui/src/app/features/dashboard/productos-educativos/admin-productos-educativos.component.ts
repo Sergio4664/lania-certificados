@@ -309,15 +309,21 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   // GESTIÓN DE ARCHIVOS
+  // *** FUNCIÓN CORREGIDA ***
   descargarPlantilla(): void {
-    const fileUrl = `${environment.apiUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
+    // Construir la URL base SIN /api/v1 para los archivos estáticos
+    const baseUrl = environment.apiUrl.replace('/api/v1', ''); // Quita el prefijo de la API
+    const fileUrl = `${baseUrl}/static/plantilla_participantes.xlsx?v=${new Date().getTime()}`;
+
+    console.log('Descargando desde:', fileUrl); // Log para verificar
+
     const anchor = document.createElement('a');
     anchor.href = fileUrl;
     anchor.download = 'plantilla_participantes.xlsx';
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
-    this.notificationSvc.showSuccess('Iniciando la descarga de la plantilla...');
+    // No mostrar notificación aquí, el navegador maneja la descarga/error.
   }
 
   onFileSelected(event: Event): void {
@@ -358,11 +364,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return this.certificados.find(c => c.inscripcion?.id === inscripcionId || c.inscripcion_id === inscripcionId);
   }
 
-  // *** CORRECCIÓN AQUÍ: Usar solo producto_educativo_id ***
   getCertificadoForDocente(docenteId: number): Certificado | undefined {
     return this.certificados.find(c =>
         (c.docente?.id === docenteId || c.docente_id === docenteId) &&
-        c.producto_educativo_id === this.selectedCourse?.id // Solo comparar con ID
+        c.producto_educativo_id === this.selectedCourse?.id
     );
   }
 
@@ -403,23 +408,19 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // *** CORRECCIÓN AQUÍ: Añadir emailType = 'personal' ***
   sendCertificate(certificadoId: number) {
-    // Asume que siempre se envía al email personal del participante
     this.certificadoSvc.sendEmail(certificadoId, 'personal').subscribe({
       next: (res) => this.notificationSvc.showSuccess(res.message || 'Enviando constancia por correo...'),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar correo.')
     });
   }
 
-  // *** CORRECCIÓN AQUÍ: Usar emailType determinado ***
   enviarConstanciaDocente(certificadoId: number, docenteId: number) {
     const docente = this.docentes.find(d => d.id === docenteId);
     if (!docente) {
       this.notificationSvc.showError("No se encontró al docente.");
       return;
     }
-    // Determina el tipo basado en la selección o default
     const emailType = this.docenteEmailSelection[docenteId] || 'institucional';
     const targetEmail = emailType === 'personal' ? docente.email_personal : docente.email_institucional;
 
@@ -430,7 +431,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
     this.notificationSvc.showInfo(`Enviando constancia al email ${emailType} (${targetEmail})...`);
 
-    // Pasa el emailType determinado al servicio
     this.certificadoSvc.sendEmail(certificadoId, emailType).subscribe({
       next: (res) => this.notificationSvc.showSuccess(res.message || 'Constancia enviada correctamente.'),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar la constancia.')
@@ -462,7 +462,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
           if (response.errors && response.errors.length > 0) {
             console.error('Errores en emisión masiva:', response.errors);
-            // *** CORRECCIÓN AQUÍ: Usar showInfo o showError en lugar de showWarning ***
             this.notificationSvc.showInfo(`Se encontraron ${response.errors.length} errores durante el proceso. Revise la consola.`);
           }
           this.loadCertificados();
