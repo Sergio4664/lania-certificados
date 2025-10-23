@@ -98,7 +98,7 @@ def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return
 
-# El resto del archivo (subida de participantes) no requiere cambios y se mantiene igual.
+# --- ⬇️ AQUÍ COMIENZAN LAS MODIFICACIONES ⬇️ ---
 @router.post("/{producto_id}/upload-participantes", summary="Inscribir participantes desde un archivo Excel o CSV")
 def upload_participantes_file(
     producto_id: int,
@@ -115,15 +115,20 @@ def upload_participantes_file(
         if file.filename.endswith('.xlsx'):
             df = pd.read_excel(io.BytesIO(contents))
         elif file.filename.endswith('.csv'):
-            df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+            # Decodificar con utf-8, opcionalmente con 'latin1' si hay problemas de acentos
+            try:
+                df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+            except UnicodeDecodeError:
+                df = pd.read_csv(io.StringIO(contents.decode('latin1')))
         else:
             raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use .xlsx o .csv")
 
+        # Columnas requeridas mínimas
         required_columns = ['nombre_completo', 'email_personal']
         if not all(col in df.columns for col in required_columns):
             raise HTTPException(
                 status_code=400, 
-                detail=f"El archivo debe contener las columnas: {', '.join(required_columns)}"
+                detail=f"El archivo debe contener al menos las columnas: {', '.join(required_columns)}"
             )
 
         creados = 0
@@ -133,17 +138,55 @@ def upload_participantes_file(
             nombre = row['nombre_completo']
             email = row['email_personal']
 
+            # Saltar filas si los datos mínimos no están
             if pd.isna(nombre) or pd.isna(email):
                 continue
 
+            # --- ✅ NUEVA LÓGICA: LEER TODOS LOS CAMPOS ---
+            
+            # Leer los campos adicionales
+            email_inst = row.get('email_institucional')
+            telefono = row.get('telefono')
+            whatsapp = row.get('whatsapp')
+
+            # Convertir valores de Pandas (NaN) a None y asegurar que sean strings
+            email_inst_str = None if pd.isna(email_inst) else str(email_inst)
+            telefono_str = None if pd.isna(telefono) else str(telefono)
+            whatsapp_str = None if pd.isna(whatsapp) else str(whatsapp)
+
+            # Buscar al participante por email personal
             db_participante = db.query(models.Participante).filter(models.Participante.email_personal == str(email)).first()
+            
             if not db_participante:
-                db_participante = models.Participante(nombre_completo=str(nombre), email_personal=str(email))
+                # --- 1. CREAR NUEVO PARTICIPANTE ---
+                db_participante = models.Participante(
+                    nombre_completo=str(nombre), 
+                    email_personal=str(email),
+                    email_institucional=email_inst_str,
+                    telefono=telefono_str,
+                    whatsapp=whatsapp_str
+                )
                 db.add(db_participante)
-                db.commit()
+                # (Hacemos commit por cada uno para obtener el ID para la inscripción)
+                db.commit() 
                 db.refresh(db_participante)
                 creados += 1
+            else:
+                # --- 2. ACTUALIZAR PARTICIPANTE EXISTENTE ---
+                db_participante.nombre_completo = str(nombre)
+                
+                # Actualizar solo si el campo viene en el CSV (no es None)
+                if email_inst_str is not None:
+                    db_participante.email_institucional = email_inst_str
+                if telefono_str is not None:
+                    db_participante.telefono = telefono_str
+                if whatsapp_str is not None:
+                    db_participante.whatsapp = whatsapp_str
+                
+                db.commit() # Guardar cambios del participante
+                db.refresh(db_participante)
             
+            # --- Lógica de Inscripción (se mantiene igual) ---
             inscripcion_existente = db.query(models.Inscripcion).filter(
                 models.Inscripcion.producto_educativo_id == producto_id,
                 models.Inscripcion.participante_id == db_participante.id
@@ -157,10 +200,14 @@ def upload_participantes_file(
                 db.add(nueva_inscripcion)
                 inscritos += 1
         
+        # Commit final para todas las inscripciones
         db.commit()
 
     except Exception as e:
         db.rollback()
+        # Proporcionar un error más detallado
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
 
     return {
@@ -168,3 +215,4 @@ def upload_participantes_file(
         "nuevos_participantes_creados": creados,
         "nuevas_inscripciones_realizadas": inscritos
     }
+# --- ⬆️ AQUÍ TERMINAN LAS MODIFICACIONES ⬆️ ---
