@@ -1,3 +1,4 @@
+#Ruta: backend/app/models/docente.py
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import CITEXT
@@ -26,3 +27,4 @@ class Docente(Base):
     # --- ✅ CORRECCIÓN AQUÍ ---
     # Se añade la relación inversa para que SQLAlchemy pueda encontrar los certificados de un docente.
     certificados = relationship("Certificado", back_populates="docente")
+    
