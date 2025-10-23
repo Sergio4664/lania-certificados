@@ -1,6 +1,5 @@
 # backend/app/models/certificado.py
-from xmlrpc.client import Boolean
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
