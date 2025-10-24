@@ -402,6 +402,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- GESTIÓN DE CERTIFICADOS ---
 
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
+    // Busca certificado NORMAL (sin competencias)
     return this.certificados.find(c =>
         (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
         !c.con_competencias
@@ -409,9 +410,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   getCertificadoCompetenciasForInscripcion(inscripcionId: number): Certificado | undefined {
+    // Busca certificado DE COMPETENCIAS
     return this.certificados.find(c =>
         (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
-        c.con_competencias
+        c.con_competencias // Busca explícitamente que sea true
     );
   }
 
@@ -437,17 +439,20 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.certificadoSvc.createForParticipant(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia ${tipo} emitida: ${newCert.folio}`);
+        console.log('Certificado recibido del backend:', newCert); // <-- DEBUG: Verifica el objeto
         
-        // --- INICIO CORRECCIÓN 1 ---
+        // --- INICIO CORRECCIÓN 1 (ACTUALIZACIÓN LOCAL) ---
         const index = this.certificados.findIndex(c =>
           (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
-          c.con_competencias === con_competencias
+          c.con_competencias === con_competencias // Compara el mismo tipo
         );
         if (index > -1) {
-          this.certificados.splice(index, 1);
+          this.certificados.splice(index, 1); // Elimina el viejo si existe
         }
-        this.certificados.push(newCert);
-        this.cdr.markForCheck();
+        // Asegúrate que el newCert tenga la propiedad con_competencias correcta
+        this.certificados.push(newCert); // Añade el nuevo
+        console.log('Lista de certificados actualizada:', this.certificados); // <-- DEBUG: Verifica la lista
+        this.cdr.markForCheck(); // Notifica a Angular
         // --- FIN CORRECCIÓN 1 ---
         
         // this.loadCertificados(); // Comentado para UI instantánea
@@ -467,7 +472,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
         
-        // --- INICIO CORRECCIÓN 2 ---
+        // --- INICIO CORRECCIÓN 2 (ACTUALIZACIÓN LOCAL) ---
         const index = this.certificados.findIndex(c =>
             (c.docente?.id === docenteId || c.docente_id === docenteId) &&
             c.producto_educativo_id === this.selectedCourse?.id
@@ -513,7 +518,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
         next: () => {
           this.notificationSvc.showSuccess('Certificado eliminado.');
 
-          // --- INICIO CORRECCIÓN 3 ---
+          // --- INICIO CORRECCIÓN 3 (ACTUALIZACIÓN LOCAL) ---
           const index = this.certificados.findIndex(c => c.id === certificadoId);
           if (index > -1) {
             this.certificados.splice(index, 1);
@@ -567,12 +572,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
         return this.certificadoSvc.createForParticipant(payload).pipe(
           switchMap((newCert: Certificado) => {
             console.log(`Cert ${newCert.id} creado, enviando...`);
-            // --- INICIO CORRECCIÓN (MASIVO) ---
+            // --- INICIO CORRECCIÓN (MASIVO - ACTUALIZACIÓN LOCAL OPCIONAL) ---
             // Añadir a la lista local aquí también si queremos UI update durante el proceso
             const index = this.certificados.findIndex(c => c.inscripcion_id === inscripcion.id && c.con_competencias);
             if (index > -1) this.certificados.splice(index, 1);
             this.certificados.push(newCert);
-            this.cdr.markForCheck(); // Esto puede ser "ruidoso" si son muchos
+            // Considera si llamar markForCheck aquí es demasiado frecuente para muchos items
+            // this.cdr.markForCheck(); 
             // --- FIN CORRECCIÓN (MASIVO) ---
             return this.certificadoSvc.sendEmail(newCert.id, 'personal');
           }),
@@ -586,9 +592,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
         const successes = results.filter(r => r && !r.error).length;
         const failures = results.length - successes;
         this.notificationSvc.showSuccess(`Proceso de competencias completado: ${successes} procesados exitosamente. ${failures > 0 ? failures + ' errores.' : ''}`);
-        // this.loadCertificados(); // Recargar al final asegura consistencia
+        // this.loadCertificados(); // Recargar al final asegura consistencia si no se actualizó durante el proceso
+        // Si no llamaste markForCheck en el switchMap, llámalo aquí una vez
+        this.cdr.markForCheck(); 
         this.competencyRecipients.clear();
-        this.cdr.markForCheck(); // Refrescar checkboxes y contador
+        // this.cdr.markForCheck(); // Ya se llama arriba o no es necesario si loadCertificados se usa
       },
       error: (err) => {
         this.notificationSvc.showError('Ocurrió un error general durante el proceso de competencias.'); console.error("Error en el forkJoin de competencias:", err); this.loadCertificados();

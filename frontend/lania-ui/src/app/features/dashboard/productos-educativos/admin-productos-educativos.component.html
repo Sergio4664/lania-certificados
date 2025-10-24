@@ -258,8 +258,7 @@
           </ng-template>
          </td>
          <td class="actions-cell">
-          <div class="actions-content">
-           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
+          <div class="actions-content"> <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
             <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Reenviar Constancia">📧</button>
            </ng-container>
            <ng-template #emitirConstanciaDocente>
@@ -269,7 +268,7 @@
            </ng-template>
           </div>
          </td>
-         </tr>
+        </tr>
        </tbody>
       </table>
      </div>
@@ -330,10 +329,8 @@
            </ng-container>
            <ng-template #noCertComp><span class="no-docentes-small">No emitida</span></ng-template>
           </td>
-
           <td class="actions-cell">
-           <div class="actions-content">
-            <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar Inscripción">🗑️</button>
+           <div class="actions-content"> <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar Inscripción">🗑️</button>
             <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else emitirConstanciaNormal">
              <button class="icon-btn email" (click)="sendCertificate(certNormal.id)" title="Reenviar Constancia Normal">📧</button>
             </ng-container>
@@ -343,8 +340,7 @@
            </div>
           </td>
           <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="actions-cell">
-           <div class="actions-content">
-            <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else emitirConstanciaComp">
+           <div class="actions-content"> <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else emitirConstanciaComp">
              
              <button class="icon-btn email email-competencias"
                      (click)="sendCertificate(certComp.id)" 
