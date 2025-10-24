@@ -354,13 +354,18 @@
 .checkbox-col input { transform: scale(1.2); }
 
 .actions-cell {
-  display: flex;
-  flex-wrap: wrap; /* Permitir que los botones pasen a la siguiente línea */
-  align-items: center;
-  gap: 6px; /* Reducir gap */
+  vertical-align: middle;
   min-width: 100px; /* Reducir min-width si es necesario */
 }
 .actions-cell .send-actions { display: flex; gap: 6px; }
+
+.actions-content {
+  display: flex;
+  flex-wrap: wrap; 
+  align-items: center;
+  gap: 6px;
+}
+
 
 /* --- ✅ ESTILOS PARA LOS FOLIOS (AJUSTADOS) --- */
 .serial-tag {

@@ -258,16 +258,18 @@
           </ng-template>
          </td>
          <td class="actions-cell">
-          <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
-           <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Reenviar Constancia">📧</button>
-          </ng-container>
-          <ng-template #emitirConstanciaDocente>
-           <div class="send-actions">
-            <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id)">Emitir</button>
-           </div>
-          </ng-template>
+          <div class="actions-content">
+           <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
+            <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Reenviar Constancia">📧</button>
+           </ng-container>
+           <ng-template #emitirConstanciaDocente>
+            <div class="send-actions">
+             <button class="secondary-btn small-btn" (click)="issueDocenteCertificate(docente.id)">Emitir</button>
+            </div>
+           </ng-template>
+          </div>
          </td>
-        </tr>
+         </tr>
        </tbody>
       </table>
      </div>
@@ -275,88 +277,95 @@
      <div class="data-table">
        <h3 class="table-title">Participantes Inscritos ({{ inscripcionesDelProducto.length }})</h3>
        <table>
-         <thead>
-           <tr>
-             <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
-               <input type="checkbox"
-                      [checked]="areAllCompetencyRecipientsSelected"
-                      (change)="toggleAllCompetencyRecipients($event)"
-                      title="Seleccionar Todos">
-             </th>
-             <th>Nombre</th>
-             <th>Email Personal</th>
-             <th>WhatsApp</th>
-             <th>Constancia (Normal)</th>
-             <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">Constancia (Comp.)</th>
-             <th>Acciones (Normal)</th>
-             <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">Acciones (Comp.)</th>
-           </tr>
-         </thead>
-         <tbody>
-           <tr *ngFor="let inscripcion of inscripcionesDelProducto">
+        <thead>
+         <tr>
+          <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
+           <input type="checkbox"
+            [checked]="areAllCompetencyRecipientsSelected"
+            (change)="toggleAllCompetencyRecipients($event)"
+            title="Seleccionar Todos">
+          </th>
+          <th>Nombre</th>
+          <th>Email Personal</th>
+          <th>WhatsApp</th>
+          <th>Constancia (Normal)</th>
+          <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">Constancia (Comp.)</th>
+          <th>Acciones (Normal)</th>
+          <th *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">Acciones (Comp.)</th>
+         </tr>
+        </thead>
+        <tbody>
+         <tr *ngFor="let inscripcion of inscripcionesDelProducto">
 
-             <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
-               <input type="checkbox"
-                      [checked]="isRecipientSelected(inscripcion.participante.id)"
-                      (change)="toggleCompetencyRecipient(inscripcion.participante.id, $event)">
-             </td>
+          <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="checkbox-col">
+           <input type="checkbox"
+            [checked]="isRecipientSelected(inscripcion.participante.id)"
+            (change)="toggleCompetencyRecipient(inscripcion.participante.id, $event)">
+          </td>
 
-             <td>{{ inscripcion.participante.nombre_completo }}</td>
-             <td>{{ inscripcion.participante.email_personal }}</td>
-             <td>{{ inscripcion.participante.telefono || 'N/A' }}</td>
+          <td>{{ inscripcion.participante.nombre_completo }}</td>
+          <td>{{ inscripcion.participante.email_personal }}</td>
+          <td>{{ inscripcion.participante.telefono || 'N/A' }}</td>
 
-             <td>
-               <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else noCertNormal">
-                 <span class="serial-tag folio-normal">
-                   {{ certNormal.folio }}
-                    <button class="icon-btn delete small-btn"
-                           (click)="eliminarCertificado(certNormal.id)"
-                           title="Eliminar Constancia Normal">✖️</button>
-                 </span>
-               </ng-container>
-               <ng-template #noCertNormal><span class="no-docentes-small">No emitida</span></ng-template>
-             </td>
+          <td>
+           <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else noCertNormal">
+            <span class="serial-tag folio-normal">
+             {{ certNormal.folio }}
+             <button class="icon-btn delete small-btn"
+              (click)="eliminarCertificado(certNormal.id)"
+              title="Eliminar Constancia Normal">✖️</button>
+            </span>
+           </ng-container>
+           <ng-template #noCertNormal><span class="no-docentes-small">No emitida</span></ng-template>
+          </td>
 
-             <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">
-               <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else noCertComp">
-                 <span class="serial-tag folio-competencias">
-                   {{ certComp.folio }}
-                   <button class="icon-btn delete small-btn"
-                           (click)="eliminarCertificado(certComp.id)"
-                           title="Eliminar Reconocimiento Competencias">❌</button>
-                 </span>
-               </ng-container>
-               <ng-template #noCertComp><span class="no-docentes-small">No emitida</span></ng-template>
-             </td>
+          <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'">
+           <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else noCertComp">
+            <span class="serial-tag folio-competencias">
+             {{ certComp.folio }}
+             <button class="icon-btn delete small-btn"
+              (click)="eliminarCertificado(certComp.id)"
+              title="Eliminar Reconocimiento Competencias">❌</button>
+            </span>
+           </ng-container>
+           <ng-template #noCertComp><span class="no-docentes-small">No emitida</span></ng-template>
+          </td>
 
-             <td class="actions-cell">
-               <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar Inscripción">🗑️</button>
-               <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else emitirConstanciaNormal">
-                 <button class="icon-btn email" (click)="sendCertificate(certNormal.id)" title="Reenviar Constancia Normal">📧</button>
-               </ng-container>
-               <ng-template #emitirConstanciaNormal>
-                  <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id, false)">Emitir Normal</button>
-               </ng-template>
-             </td>
-
-             <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="actions-cell">
-                <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else emitirConstanciaComp">
-                  <button class="icon-btn email email-competencias"
-                          (click)="sendCertificate(certComp.id)" title="Reenviar Reconocimiento Competencias">📧</button>
-                </ng-container>
-                <ng-template #emitirConstanciaComp>
-                  <button class="secondary-btn small-btn btn-competencias"
-                          (click)="issueCertificate(inscripcion.id, true)">Emitir Comp.</button>
-                </ng-template>
-             </td>
-
-           </tr> <tr *ngIf="inscripcionesDelProducto.length === 0">
-             <td [attr.colspan]="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO' ? 8 : 6" class="no-data">No hay participantes inscritos.</td>
-           </tr>
-         </tbody>
+          <td class="actions-cell">
+           <div class="actions-content">
+            <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar Inscripción">🗑️</button>
+            <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else emitirConstanciaNormal">
+             <button class="icon-btn email" (click)="sendCertificate(certNormal.id)" title="Reenviar Constancia Normal">📧</button>
+            </ng-container>
+            <ng-template #emitirConstanciaNormal>
+             <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id, false)">Emitir Normal</button>
+            </ng-template>
+           </div>
+          </td>
+          <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="actions-cell">
+           <div class="actions-content">
+            <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else emitirConstanciaComp">
+             
+             <button class="icon-btn email email-competencias"
+                     (click)="sendCertificate(certComp.id)" 
+                     title="Reenviar Reconocimiento Competencias">📧</button>
+                     
+            </ng-container>
+            <ng-template #emitirConstanciaComp>
+             <button class="secondary-btn small-btn btn-competencias"
+                     (click)="issueCertificate(inscripcion.id, true)">Emitir Comp.</button>
+            </ng-template>
+           </div>
+          </td>
+          </tr> <tr *ngIf="inscripcionesDelProducto.length === 0">
+          <td [attr.colspan]="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO' ? 8 : 6" class="no-data">No hay participantes inscritos.</td>
+         </tr>
+        </tbody>
        </table>
+      </div>
      </div>
-     </div> </div> <div class="modal-footer">
+   </div>
+   <div class="modal-footer">
     <button type="button" class="secondary-btn" (click)="unselectCourse()">Cerrar</button>
     <button
      type="button"
@@ -373,7 +382,9 @@
      Emitir y Enviar Competencias ({{ competencyRecipients.size }} seleccionados)
     </button>
    </div>
-  </div> </div> <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
+  </div>
+ </div>
+ <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
   <div class="modal-content" (click)="$event.stopPropagation()">
    <div class="modal-header">
     <h2>Gestionar Competencias</h2>
