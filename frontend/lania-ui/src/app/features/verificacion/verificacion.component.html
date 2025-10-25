@@ -1,0 +1,51 @@
+<div class="verificacion-container">
+  <header class="verificacion-header">
+    <h1>Verificación de Constancias</h1>
+    <p>Ingresa el folio de la constancia para verificar su autenticidad.</p>
+  </header>
+
+  <div class="search-form">
+    <input 
+      type="text" 
+      [(ngModel)]="folioParaVerificar" 
+      placeholder="LANIA-XXXX-XXXXXX"
+      aria-label="Folio de la constancia"
+      (keyup.enter)="buscarManualmente()"> <!-- Permite buscar con Enter -->
+    <button (click)="buscarManualmente()" [disabled]="isLoading">
+      <span *ngIf="!isLoading">Verificar</span>
+      <span *ngIf="isLoading">Verificando...</span>
+    </button>
+  </div>
+
+  <!-- Resultados de la verificación -->
+  <div class="resultados">
+    <div *ngIf="isLoading" class="loading-indicator">
+      Buscando constancia...
+    </div>
+
+    <div *ngIf="!isLoading && certificadoVerificado" class="certificado-valido fade-in">
+      <div class="icono-valido">✔️</div>
+      <h2>Constancia Auténtica</h2>
+      <div class="detalle-certificado">
+        <p><strong>Folio:</strong> {{ certificadoVerificado.folio }}</p>
+        <p><strong>Participante:</strong> {{ certificadoVerificado.nombre_participante }}</p>
+        <p><strong>Producto Educativo:</strong> {{ certificadoVerificado.nombre_producto }}</p>
+        <p><strong>Horas:</strong> {{ certificadoVerificado.horas }}</p>
+        <p><strong>Fecha de Emisión:</strong> {{ certificadoVerificado.fecha_emision | date:'dd/MM/yyyy' }}</p>
+        <p><strong>Emitido por:</strong> {{ certificadoVerificado.nombre_docente || 'LANIA' }}</p> 
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && errorMensaje && fueVerificado" class="certificado-invalido fade-in">
+       <div class="icono-invalido">❌</div>
+      <h2>Constancia no Válida</h2>
+      <p>{{ errorMensaje }}</p>
+    </div>
+
+     <div *ngIf="!isLoading && !certificadoVerificado && !errorMensaje && !fueVerificado" class="placeholder">
+      <!-- Mensaje inicial o cuando se limpia -->
+       <p>Ingresa un folio para comenzar la verificación.</p>
+    </div>
+  </div>
+
+</div>
