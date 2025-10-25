@@ -1,0 +1,171 @@
+:host {
+  display: block;
+  max-width: 800px; /* Ancho máximo del contenido */
+  margin: 2rem auto; /* Centrado horizontal con margen superior/inferior */
+  padding: 1rem;
+  font-family: sans-serif;
+  color: #333;
+}
+
+.verificacion-container {
+  background-color: #fff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.verificacion-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.verificacion-header h1 {
+  font-size: 2rem;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.verificacion-header p {
+  font-size: 1rem;
+  color: #718096;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.75rem; /* Espacio entre input y botón */
+  margin-bottom: 2.5rem;
+}
+
+.search-form input {
+  flex-grow: 1; /* El input ocupa el espacio disponible */
+  padding: 0.9rem 1.2rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-form input:focus {
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+  outline: none;
+}
+
+.search-form button {
+  padding: 0.9rem 1.5rem;
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap; /* Evita que el texto del botón se parta */
+}
+
+.search-form button:hover:not(:disabled) {
+  background-color: #357ABD;
+}
+
+.search-form button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.resultados {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.loading-indicator {
+  color: #718096;
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+/* Estilos comunes para resultados */
+.certificado-valido, .certificado-invalido {
+  padding: 2rem;
+  border-radius: 8px;
+  margin-top: 1rem; /* Espacio arriba */
+}
+
+/* Estilos específicos para válido */
+.certificado-valido {
+  background-color: #f0fff4; /* Verde muy claro */
+  border: 1px solid #9ae6b4; /* Borde verde */
+  color: #2f855a; /* Texto verde oscuro */
+}
+
+.icono-valido {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #48bb78; /* Verde */
+}
+
+.certificado-valido h2 {
+  color: #38a169; /* Verde medio */
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.detalle-certificado {
+  text-align: left; /* Alinea los detalles a la izquierda */
+  max-width: 500px; /* Limita ancho para mejor lectura */
+  margin: 0 auto; /* Centra el bloque de detalles */
+  line-height: 1.6;
+}
+
+.detalle-certificado p {
+  margin-bottom: 0.8rem;
+  border-bottom: 1px dashed #c6f6d5; /* Separador sutil */
+  padding-bottom: 0.8rem;
+}
+.detalle-certificado p:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.detalle-certificado strong {
+  color: #2c7a7b; /* Verde azulado */
+  margin-right: 0.5rem;
+}
+
+/* Estilos específicos para inválido */
+.certificado-invalido {
+  background-color: #fff5f5; /* Rojo muy claro */
+  border: 1px solid #feb2b2; /* Borde rojo */
+  color: #c53030; /* Texto rojo oscuro */
+}
+
+.icono-invalido {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #f56565; /* Rojo */
+}
+
+.certificado-invalido h2 {
+  color: #e53e3e; /* Rojo medio */
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.placeholder {
+  color: #a0aec0;
+  padding: 2rem 0;
+  font-style: italic;
+}
+
+/* Animación de entrada */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
