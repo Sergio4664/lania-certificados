@@ -3,7 +3,8 @@
     <h2>Gestión de Certificados</h2>
     <div class="header-actions">
       <div class="search-container">
-        <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificados()" placeholder="Buscar por folio, participante o curso...">
+        <!-- El placeholder ya está actualizado -->
+        <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificados()" placeholder="Buscar por folio, participante, correo, whatsapp o curso...">
         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -14,13 +15,17 @@
 
   <div *ngIf="isLoading" class="loading-indicator">Cargando...</div>
 
+  <!-- La tabla ya incluye todas las columnas nuevas -->
   <div *ngIf="!isLoading && filteredCertificados.length > 0" class="data-table">
     <table>
       <thead>
         <tr>
           <th>Folio</th>
           <th>Participante</th>
+          <th>Correo</th>
+          <th>WhatsApp</th>
           <th>Producto Educativo</th>
+          <th>Tipo de Producto</th>
           <th>Fecha de Emisión</th>
           <th>Acciones</th>
         </tr>
@@ -29,9 +34,21 @@
         <tr *ngFor="let certificado of filteredCertificados">
           <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
           <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
+          
+          <td>{{ certificado.inscripcion?.participante?.email_personal || certificado.inscripcion?.participante?.email_institucional || 'N/A' }}</td>
+          
+          <td>{{ certificado.inscripcion?.participante?.whatsapp || 'N/A' }}</td>
+          
           <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
+          
+          <td>{{ certificado.con_competencias ? 'Competencias' : 'Constancia Normal' }}</td>
+          
           <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+          
           <td class="actions-cell">
+            <!-- ✅ CAMBIO: Actualizado el 'title' para reflejar la nueva acción (ir a verificación) -->
+            <button class="icon-btn view" (click)="visualizarCertificado(certificado)" title="Verificar Constancia (Vista Pública)">👁️</button>
+            <button class="icon-btn resend" (click)="reenviarCertificado(certificado)" title="Reenviar por Correo">📧</button>
             <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
           </td>
         </tr>

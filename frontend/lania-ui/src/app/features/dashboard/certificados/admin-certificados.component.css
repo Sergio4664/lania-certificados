@@ -73,6 +73,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   border: 1px solid #e2e8f0;
+
+  /* ✅ CAMBIO: Añadido para permitir el scroll horizontal */
+  width: 100%;
+  overflow-x: auto;
 }
 
 .table-title {
@@ -93,6 +97,9 @@ th, td {
   text-align: left;
   border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
+
+  /* ✅ CAMBIO: Añadido para evitar que el texto se parta en varias líneas */
+  white-space: nowrap;
 }
 
 thead th {
@@ -102,6 +109,10 @@ thead th {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  
+  /* ✅ AÑADIDO (Opcional): Fija la cabecera al hacer scroll vertical */
+  position: sticky;
+  top: 0;
 }
 
 tbody tr:hover {
@@ -136,9 +147,13 @@ td a:hover {
 
 /* Celdas de acciones */
 .actions-cell {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  /* display: flex;  <-- Tu estilo original (bueno) */
+  /* gap: 0.75rem; <-- Tu estilo original (bueno) */
+  /* align-items: center; <-- Tu estilo original (bueno) */
+  
+  /* ✅ AÑADIDO: Asegura que la celda tenga ancho mínimo para los botones */
+  text-align: center;
+  width: 1%;
 }
 
 .icon-btn {
@@ -146,6 +161,7 @@ td a:hover {
   border: none;
   cursor: pointer;
   padding: 5px;
+  margin: 0 4px; /* Añadido un pequeño margen */
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
@@ -158,5 +174,16 @@ td a:hover {
   background-color: #edf2f7;
 }
 
-.icon-btn.email { color: #3182ce; }
+/* ✅ CAMBIO/AÑADIDO: Estilos para todos los botones de acción */
+
+/* Botón Visualizar (Ojo) */
+.icon-btn.view { color: #3182ce; }
+.icon-btn.view:hover { background-color: #ebf8ff; }
+
+/* Botón Reenviar (Email) - Tu estilo '.email' renombrado a '.resend' */
+.icon-btn.resend { color: #38a169; }
+.icon-btn.resend:hover { background-color: #f0fff4; }
+
+/* Botón Eliminar (Basura) */
 .icon-btn.delete { color: #e53e3e; }
+.icon-btn.delete:hover { background-color: #fff5f5; }
