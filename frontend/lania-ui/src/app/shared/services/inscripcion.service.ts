@@ -13,7 +13,7 @@ export class InscripcionService {
   private http = inject(HttpClient);
   
   // ✅ CORRECCIÓN AQUÍ: Se añadió el prefijo '/api' a la URL.
-  private apiUrl = `${environment.apiUrl}/admin/inscripciones`;
+  private apiUrl = `${environment.apiUrl}/admin/inscripciones/`;
 
   /**
    * Obtiene una lista de todas las inscripciones.

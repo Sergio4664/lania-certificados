@@ -9,7 +9,7 @@ import { Participante, ParticipanteCreate, ParticipanteUpdate } from '@shared/in
 })
 export class ParticipanteService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/admin/participantes`;
+  private apiUrl = `${environment.apiUrl}/admin/participantes/`;
 
   getAll(): Observable<Participante[]> {
     return this.http.get<Participante[]>(this.apiUrl);

@@ -10,7 +10,7 @@ import { DocenteDTO, CreateDocenteDTO, UpdateDocenteDTO } from '@shared/interfac
 export class DocenteService {
   private http = inject(HttpClient);
   // ✅ CORRECCIÓN: Se añadió el prefijo /api a la URL.
-  private apiUrl = `${environment.apiUrl}/admin/docentes`;
+  private apiUrl = `${environment.apiUrl}/admin/docentes/`;
 
   getAll(): Observable<DocenteDTO[]> {
     return this.http.get<DocenteDTO[]>(this.apiUrl);

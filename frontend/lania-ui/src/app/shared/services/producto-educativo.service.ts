@@ -11,7 +11,7 @@ import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } f
 export class ProductoEducativoService {
   private http = inject(HttpClient);
   // ✅ CORRECTION: The base URL for this service
-  private baseUrl = `${environment.apiUrl}/admin/productos-educativos`;
+  private baseUrl = `${environment.apiUrl}/admin/productos-educativos/`;
 
   getAll(): Observable<ProductoEducativo[]> {
     return this.http.get<ProductoEducativo[]>(this.baseUrl);
