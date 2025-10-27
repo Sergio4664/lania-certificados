@@ -1,0 +1,245 @@
+/* Estilos para /features/verificacion/verificacion.component.css */
+
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Alinea al inicio */
+  min-height: 100vh;
+  background-color: #f4f7f6;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.verificacion-container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* --- Header --- */
+.verificacion-header {
+  text-align: center;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+}
+
+.verificacion-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.verificacion-header p {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+.login-link {
+  font-size: 0.9rem;
+  color: var(--color-primary, #005f73);
+  text-decoration: none;
+}
+.login-link:hover {
+  text-decoration: underline;
+}
+
+
+/* --- Tarjeta de Búsqueda --- */
+.search-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #444;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Importante para que el padding no desborde */
+}
+
+.form-group input.is-invalid {
+  border-color: #e74c3c;
+}
+
+.invalid-feedback {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* --- Botones (estos estilos deberían ser globales) --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.btn-primary {
+  background-color: var(--color-primary, #005f73);
+  color: white;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-dark, #004c5c);
+}
+.btn-primary:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* --- Tarjeta de Resultado --- */
+.resultado-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.resultado-card h2 {
+  color: var(--color-success, #2a9d8f);
+  margin-top: 0;
+}
+
+.resultado-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  text-align: left;
+  margin: 2rem 0;
+}
+
+@media (min-width: 600px) {
+  .resultado-grid {
+    grid-template-columns: 1fr 1fr; /* 2 columnas en pantallas más grandes */
+  }
+}
+
+.grid-item {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.grid-item strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.grid-item span {
+  font-size: 1.1rem;
+  color: #333;
+  word-wrap: break-word;
+}
+
+.valido-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--color-success, #2a9d8f);
+  border: 2px solid var(--color-success, #2a9d8f);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+}
+
+.valido-badge svg {
+  stroke: var(--color-success, #2a9d8f);
+}
+
+/* --- Tarjetas de Error y Carga --- */
+.error-card, .loading-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  color: #555;
+}
+
+.error-card {
+  background: #fff1f1;
+  border-color: #e74c3c;
+  color: #b92c1c;
+}
+.error-card svg {
+  stroke: #e74c3c;
+  width: 32px;
+  height: 32px;
+}
+.error-card strong {
+  font-size: 1.2rem;
+}
+.error-card p {
+  margin: 0;
+}
+
+/* --- Spinner --- */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.loading-card .spinner {
+  width: 24px;
+  height: 24px;
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: var(--color-primary, #005f73);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

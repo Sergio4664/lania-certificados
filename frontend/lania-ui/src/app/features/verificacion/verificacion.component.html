@@ -1,0 +1,102 @@
+<div class="verificacion-container">
+  
+  <header class="verificacion-header">
+    <h1>Verificación de Constancias</h1>
+    <p>Ingresa el folio para validar la autenticidad de una constancia.</p>
+    <a routerLink="/login" class="login-link">Ir al Panel de Administración</a>
+  </header>
+
+  <div *ngIf="certificado; else searchBlock" class="resultado-card">
+    <h2>Certificado Válido</h2>
+    <div class="resultado-grid">
+      <div class="grid-item">
+        <strong>Folio:</strong>
+        <span>{{ certificado.folio }}</span>
+      </div>
+      <div class="grid-item">
+        <strong>Emitido a:</strong>
+        <span>{{ certificado.participante_nombre }}</span>
+      </div>
+      <div class="grid-item">
+        <strong>Producto Educativo:</strong>
+        <span>{{ certificado.producto_educativo_nombre }}</span>
+      </div>
+      <div class="grid-item">
+        <strong>Tipo:</strong>
+        <span>{{ certificado.tipo_producto }}</span>
+      </div>
+      <div class="grid-item">
+        <strong>Fecha de Emisión:</strong>
+        <span>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </div>
+    
+    <div class="valido-badge">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      AUTÉNTICO
+    </div>
+
+    <button (click)="buscarOtro()" class="btn btn-secondary">
+      Verificar otro
+    </button>
+  </div>
+
+
+  <ng-template #searchBlock>
+    <div class="search-card">
+      <form (ngSubmit)="onBuscar()">
+        <div class="form-group">
+          <label for="folio">Folio de la Constancia</label>
+          <input 
+            type="text" 
+            id="folio" 
+            placeholder="Ej: LANIA-2025-XXXXXX"
+            [formControl]="folioControl"
+            [class.is-invalid]="folioControl.invalid && folioControl.touched">
+          
+          <div *ngIf="folioControl.invalid && folioControl.touched" class="invalid-feedback">
+            <small *ngIf="folioControl.errors?.['required']">El folio es requerido.</small>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="isLoading || folioControl.invalid">
+          
+          <span *ngIf="!isLoading">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Verificar
+          </span>
+
+          <span *ngIf="isLoading" class="spinner"></span>
+          <span *ngIf="isLoading">Verificando...</span>
+
+        </button>
+      </form>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-card">
+      <span class="spinner"></span>
+      <p>Buscando certificado...</p>
+    </div>
+
+    <div *ngIf="errorMessage && !isLoading" class="error-card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <strong>Error</strong>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+  </ng-template>
+
+</div>
