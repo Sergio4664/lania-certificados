@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '@environments/environment';
-import { CertificadoPublico } from '@app/shared/interfaces/verificacion.interface';
+// ✅ --- CORRECCIÓN: Importamos la interfaz con el nombre correcto ---
+import { CertificadoPublic } from '@app/shared/interfaces/certificado.interface'; 
 
 @Injectable({
   providedIn: 'root'
@@ -9,18 +10,11 @@ import { CertificadoPublico } from '@app/shared/interfaces/verificacion.interfac
 export class VerificacionService {
 
   private http = inject(HttpClient);
-  // Usa la URL de la API definida en tu archivo de environment
-  private apiUrl = `${environment.apiUrl}/public`; // Ruta base para las APIs públicas
+  private apiUrl = `${environment.apiUrl}/public`; 
 
-  /**
-   * Método público para verificar un certificado por su folio.
-   * No requiere autenticación.
-   * @param folio El folio del certificado a verificar.
-   * @returns Observable con los datos públicos del certificado.
-   */
   verificarPorFolio(folio: string) {
-    // Llama al endpoint: /api/public/verificar/FOLIO-BUSCADO
-    return this.http.get<CertificadoPublico>(`${this.apiUrl}/verificar/${folio}`);
+    // ✅ --- CORRECCIÓN: Usamos el nombre de interfaz correcto ---
+    return this.http.get<CertificadoPublic>(`${this.apiUrl}/verificar/${folio}`);
   }
 
 }
