@@ -1,8 +1,10 @@
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
-// ✅ --- CORRECCIÓN: Importamos la interfaz con el nombre correcto ---
-import { CertificadoPublic } from '@app/shared/interfaces/certificado.interface'; 
+
+// --- CORRECCIÓN 1: Importa la interfaz correcta ("...Publico" con "o") ---
+import { CertificadoPublico } from '@app/shared/interfaces/verificacion.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -10,12 +12,13 @@ import { CertificadoPublic } from '@app/shared/interfaces/certificado.interface'
 export class VerificacionService {
 
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/public`; 
+  private apiUrl = `${environment.apiUrl}/public`;
 
-  verificarPorFolio(folio: string) {
-    // ✅ --- CORRECCIÓN: Usamos el nombre de interfaz correcto ---
-    return this.http.get<CertificadoPublic>(`${this.apiUrl}/verificar/${folio}`);
+  constructor() { }
+
+  // --- CORRECCIÓN 2: Cambia el tipo de retorno aquí ---
+  verificarPorFolio(folio: string): Observable<CertificadoPublico> { 
+    // Y también cambia el tipo genérico de la petición http
+    return this.http.get<CertificadoPublico>(`${this.apiUrl}/verificar/${folio}`);
   }
-  
-
 }

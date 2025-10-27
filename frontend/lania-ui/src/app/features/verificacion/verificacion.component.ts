@@ -3,8 +3,9 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VerificacionService } from '@app/shared/services/verificacion.service';
-// ✅ --- CORRECCIÓN: Importamos la interfaz con el nombre correcto ---
-import { CertificadoPublic } from '@app/shared/interfaces/certificado.interface'; 
+
+// --- CORRECCIÓN 1: Importar la interfaz correcta ("CertificadoPublico" con "o") ---
+import { CertificadoPublico } from '@app/shared/interfaces/verificacion.interface'; 
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -26,8 +27,8 @@ export default class VerificacionComponent implements OnInit {
   private verificacionService = inject(VerificacionService);
 
   // Estado del componente
-  // ✅ --- CORRECCIÓN: Usamos el nombre de interfaz correcto ---
-  certificado: CertificadoPublic | null = null;
+  // --- CORRECCIÓN 2: Usar el nombre de la interfaz correcta ---
+  certificado: CertificadoPublico | null = null;
   isLoading = false;
   errorMessage: string | null = null;
   
@@ -40,7 +41,6 @@ export default class VerificacionComponent implements OnInit {
 
   ngOnInit(): void {
     // 1. Revisar si el folio viene en la URL
-    // ✅ --- CORRECCIÓN: Esta es la lógica correcta, sin el authService.logout() ---
     this.route.paramMap.subscribe(params => {
       const folio = params.get('folio');
       if (folio) {
@@ -73,6 +73,7 @@ export default class VerificacionComponent implements OnInit {
       finalize(() => this.isLoading = false)
     ).subscribe({
       next: (data) => {
+        // data ya es del tipo 'CertificadoPublico' gracias a la corrección
         this.certificado = data;
       },
       error: (err) => {

@@ -46,7 +46,8 @@ class CertificadoPublic(BaseModel):
     folio: str
     fecha_emision: datetime
     participante_nombre: str
-    producto_nombre: str
+    producto_educativo_nombre: str
+    tipo_producto: str
     # ... otros campos que necesites en la página pública
     model_config = ConfigDict(from_attributes=True)
     

@@ -19,12 +19,13 @@ import AdminParticipantsComponent from './features/dashboard/participantes/admin
 import AdminCertificatesComponent from './features/dashboard/certificados/admin-certificados.component';
 // Corregido: El componente real se llama 'AdminAdministradoresComponent'
 import AdminAdministradoresComponent from '@features/admin/administradores/admin-administradores.component';
+import VerificacionComponent from './features/verificacion/verificacion.component';
 export const routes: Routes = [
   // --- Rutas Públicas (no requieren autenticación) ---
   { path: 'login', component: LoginComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password/:token', component: ResetPasswordComponent },
-  // { path: 'v/:token', component: PublicVerifyComponent }, // Ruta para la verificación pública de certificados
+  { path: 'v/:token', component: VerificacionComponent }, // Ruta para la verificación pública de certificados
 
   // --- Rutas Protegidas del Panel de Administración ---
   {

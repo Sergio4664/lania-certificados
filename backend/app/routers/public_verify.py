@@ -36,8 +36,7 @@ def verify_certificate_by_folio(folio: str, db: Session = Depends(get_db)):
     return CertificadoPublic(
         folio=certificado.folio,
         fecha_emision=certificado.fecha_emision,
-        nombre_participante=participante.nombre_completo,
-        nombre_producto=producto.nombre,
-        horas=producto.horas,
-        nombre_docente=nombres_docentes
+        participante_nombre=participante.nombre_completo,    # <-- CLAVE CORREGIDA
+        producto_educativo_nombre=producto.nombre,           # <-- CLAVE CORREGIDA
+        tipo_producto=producto.tipo_producto.value if producto.tipo_producto else "No especificado" # <-- CAMPO AÑADIDO (ajusta 'producto.tipo_producto.value' según tu modelo)
     )
