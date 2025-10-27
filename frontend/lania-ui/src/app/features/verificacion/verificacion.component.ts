@@ -51,15 +51,26 @@ export default class VerificacionComponent implements OnInit {
     });
   }
 
-  onBuscar(): void {
+ onBuscar(): void {
     if (this.folioControl.invalid) {
       this.errorMessage = 'Por favor, ingresa un folio válido.';
       return;
     }
     const folio = this.folioControl.value!;
+    
     if (folio !== this.folioParam) {
+       // --- INICIO DE CORRECCIÓN ---
+       // Establece el estado de carga INMEDIATAMENTE
+       // para que el usuario vea que algo está pasando.
+       this.isLoading = true;
+       this.errorMessage = null;
+       this.certificado = null;
+       // --- FIN DE CORRECCIÓN ---
+
        this.router.navigate(['/verificacion', folio]);
     } else {
+       // Esta parte ya funcionaba bien porque llama
+       // directamente a buscarPorFolio()
        this.buscarPorFolio(folio);
     }
   }

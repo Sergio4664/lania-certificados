@@ -25,7 +25,12 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password/:token', component: ResetPasswordComponent },
-  { path: 'v/:token', component: VerificacionComponent }, // Ruta para la verificación pública de certificados
+ // --- INICIO DE CORRECCIÓN ---
+  // 1. Ruta para la búsqueda (Ej: /verificacion/LANIA-XXX)
+  { path: 'verificacion/:folio', component: VerificacionComponent },
+  // 2. Ruta base para mostrar el buscador (Ej: /verificacion)
+  { path: 'verificacion', component: VerificacionComponent },
+  // --- FIN DE CORRECCIÓN ---
 
   // --- Rutas Protegidas del Panel de Administración ---
   {
