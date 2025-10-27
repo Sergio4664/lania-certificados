@@ -16,5 +16,6 @@ export class VerificacionService {
     // ✅ --- CORRECCIÓN: Usamos el nombre de interfaz correcto ---
     return this.http.get<CertificadoPublic>(`${this.apiUrl}/verificar/${folio}`);
   }
+  
 
 }
