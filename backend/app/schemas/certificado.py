@@ -45,10 +45,13 @@ class CertificadoCreate(BaseModel):
 class CertificadoPublic(BaseModel):
     folio: str
     fecha_emision: datetime
-    participante_nombre: str
-    producto_educativo_nombre: str
-    tipo_producto: str
-    # ... otros campos que necesites en la página pública
+    
+    # --- INICIO DE CORRECCIÓN ---
+    participante_nombre: str       # <-- Debe coincidir con el frontend
+    producto_educativo_nombre: str  # <-- CAMBIADO de 'producto_nombre'
+    tipo_producto: str              # <-- AÑADIDO
+    # --- FIN DE CORRECCIÓN ---
+    
     model_config = ConfigDict(from_attributes=True)
     
 class EmisionMasivaResponse(BaseModel):
