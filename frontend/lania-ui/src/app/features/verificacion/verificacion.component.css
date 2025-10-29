@@ -139,19 +139,23 @@
   margin-top: 0;
 }
 
+/* --- INICIO DE LA CORRECCIÓN --- */
 .resultado-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr; /* <-- 2 columnas por defecto */
   gap: 1rem;
   text-align: left;
   margin: 2rem 0;
 }
 
-@media (min-width: 600px) {
+/* Ahora, solo se hará 1 columna en pantallas MUY pequeñas */
+@media (max-width: 480px) { 
   .resultado-grid {
-    grid-template-columns: 1fr 1fr; /* 2 columnas en pantallas más grandes */
+    grid-template-columns: 1fr; 
   }
 }
+/* --- FIN DE LA CORRECCIÓN --- */
+
 
 .grid-item {
   background-color: #f9f9f9;

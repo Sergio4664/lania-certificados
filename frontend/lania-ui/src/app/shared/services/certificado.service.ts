@@ -11,7 +11,7 @@ import { Certificado, CertificadoCreate, EmisionMasivaResponse } from '../interf
 export class CertificadoService {
   private http = inject(HttpClient);
   // La URL base para todas las operaciones de certificados.
-  private apiUrl = `${environment.apiUrl}/admin/certificados/`;
+  private apiUrl = `${environment.apiUrl}/admin/certificados`;
 
   /**
    * Obtiene todos los certificados del sistema.
