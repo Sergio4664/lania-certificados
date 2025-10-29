@@ -1,10 +1,9 @@
+// frontend/lania-ui/src/app/features/verificacion/verificacion.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VerificacionService } from '@app/shared/services/verificacion.service';
-
-// --- CORRECCIÓN 1: Importar la interfaz correcta ("CertificadoPublico" con "o") ---
 import { CertificadoPublico } from '@app/shared/interfaces/verificacion.interface'; 
 import { finalize } from 'rxjs/operators';
 
@@ -26,13 +25,10 @@ export default class VerificacionComponent implements OnInit {
   private router = inject(Router);
   private verificacionService = inject(VerificacionService);
 
-  // Estado del componente
-  // --- CORRECCIÓN 2: Usar el nombre de la interfaz correcta ---
   certificado: CertificadoPublico | null = null;
   isLoading = false;
   errorMessage: string | null = null;
-  
-  folioParam: string | null = null;
+  folioParam: string | null = null; // Se mantiene para la carga inicial desde URL
 
   folioControl = new FormControl('', [
     Validators.required,
@@ -40,7 +36,8 @@ export default class VerificacionComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
-    // 1. Revisar si el folio viene en la URL
+    // Esta parte se queda igual.
+    // Se encarga de buscar SÓLO si vienes de una URL con folio (ej. desde el admin)
     this.route.paramMap.subscribe(params => {
       const folio = params.get('folio');
       if (folio) {
@@ -51,44 +48,51 @@ export default class VerificacionComponent implements OnInit {
     });
   }
 
- onBuscar(): void {
+  // --- *** INICIO DE LA CORRECCIÓN *** ---
+  // Este método ahora llama a la búsqueda directamente.
+  onBuscar(): void {
+    
+    console.log("1. Botón 'onBuscar' presionado.");
+
     if (this.folioControl.invalid) {
       this.errorMessage = 'Por favor, ingresa un folio válido.';
       return;
     }
-    const folio = this.folioControl.value!;
     
-    if (folio !== this.folioParam) {
-       // --- INICIO DE CORRECCIÓN ---
-       // Establece el estado de carga INMEDIATAMENTE
-       // para que el usuario vea que algo está pasando.
-       this.isLoading = true;
-       this.errorMessage = null;
-       this.certificado = null;
-       // --- FIN DE CORRECCIÓN ---
+    // Obtenemos el folio del control y quitamos espacios extra
+    const folio = this.folioControl.value!.trim(); 
 
-       this.router.navigate(['/verificacion', folio]);
-    } else {
-       // Esta parte ya funcionaba bien porque llama
-       // directamente a buscarPorFolio()
-       this.buscarPorFolio(folio);
+    console.log("2. Folio a buscar:", folio);
+
+    // Si hay un folio, llamamos a la función de búsqueda directamente.
+    // Ya NO usamos this.router.navigate() aquí.
+    if (folio) {
+      this.buscarPorFolio(folio);
     }
   }
+  // --- *** FIN DE LA CORRECCIÓN *** ---
+
 
   private buscarPorFolio(folio: string): void {
+    // --- Logs de diagnóstico añadidos ---
+    console.log("3. Llamando a buscarPorFolio() con:", folio); 
     this.isLoading = true;
     this.errorMessage = null;
     this.certificado = null;
 
     this.verificacionService.verificarPorFolio(folio).pipe(
-      finalize(() => this.isLoading = false)
+      finalize(() => {
+        console.log("5. Finalize: Petición HTTP completada."); // Log de finalización
+        this.isLoading = false;
+      })
     ).subscribe({
       next: (data) => {
-        // data ya es del tipo 'CertificadoPublico' gracias a la corrección
+        console.log("4. Next: Datos recibidos:", data); // Log de éxito
         this.certificado = data;
       },
       error: (err) => {
-        console.error(err);
+        console.error("4. Error: Petición HTTP falló:", err); // Log de error
+        
         if (err.status === 404) {
           this.errorMessage = `No se encontró ningún certificado con el folio "${folio}".`;
         } else {
