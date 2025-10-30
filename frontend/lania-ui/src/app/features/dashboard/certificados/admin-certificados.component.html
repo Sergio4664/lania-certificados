@@ -1,45 +1,97 @@
 <div class="module-content">
   <div class="module-header">
     <h2>Gestión de Certificados</h2>
-    <div class="header-actions">
+    </div>
+
+  <hr>
+
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Certificados de Participantes</h3>
       <div class="search-container">
-        <input type="text" [(ngModel)]="searchTerm" (input)="filterCertificados()" placeholder="Buscar por folio, participante o curso...">
+        <input type="text" [(ngModel)]="searchTermParticipantes" (input)="filterCertificadosParticipantes()" placeholder="Buscar por folio, participante o curso...">
         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
       </div>
     </div>
+
+    <div *ngIf="isLoadingParticipantes" class="loading-indicator">Cargando...</div>
+
+    <div *ngIf="!isLoadingParticipantes && filteredCertificadosParticipantes.length > 0" class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Participante</th>
+            <th>Producto Educativo</th>
+            <th>Fecha de Emisión</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let certificado of filteredCertificadosParticipantes">
+            <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
+            <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
+            <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
+            <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+            <td class="actions-cell">
+              <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoadingParticipantes && filteredCertificadosParticipantes.length === 0" class="no-data-card">
+      No se encontraron certificados de participantes que coincidan con la búsqueda.
+    </div>
   </div>
 
-  <div *ngIf="isLoading" class="loading-indicator">Cargando...</div>
+  <hr>
 
-  <div *ngIf="!isLoading && filteredCertificados.length > 0" class="data-table">
-    <table>
-      <thead>
-        <tr>
-          <th>Folio</th>
-          <th>Participante</th>
-          <th>Producto Educativo</th>
-          <th>Fecha de Emisión</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let certificado of filteredCertificados">
-          <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
-          <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
-          <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
-          <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
-          <td class="actions-cell">
-            <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Certificados de Docentes</h3>
+      <div class="search-container">
+        <input type="text" [(ngModel)]="searchTermDocentes" (input)="filterCertificadosDocentes()" placeholder="Buscar por folio, docente...">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+    </div>
 
-  <div *ngIf="!isLoading && filteredCertificados.length === 0" class="no-data-card">
-    No se encontraron certificados que coincidan con la búsqueda.
+    <div *ngIf="isLoadingDocentes" class="loading-indicator">Cargando...</div>
+
+    <div *ngIf="!isLoadingDocentes && filteredCertificadosDocentes.length > 0" class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Docente</th>
+            <th>Producto Educativo (ID)</th>
+            <th>Fecha de Emisión</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let certificado of filteredCertificadosDocentes">
+            <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
+            <td>{{ certificado.docente?.nombre_completo || 'N/A' }}</td>
+            <td>{{ certificado.producto_educativo_id || 'N/A' }}</td>
+            <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+            <td class="actions-cell">
+              <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoadingDocentes && filteredCertificadosDocentes.length === 0" class="no-data-card">
+      No se encontraron certificados de docentes que coincidan con la búsqueda.
+    </div>
   </div>
 </div>

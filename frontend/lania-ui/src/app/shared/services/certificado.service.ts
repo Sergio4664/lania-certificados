@@ -1,4 +1,3 @@
-// ruta: frontend/lania-ui/src/app/shared/services/certificado.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -15,11 +14,51 @@ export class CertificadoService {
 
   /**
    * Obtiene todos los certificados del sistema.
+   * (Este método puede o no ser usado por el dashboard, 
+   * pero lo mantenemos por si es usado en otra parte).
    */
   getAll(): Observable<Certificado[]> {
     return this.http.get<Certificado[]>(this.apiUrl);
   }
+
+  // --- MÉTODOS AÑADIDOS PARA EL DASHBOARD ---
   
+  /**
+   * Obtiene la lista de certificados específicos de Participantes.
+   * (Usado por la primera tabla del dashboard).
+   */
+  getCertificadosParticipantes(): Observable<Certificado[]> {
+    // Asumimos que el backend tiene un endpoint específico para participantes
+    return this.http.get<Certificado[]>(`${this.apiUrl}/participantes`);
+  }
+
+  /**
+   * Obtiene la lista de certificados específicos de Docentes.
+   * (Usado por la segunda tabla del dashboard).
+   */
+  getCertificadosDocentes(): Observable<Certificado[]> {
+    // Asumimos que el backend tiene un endpoint específico para docentes
+    return this.http.get<Certificado[]>(`${this.apiUrl}/docentes`);
+  }
+
+  /**
+   * Descarga el PDF de un certificado de Participante.
+   */
+  downloadCertificado(folio: string): Observable<Blob> {
+    // Asumimos un endpoint de descarga. 
+    // Ajusta la ruta si es necesario (ej. /download/${folio})
+    return this.http.get(`${this.apiUrl}/download/participante/${folio}`, { responseType: 'blob' });
+  }
+
+  /**
+   * Descarga el PDF de un certificado de Docente.
+   */
+  downloadCertificadoDocente(folio: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/download/docente/${folio}`, { responseType: 'blob' });
+  }
+
+  // --- MÉTODOS ORIGINALES DE GESTIÓN ---
+
   /**
    * Crea un nuevo certificado para un participante (constancia normal).
    * @param data - El payload que incluye el 'inscripcion_id' y 'producto_educativo_id'.

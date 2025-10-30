@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // No se necesita ReactiveFormsModule aquí
+import { FormsModule } from '@angular/forms'; // Necesario para [(ngModel)]
 import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '@environments/environment';
 
@@ -19,43 +19,88 @@ export default class AdminCertificadosComponent implements OnInit {
   private certificadoSvc = inject(CertificadoService);
   private notificationSvc = inject(NotificationService);
 
-  certificados: Certificado[] = [];
-  filteredCertificados: Certificado[] = [];
-  isLoading = true;
-  searchTerm: string = '';
+  // --- Propiedades para Participantes ---
+  certificadosParticipantes: Certificado[] = [];
+  filteredCertificadosParticipantes: Certificado[] = [];
+  isLoadingParticipantes = true;
+  searchTermParticipantes: string = '';
+
+  // --- Propiedades para Docentes ---
+  certificadosDocentes: Certificado[] = [];
+  filteredCertificadosDocentes: Certificado[] = [];
+  isLoadingDocentes = true;
+  searchTermDocentes: string = '';
 
   ngOnInit(): void {
-    this.loadCertificados();
+    // Cargamos ambas listas al iniciar
+    this.loadCertificadosParticipantes();
+    this.loadCertificadosDocentes();
   }
 
-  loadCertificados(): void {
-    this.isLoading = true;
-    this.certificadoSvc.getAll().subscribe({
+  // --- Métodos para Participantes ---
+
+  loadCertificadosParticipantes(): void {
+    this.isLoadingParticipantes = true;
+    // Usamos el método específico del servicio
+    this.certificadoSvc.getCertificadosParticipantes().subscribe({
       next: (certificados) => {
-        this.certificados = certificados;
-        this.filteredCertificados = certificados;
-        this.isLoading = false;
+        this.certificadosParticipantes = certificados;
+        this.filteredCertificadosParticipantes = certificados;
+        this.isLoadingParticipantes = false;
       },
-      error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al cargar los certificados')
+      error: (err: HttpErrorResponse) => {
+        this.isLoadingParticipantes = false;
+        this.handleError(err.error?.detail || 'Error al cargar certificados de participantes');
+      }
     });
   }
 
-  filterCertificados(): void {
-    const term = this.searchTerm.toLowerCase();
-    this.filteredCertificados = this.certificados.filter(c =>
+  filterCertificadosParticipantes(): void {
+    const term = this.searchTermParticipantes.toLowerCase();
+    this.filteredCertificadosParticipantes = this.certificadosParticipantes.filter(c =>
       c.folio.toLowerCase().includes(term) ||
-      // ✅ CORRECCIÓN: El acceso a los datos anidados ahora es seguro
       c.inscripcion?.participante.nombre_completo.toLowerCase().includes(term) ||
       c.inscripcion?.producto_educativo.nombre.toLowerCase().includes(term)
     );
   }
+
+  // --- Métodos para Docentes ---
+
+  loadCertificadosDocentes(): void {
+    this.isLoadingDocentes = true;
+    // Usamos el método específico del servicio
+    this.certificadoSvc.getCertificadosDocentes().subscribe({
+      next: (certificados) => {
+        this.certificadosDocentes = certificados;
+        this.filteredCertificadosDocentes = certificados;
+        this.isLoadingDocentes = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoadingDocentes = false;
+        this.handleError(err.error?.detail || 'Error al cargar certificados de docentes');
+      }
+    });
+  }
+
+  filterCertificadosDocentes(): void {
+    const term = this.searchTermDocentes.toLowerCase();
+    this.filteredCertificadosDocentes = this.certificadosDocentes.filter(c =>
+      c.folio.toLowerCase().includes(term) ||
+      // Filtramos por el nombre del docente
+      c.docente?.nombre_completo.toLowerCase().includes(term)
+    );
+  }
+
+  // --- Métodos Comunes ---
 
   deleteCertificado(certificado: Certificado): void {
     if (confirm(`¿Está seguro de eliminar el certificado con folio ${certificado.folio}?`)) {
       this.certificadoSvc.delete(certificado.id).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Certificado eliminado.');
-          this.loadCertificados(); // Recargar la lista para reflejar el cambio
+          // Recargamos ambas listas para reflejar el cambio en cualquier tabla
+          this.loadCertificadosParticipantes();
+          this.loadCertificadosDocentes();
         },
         error: (err: HttpErrorResponse) => this.handleError(err.error?.detail || 'Error al eliminar')
       });
@@ -69,6 +114,6 @@ export default class AdminCertificadosComponent implements OnInit {
 
   private handleError(message: string): void {
     this.notificationSvc.showError(message);
-    this.isLoading = false;
+    // Los flags de 'isLoading' se manejan en cada método de carga
   }
 }

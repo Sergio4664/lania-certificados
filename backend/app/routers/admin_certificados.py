@@ -21,7 +21,7 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-# --- (Las rutas GET / y GET /{id} permanecen igual) ---
+# --- (Este es el endpoint que YA TENÍAS) ---
 @router.get(
     "/",
     response_model=List[Certificado]
@@ -46,6 +46,65 @@ def read_all_certificados(db: Session = Depends(get_db)):
     )
     return certificados
 
+
+# --- 💡 ¡NUEVO ENDPOINT! RUTA PARA PARTICIPANTES ---
+@router.get(
+    "/participantes",
+    response_model=List[Certificado],
+    summary="Obtener certificados de participantes"
+)
+def read_certificados_participantes(db: Session = Depends(get_db)):
+    """
+    Recupera solo los certificados de participantes (con inscripcion_id),
+    cargando todas las relaciones anidadas necesarias para el dashboard.
+    """
+    certificados = (
+        db.query(models.Certificado)
+        .filter(models.Certificado.inscripcion_id.isnot(None)) # Filtra solo participantes
+        .options(
+            # Carga Inscripcion -> Participante
+            selectinload(models.Certificado.inscripcion)
+            .selectinload(models.Inscripcion.participante),
+            
+            # Carga Inscripcion -> ProductoEducativo
+            selectinload(models.Certificado.inscripcion)
+            .selectinload(models.Inscripcion.producto_educativo)
+        )
+        .order_by(models.Certificado.id.desc())
+        .all()
+    )
+    return certificados
+
+
+# --- 💡 ¡NUEVO ENDPOINT! RUTA PARA DOCENTES ---
+@router.get(
+    "/docentes",
+    response_model=List[Certificado],
+    summary="Obtener certificados de docentes"
+)
+def read_certificados_docentes(db: Session = Depends(get_db)):
+    """
+    Recupera solo los certificados de docentes (con docente_id),
+    cargando todas las relaciones anidadas necesarias para el dashboard.
+    """
+    certificados = (
+        db.query(models.Certificado)
+        .filter(models.Certificado.docente_id.isnot(None)) # Filtra solo docentes
+        .options(
+            # Carga la relación directa con Docente
+            selectinload(models.Certificado.docente),
+            
+            # Carga la relación directa con ProductoEducativo
+            # Tu modelo SQL 'certificado' tiene 'producto_educativo_id' y la relación.
+            selectinload(models.Certificado.producto_educativo) 
+        )
+        .order_by(models.Certificado.id.desc())
+        .all()
+    )
+    return certificados
+
+
+# --- (El resto de tus endpoints permanecen sin cambios) ---
 
 @router.get("/{certificado_id}", response_model=Certificado)
 def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
@@ -112,7 +171,7 @@ def issue_certificate_to_participant(
             # producto.competencias es un string de JSON
             competencias_list = json.loads(producto.competencias)
             if not isinstance(competencias_list, list):
-                 competencias_list = []
+                    competencias_list = []
         except json.JSONDecodeError:
             print(f"Error: El campo 'competencias' del producto {producto.id} no es un JSON válido.")
             competencias_list = [] # Dejar la lista vacía si el JSON es inválido
@@ -315,7 +374,7 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     """
     db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
     if not db_certificado:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificado no encontrado")
+        raise HTTPException(status_code=status.HTTP_440_NOT_FOUND, detail="Certificado no encontrado") # Corregido 404
 
     file_path_to_delete = db_certificado.archivo_path
 
@@ -340,7 +399,7 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     return None
 
 
-# --- ✅ 5. RUTA DE EMISIÓN MASIVA (ACTUALIZADA) ---
+# --- (La ruta POST /emitir-enviar-masivo... permanece igual) ---
 @router.post("/emitir-enviar-masivo/producto/{producto_id}", status_code=status.HTTP_200_OK)
 async def issue_and_send_certificates_massively(
     producto_id: int,
@@ -374,21 +433,21 @@ async def issue_and_send_certificates_massively(
     if emitir_con_competencias:
         # Solo aplica a Cursos
         if db_producto.tipo_producto != models.TipoProductoEnum.CURSO_EDUCATIVO:
-             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="La emisión masiva de Reconocimientos solo aplica a productos tipo 'CURSO_EDUCATIVO'."
-            )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="La emisión masiva de Reconocimientos solo aplica a productos tipo 'CURSO_EDUCATIVO'."
+                )
         
         if db_producto.competencias:
             try:
                 competencias_list_masivo = json.loads(db_producto.competencias)
                 if not isinstance(competencias_list_masivo, list) or not competencias_list_masivo:
-                    raise ValueError("El JSON no es una lista válida o está vacía")
+                        raise ValueError("El JSON no es una lista válida o está vacía")
             except Exception as e:
-                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Se intentó emitir con competencias, pero el producto no tiene competencias válidas registradas: {e}"
-                )
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Se intentó emitir con competencias, pero el producto no tiene competencias válidas registradas: {e}"
+                    )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -409,7 +468,7 @@ async def issue_and_send_certificates_massively(
     for inscripcion in db_producto.inscripciones:
         # Busca certificado específico (normal O con competencias)
         certificado_existente = next((cert for cert in inscripcion.certificados
-                                      if cert.producto_educativo_id == producto_id and cert.con_competencias == emitir_con_competencias), None)
+                                        if cert.producto_educativo_id == producto_id and cert.con_competencias == emitir_con_competencias), None)
         
         certificado_a_enviar = None
         participante = inscripcion.participante
@@ -498,7 +557,7 @@ async def issue_and_send_certificates_massively(
         print(f"\n--- Iniciando proceso masivo para DOCENTES del producto ID: {producto_id} ---")
         for docente in db_producto.docentes:
             constancia_existente = next((cert for cert in docente.certificados
-                                          if cert.producto_educativo_id == producto_id), None)
+                                            if cert.producto_educativo_id == producto_id), None)
             constancia_a_enviar = None
             docente_id = docente.id
             docente_email = docente.email_institucional or docente.email_personal
@@ -595,7 +654,7 @@ async def issue_and_send_certificates_massively(
         f"Participantes: {issued_participant_count} emitidos, {skipped_participant_count} omitidos, {sent_participant_count} enviados."
     ]
     if not emitir_con_competencias:
-         summary_parts.append(f"Docentes: {issued_docente_count} emitidos, {skipped_docente_count} omitidos, {sent_docente_count} enviados.")
+            summary_parts.append(f"Docentes: {issued_docente_count} emitidos, {skipped_docente_count} omitidos, {sent_docente_count} enviados.")
 
     response_message = " ".join(summary_parts)
     if errors:
