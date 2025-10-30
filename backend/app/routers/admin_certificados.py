@@ -3,6 +3,7 @@ import datetime
 import os
 import json # --- ✅ 1. IMPORTAR JSON ---
 from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi.responses import FileResponse # --- 💡 1. IMPORTAR FileResponse ---
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List
 
@@ -374,7 +375,8 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     """
     db_certificado = db.query(models.Certificado).filter(models.Certificado.id == certificado_id).first()
     if not db_certificado:
-        raise HTTPException(status_code=status.HTTP_440_NOT_FOUND, detail="Certificado no encontrado") # Corregido 404
+        # --- Pequeña corrección de 440 a 404 ---
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificado no encontrado")
 
     file_path_to_delete = db_certificado.archivo_path
 
@@ -397,6 +399,37 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
             print(f"Error al eliminar el archivo físico {file_path_to_delete}: {e}")
 
     return None
+
+
+# --- 💡 2. ¡NUEVO ENDPOINT PARA VISUALIZAR/DESCARGAR PDF! ---
+@router.get(
+    "/download/{folio}",
+    response_class=FileResponse,
+    summary="Descargar o visualizar un archivo de certificado por folio"
+)
+def download_certificado_by_folio(
+    folio: str,
+    db: Session = Depends(get_db),
+    # --- 💡 3. AÑADIR ESTA LÍNEA PARA ARREGLAR EL ERROR 401 ---
+    current_user: models.Administrador = Depends(get_current_admin_user)
+):
+    """
+    Busca un certificado por su folio y devuelve el archivo PDF.
+    El navegador lo mostrará en línea (inline) si es posible.
+    """
+    db_certificado = db.query(models.Certificado).filter(models.Certificado.folio == folio).first()
+
+    if not db_certificado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificado no encontrado")
+
+    file_path = db_certificado.archivo_path
+
+    if not file_path or not os.path.exists(file_path):
+        print(f"Error: Archivo no encontrado en la ruta: {file_path}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo PDF no encontrado en el servidor")
+
+    # Devolver el archivo. El navegador decidirá si mostrarlo o descargarlo.
+    return FileResponse(file_path, media_type='application/pdf', filename=f"{folio}.pdf")
 
 
 # --- (La ruta POST /emitir-enviar-masivo... permanece igual) ---

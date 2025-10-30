@@ -91,6 +91,27 @@ export default class AdminCertificadosComponent implements OnInit {
     );
   }
 
+  // --- 💡 MÉTODO AÑADIDO PARA EL BOTÓN "👁️" ---
+  /**
+   * Llama al servicio para obtener el PDF y lo abre en una nueva pestaña.
+   * Usa el método 'getCertificadoBlob' que funciona para ambos (docentes y participantes).
+   */
+  visualizarCertificado(certificado: Certificado): void {
+    this.certificadoSvc.getCertificadoBlob(certificado.folio).subscribe({
+      next: (blob) => {
+        // Crear una URL temporal para el Blob
+        const fileURL = URL.createObjectURL(blob);
+        // Abrir la URL en una nueva pestaña
+        window.open(fileURL, '_blank');
+      },
+      error: (err) => {
+        // Maneja el error si el backend (404) o el servicio fallan
+        const errorMsg = err.error instanceof Blob ? "No se pudo leer el archivo" : err.error?.detail;
+        this.handleError(`Error al visualizar el certificado: ${errorMsg || 'No se pudo cargar el archivo'}`);
+      }
+    });
+  }
+
   // --- Métodos Comunes ---
 
   deleteCertificado(certificado: Certificado): void {

@@ -28,7 +28,7 @@ export class CertificadoService {
    * (Usado por la primera tabla del dashboard).
    */
   getCertificadosParticipantes(): Observable<Certificado[]> {
-    // Asumimos que el backend tiene un endpoint específico para participantes
+    // Llama al endpoint /participantes que creamos en el backend
     return this.http.get<Certificado[]>(`${this.apiUrl}/participantes`);
   }
 
@@ -37,25 +37,20 @@ export class CertificadoService {
    * (Usado por la segunda tabla del dashboard).
    */
   getCertificadosDocentes(): Observable<Certificado[]> {
-    // Asumimos que el backend tiene un endpoint específico para docentes
+    // Llama al endpoint /docentes que creamos en el backend
     return this.http.get<Certificado[]>(`${this.apiUrl}/docentes`);
   }
 
+  // --- 💡 MÉTODO NUEVO PARA EL BOTÓN "👁️" ---
   /**
-   * Descarga el PDF de un certificado de Participante.
+   * Obtiene el archivo PDF de un certificado (participante O docente) como un Blob.
+   * Llama al endpoint unificado /download/{folio}
    */
-  downloadCertificado(folio: string): Observable<Blob> {
-    // Asumimos un endpoint de descarga. 
-    // Ajusta la ruta si es necesario (ej. /download/${folio})
-    return this.http.get(`${this.apiUrl}/download/participante/${folio}`, { responseType: 'blob' });
+  getCertificadoBlob(folio: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/download/${folio}`, { responseType: 'blob' });
   }
-
-  /**
-   * Descarga el PDF de un certificado de Docente.
-   */
-  downloadCertificadoDocente(folio: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/download/docente/${folio}`, { responseType: 'blob' });
-  }
+  
+  // --- (Métodos downloadCertificado y downloadCertificadoDocente eliminados) ---
 
   // --- MÉTODOS ORIGINALES DE GESTIÓN ---
 

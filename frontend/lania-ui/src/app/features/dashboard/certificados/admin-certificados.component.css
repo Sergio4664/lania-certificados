@@ -36,6 +36,26 @@
   gap: 1rem;
 }
 
+/* --- 💡 SECCIÓN AÑADIDA / MODIFICADA ---
+  Estilos para las dos tablas y sus buscadores 
+*/
+.table-section {
+  margin-bottom: 2.5rem; /* Espacio entre las dos tablas */
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #2d3748;
+}
+
 /* Estilos para la barra de búsqueda */
 .search-container {
   position: relative;
@@ -75,6 +95,9 @@
   border: 1px solid #e2e8f0;
 }
 
+/* Este estilo .table-title ya no se usa, 
+  fue reemplazado por .table-header h3 
+*/
 .table-title {
   font-size: 1.25rem;
   color: #2d3748;
@@ -150,7 +173,7 @@ td a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   font-size: 1.25rem; /* Hace los emojis un poco más grandes */
 }
 
@@ -160,3 +183,12 @@ td a:hover {
 
 .icon-btn.email { color: #3182ce; }
 .icon-btn.delete { color: #e53e3e; }
+
+/* --- 💡 ESTILOS AÑADIDOS PARA EL BOTÓN "VER" --- */
+.icon-btn.view {
+  color: #4A90E2; /* Mismo azul que los links de folio */
+}
+
+.icon-btn.view:hover {
+  color: #3182ce; /* Un azul un poco más oscuro */
+}

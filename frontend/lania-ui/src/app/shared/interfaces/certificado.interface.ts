@@ -1,6 +1,8 @@
-//Ruta: frontend/lania-ui/src/app/shared/interfaces/certificado.interface.ts
 import { Inscripcion } from "./inscripcion.interface";
 import { DocenteDTO } from "./docente.interfaces";
+// --- 💡 1. IMPORTAR LA INTERFAZ DE PRODUCTO EDUCATIVO ---
+// (Asumo que la ruta a tu interfaz de producto es esta)
+import { ProductoEducativo } from "./producto-educativo.interface"; 
 
 /**
  * Representa la estructura completa de un Certificado recuperado desde la API.
@@ -19,6 +21,9 @@ export interface Certificado {
   // Datos anidados para facilitar el acceso en la UI
   inscripcion?: Inscripcion;
   docente?: DocenteDTO;
+  // --- 💡 2. AÑADIR LA PROPIEDAD QUE FALTA ---
+  // Esta línea arregla el error de compilación en el HTML
+  producto_educativo?: ProductoEducativo; 
 
   // --- ⬇️ AQUÍ ESTÁ LA CORRECCIÓN ⬇️ ---
   /** Indica si este certificado fue emitido con competencias. */
