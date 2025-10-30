@@ -59,3 +59,85 @@
   font-size: 18px;
   color: #64748b;
 }
+
+/* --- ⬇️ ESTILOS AÑADIDOS PARA LAS NUEVAS TABLAS ⬇️ --- */
+
+.recent-activity h2 {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-size: 1.5rem; /* 24px */
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.tables-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap; /* Para que en pantallas pequeñas se ponga uno debajo de otro */
+  gap: 30px;
+  width: 100%;
+}
+
+.table-wrapper {
+  flex: 1; /* Cada tabla tomará la mitad del espacio */
+  min-width: 400px; /* Ancho mínimo antes de que se envuelva */
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.table-wrapper h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.1rem; /* 18px */
+  font-weight: 600;
+  color: #005A9C; /* Un color de acento, puedes cambiarlo */
+}
+
+.recent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem; /* 14px */
+}
+
+.recent-table thead tr {
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.recent-table th {
+  text-align: left;
+  padding: 12px 8px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap; /* Evita que los títulos se partan */
+}
+
+.recent-table tbody tr {
+  border-bottom: 1px solid #f9f9f9;
+}
+
+.recent-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.recent-table td {
+  padding: 12px 8px;
+  color: #333;
+  vertical-align: top;
+}
+
+.recent-table td:first-child {
+  font-weight: 500;
+}
+
+.recent-table td:nth-child(3), 
+.recent-table td:nth-child(4) {
+  /* Estilo más pequeño para fecha y folio */
+  font-size: 0.85rem; /* 13px */
+  color: #666;
+  white-space: nowrap;
+}

@@ -139,22 +139,17 @@
   margin-top: 0;
 }
 
-/* --- INICIO DE LA CORRECCIÓN --- */
+/* --- CORRECCIÓN --- */
+/* Esta es la regla que fuerza las 2 columnas */
 .resultado-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* <-- 2 columnas por defecto */
+  grid-template-columns: 1fr 1fr; /* <-- 2 columnas, siempre */
   gap: 1rem;
   text-align: left;
   margin: 2rem 0;
 }
 
-/* Ahora, solo se hará 1 columna en pantallas MUY pequeñas */
-@media (max-width: 480px) { 
-  .resultado-grid {
-    grid-template-columns: 1fr; 
-  }
-}
-/* --- FIN DE LA CORRECCIÓN --- */
+/* He eliminado el bloque @media que forzaba 1 columna en pantallas pequeñas */
 
 
 .grid-item {
