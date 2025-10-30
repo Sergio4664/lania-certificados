@@ -26,6 +26,7 @@
             <th>Folio</th>
             <th>Participante</th>
             <th>Producto Educativo</th>
+            <th>Correo Personal</th>
             <th>Fecha de Emisión</th>
             <th>Acciones</th>
           </tr>
@@ -35,9 +36,11 @@
             <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
             <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
             <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
+            <td>{{ certificado.inscripcion?.participante?.email_personal || 'N/A' }}</td>
             <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
             <td class="actions-cell">
               <button class="icon-btn view" (click)="visualizarCertificado(certificado)" title="Visualizar">👁️</button>
+              <button class="icon-btn email" (click)="reenviarCertificado(certificado)" title="Reenviar Email">📧</button>
               <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
             </td>
           </tr>
@@ -56,7 +59,7 @@
     <div class="table-header">
       <h3>Certificados de Docentes</h3>
       <div class="search-container">
-        <input type="text" [(ngModel)]="searchTermDocentes" (input)="filterCertificadosDocentes()" placeholder="Buscar por folio, docente...">
+         <input type="text" [(ngModel)]="searchTermDocentes" (input)="filterCertificadosDocentes()" placeholder="Buscar por folio, docente...">
         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -73,6 +76,7 @@
             <th>Folio</th>
             <th>Docente</th>
             <th>Producto Educativo</th>
+            <th>Correo Institucional</th>
             <th>Fecha de Emisión</th>
             <th>Acciones</th>
           </tr>
@@ -82,9 +86,11 @@
             <td><a [href]="getVerificationUrl(certificado.folio)" target="_blank">{{ certificado.folio }}</a></td>
             <td>{{ certificado.docente?.nombre_completo || 'N/A' }}</td>
             <td>{{ certificado.producto_educativo?.nombre || 'N/A' }}</td>
+            <td>{{ certificado.docente?.email_institucional || 'N/A' }}</td>
             <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
             <td class="actions-cell">
               <button class="icon-btn view" (click)="visualizarCertificado(certificado)" title="Visualizar">👁️</button>
+               <button class="icon-btn email" (click)="reenviarCertificado(certificado)" title="Reenviar Email">📧</button>
               <button class="icon-btn delete" (click)="deleteCertificado(certificado)" title="Eliminar">🗑️</button>
             </td>
           </tr>

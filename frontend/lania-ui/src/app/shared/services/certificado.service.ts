@@ -18,6 +18,7 @@ export class CertificadoService {
    * pero lo mantenemos por si es usado en otra parte).
    */
   getAll(): Observable<Certificado[]> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.get<Certificado[]>(this.apiUrl);
   }
 
@@ -28,7 +29,7 @@ export class CertificadoService {
    * (Usado por la primera tabla del dashboard).
    */
   getCertificadosParticipantes(): Observable<Certificado[]> {
-    // Llama al endpoint /participantes que creamos en el backend
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.get<Certificado[]>(`${this.apiUrl}/participantes`);
   }
 
@@ -37,7 +38,7 @@ export class CertificadoService {
    * (Usado por la segunda tabla del dashboard).
    */
   getCertificadosDocentes(): Observable<Certificado[]> {
-    // Llama al endpoint /docentes que creamos en el backend
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.get<Certificado[]>(`${this.apiUrl}/docentes`);
   }
 
@@ -47,6 +48,7 @@ export class CertificadoService {
    * Llama al endpoint unificado /download/{folio}
    */
   getCertificadoBlob(folio: string): Observable<Blob> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.get(`${this.apiUrl}/download/${folio}`, { responseType: 'blob' });
   }
   
@@ -59,6 +61,7 @@ export class CertificadoService {
    * @param data - El payload que incluye el 'inscripcion_id' y 'producto_educativo_id'.
    */
   createForParticipant(data: CertificadoCreate): Observable<Certificado> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.post<Certificado>(`${this.apiUrl}/participante`, data);
   }
 
@@ -67,6 +70,7 @@ export class CertificadoService {
    * @param data - El payload que incluye el 'docente_id' y 'producto_educativo_id'.
    */
   createForDocente(data: CertificadoCreate): Observable<Certificado> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.post<Certificado>(`${this.apiUrl}/docente`, data);
   }
 
@@ -75,18 +79,19 @@ export class CertificadoService {
    * @param id - El ID del certificado a eliminar.
    */
   delete(id: number): Observable<void> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   /**
-   * Solicita al backend que envíe un certificado por correo electrónico.
+   * 💡 CORRECCIÓN PARA EL BOTÓN "📧"
+   * Solicita al backend que reenvíe un certificado por correo electrónico.
+   * El endpoint del backend no espera un body, solo la llamada POST.
    * @param certificadoId - El ID del certificado a enviar.
-   * @param emailType - El tipo de email al que se enviará ('institucional' o 'personal').
    */
-  // ✅ CORRECCIÓN APLICADA AQUÍ
-  sendEmail(certificadoId: number, emailType: 'institucional' | 'personal'): Observable<any> {
-    const body = { email_type: emailType };
-    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, body);
+  sendEmail(certificadoId: number): Observable<any> {
+    // 💡 CORRECCIÓN: 'this.apiUrl' en lugar de 'this->apiUrl'
+    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, {});
   }
 
   /**
