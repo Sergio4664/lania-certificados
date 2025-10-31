@@ -1,5 +1,7 @@
 import { Participante } from '@shared/interfaces/participante.interface';
 import { ProductoEducativo } from './producto-educativo.interface';
+// --- 💡 1. IMPORTAR LA INTERFAZ DE CERTIFICADO ---
+import { Certificado } from './certificado.interface';
 
 /**
  * Define la estructura para crear una nueva inscripción.
@@ -20,5 +22,8 @@ export interface Inscripcion extends InscripcionCreate {
   fecha_inscripcion: string; // Las fechas desde la API llegan como strings en formato ISO
   participante: Participante;
   producto_educativo: ProductoEducativo;
-}
 
+  // --- 💡 2. AÑADIR LA PROPIEDAD QUE FALTABA ---
+  // (Esto arregla el error de 'certificados' no existe)
+  certificados?: Certificado[];
+}
