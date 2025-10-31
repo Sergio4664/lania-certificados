@@ -1,5 +1,7 @@
 import { DocenteDTO } from "./docente.interfaces";
 import { Inscripcion } from "./inscripcion.interface";
+// 💡 --- IMPORTACIÓN AÑADIDA ---
+import { Certificado } from "./certificado.interface";
 
 export interface ProductoEducativo {
   id: number;
@@ -8,12 +10,14 @@ export interface ProductoEducativo {
   fecha_inicio: string; // O Date, si lo conviertes
   fecha_fin: string;    // O Date, si lo conviertes
   competencias: string;
-  docentes: DocenteDTO[];
-  inscripciones: Inscripcion[];
 
   // --- PROPIEDADES AÑADIDAS ---
   tipo_producto?: string;
   modalidad?: string;
+  
+  // --- 💡 CORRECCIÓN: Añadir las relaciones ---
+  docentes: DocenteDTO[];
+  inscripciones: Inscripcion[];
 }
 
 export type ProductoEducativoCreate = Omit<ProductoEducativo, 'id' | 'docentes' | 'inscripciones'> & {
@@ -21,3 +25,8 @@ export type ProductoEducativoCreate = Omit<ProductoEducativo, 'id' | 'docentes' 
 };
 
 export type ProductoEducativoUpdate = Partial<ProductoEducativoCreate>;
+
+// 💡 --- INTERFAZ AÑADIDA (Aunque no se use 'getAllWithDetails', la dejamos por si 'admin-productos' la necesita) ---
+export interface ProductoEducativoWithDetails extends ProductoEducativo {
+  // Hereda todo de ProductoEducativo
+}

@@ -5,36 +5,36 @@ export interface DocenteDTO {
   id: number;
   nombre_completo: string;
   email_institucional: string;
-  email_personal?: string | null; // Hecho opcional
-  telefono?: string | null;     // Hecho opcional
-  whatsapp?: string | null;     // Hecho opcional
-  especialidad?: string | null; // Hecho opcional
-  is_active?: boolean;          // Hecho opcional
-  fecha_registro?: string;      // Hecho opcional
-  
+  email_personal: string;
+  telefono: string;
+  whatsapp: string;
+  especialidad: string;
+  is_active: boolean;
+  fecha_registro: string;
+
   // --- 💡 2. AÑADIR LA PROPIEDAD QUE FALTABA ---
-  // (Esto arregla el error de 'certificados' no existe)
+  // (Esto arregla el error TS2339)
   certificados?: Certificado[];
 }
 
 export interface CreateDocenteDTO {
   nombre_completo: string;
   email_institucional: string;
-  email_personal?: string | null;
-  telefono?: string | null;
-  whatsapp?: string | null;
-  especialidad?: string | null;
-  is_active?: boolean;
-  fecha_registro?: string;
+  email_personal: string;
+  telefono: string;
+  whatsapp: string;
+  especialidad: string;
+  is_active: boolean;
+  fecha_registro: string;
 }
 
 export interface UpdateDocenteDTO {
-  d: number; // 💡 Debería ser 'id'
-  nombre_completo?: string;
-  email_institucional?: string;
-  email_personal?: string | null;
-  telefono?: string | null;
-  whatsapp?: string | null;
-  especialidad?: string | null;
-  is_active?: boolean;
+  id: number; // 💡 Corregido de 'd' a 'id'
+  nombre_completo?: string; // Hecho opcional
+  email_institucional?: string; // Hecho opcional
+  email_personal?: string; // Hecho opcional
+  telefono?: string; // Hecho opcional
+  whatsapp?: string; // Hecho opcional
+  especialidad?: string; // Hecho opcional
+  is_active?: boolean; // Hecho opcional
 }
