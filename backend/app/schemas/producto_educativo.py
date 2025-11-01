@@ -68,3 +68,6 @@ class ProductoEducativo(ProductoEducativoBase):
 class ProductoEducativoWithDetails(ProductoEducativo):
     pass
 # --- 💡 FIN DE LA CORRECCIÓN ---
+
+class Config:
+    from_attributes = True

@@ -57,3 +57,6 @@ class CertificadoPublic(BaseModel):
 class EmisionMasivaResponse(BaseModel):
     success: list[dict]
     errors: list[dict]
+
+class Config:
+    from_attributes = True

@@ -136,11 +136,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- CARGA DE DATOS ---
   loadInitialData() {
     forkJoin({
-      productos: this.productoSvc.getAll(),
+      // CORRECCIÓN 1: El nombre del método es 'getAllProductosWithDetails'
+      productos: this.productoSvc.getAllProductosWithDetails(), 
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll()
     }).subscribe(({ productos, docentes, participantes }) => {
-      this.productos = productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
+      // CORRECCIÓN 2: Añadir tipos explícitos a 'a' y 'b'
+      this.productos = productos.sort((a: ProductoEducativo, b: ProductoEducativo) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
       this.docentes = docentes;
       this.participantes = participantes;
       this.groupAndFilterProducts();
@@ -214,7 +216,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.create(payload).subscribe({
       next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.productos = [newProduct, ...this.productos].sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
+        this.productos = [newProduct, ...this.productos].sort((a: ProductoEducativo, b: ProductoEducativo) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
         this.groupAndFilterProducts();
         this.cancelCourseForm();
         this.cdr.markForCheck();
@@ -229,7 +231,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
         this.productos = this.productos.map(p => p.id === updatedProduct.id ? updatedProduct : p);
-        this.groupAndFilterProducts();
+	    this.groupAndFilterProducts();
         this.cancelCourseForm();
         if (this.selectedCourse && this.selectedCourse.id === updatedProduct.id) {
             this.selectedCourse = updatedProduct;
@@ -450,12 +452,12 @@ export default class AdminProductosEducativosComponent implements OnInit {
           this.certificados.splice(index, 1); // Elimina el viejo si existe
         }
 
-        // ==========================================================
+        // ==========================================================
         // --- INICIO DE LA SOLUCIÓN (La que pediste) ---
         // Forzamos el valor correcto de 'con_competencias' en el objeto recibido.
         newCert.con_competencias = con_competencias;
         // --- FIN DE LA SOLUCIÓN ---
-        // ==========================================================
+        // ==========================================================
 
         this.certificados.push(newCert); // Añade el nuevo (ahora corregido)
         console.log('Lista de certificados actualizada:', this.certificados); // <-- DEBUG: Verifica la lista
@@ -512,6 +514,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const emailType: 'institucional' | 'personal' = (emailTypeChoice === 'personal') ? 'personal' : 'institucional';
     const targetEmail = emailType === 'personal' ? docente.email_personal : docente.email_institucional;
     if (!targetEmail) { this.notificationSvc.showError(`El docente no tiene un email ${emailType} registrado.`); return; }
+    // CORRECCIÓN 3: Eliminado 'Gnbsp;'
     this.notificationSvc.showInfo(`Enviando constancia al email ${emailType} (${targetEmail})...`);
     this.certificadoSvc.sendEmail(certificadoId, emailType).subscribe({
       next: (res) => this.notificationSvc.showSuccess(res?.message || 'Constancia enviada correctamente.'),
@@ -582,9 +585,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
             // --- INICIO CORRECCIÓN (MASIVO - ACTUALIZACIÓN LOCAL OPCIONAL) ---
             // Añadir a la lista local aquí también si queremos UI update durante el proceso
             const index = this.certificados.findIndex(c => c.inscripcion_id === inscripcion.id && c.con_competencias);
-            if (index > -1) this.certificados.splice(index, 1);
-            // Aplicamos la misma corrección aquí por si acaso
-            newCert.con_competencias = true; 
+            if (index > -1) this.certificados.splice(index, 1);
+            // Aplicamos la misma corrección aquí por si acaso
+            newCert.con_competencias = true; 
             this.certificados.push(newCert);
             // Considera si llamar markForCheck aquí es demasiado frecuente para muchos items
             // this.cdr.markForCheck(); 
@@ -627,7 +630,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const term = this.searchTerm.toLowerCase();
     const filtered = this.searchTerm ? this.productos.filter(p => p.nombre.toLowerCase().includes(term)) : [...this.productos];
     this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO'); this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA'); this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
-  }
+ }
 
   getCourseColor(id: number): string {
     const colors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0', '#9013FE', '#F8E71C', '#FF6666', '#66CCCC', '#FF99CC'];
@@ -646,6 +649,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   isRecipientSelected = (id: number): boolean => this.competencyRecipients.has(id);
 
   toggleDocenteCompetencyRecipient(docenteId: number, event: Event) {
+    // CORRECCIÓN 5: Eliminado 'Gnbsp;'
     const isChecked = (event.target as HTMLInputElement).checked; if (isChecked) { this.selectedDocenteIds.add(docenteId); } else { this.selectedDocenteIds.delete(docenteId); }
   }
 
@@ -668,7 +672,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
           else { this.competenciesList = []; }
       } catch(e) { this.competenciesList = []; }
       if (this.competenciesList.length === 0) { this.competenciesList.push(''); }
-     this.showCompetenciesModal = true;
+     this.showCompetenciesModal = true;
   }
 
   saveCompetencies() {

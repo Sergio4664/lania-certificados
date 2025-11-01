@@ -28,5 +28,5 @@ class Administrador(AdministradorBase):
     id: int
     fecha_creacion: datetime
 
-    class Config:
-        from_attributes = True
+class Config:
+    from_attributes = True

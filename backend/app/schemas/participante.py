@@ -38,3 +38,6 @@ class ParticipanteOut(ParticipanteBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 # --- 💡 FIN DE LA CORRECCIÓN ---
+
+class Config:
+    from_attributes = True

@@ -33,3 +33,6 @@ producto_educativo: 'ProductoEducativoOut'
 certificados: List['CertificadoOut'] = [] # 👈 Cambiado a List (mejor práctica)
 
 model_config = ConfigDict(from_attributes=True)
+
+class Config:
+    from_attributes = True

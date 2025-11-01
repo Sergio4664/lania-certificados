@@ -29,3 +29,6 @@ class DocenteOut(DocenteBase):
 class Docente(DocenteOut):
     productos_educativos: List['ProductoEducativo'] = []
     model_config = ConfigDict(from_attributes=True)
+
+class Config:
+    from_attributes = True

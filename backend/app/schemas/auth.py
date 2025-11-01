@@ -31,3 +31,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     rol: Optional[UserRole] = None
+
+class Config:
+    from_attributes = True
