@@ -1,19 +1,54 @@
 # backend/app/schemas/__init__.py
 
-# 1. Importar todos los esquemas, incluyendo los nuevos 'Out'
-from .docente import Docente, DocenteOut
-from .participante import Participante
-from .producto_educativo import ProductoEducativo, ProductoEducativoOut
-from .certificado import Certificado, CertificadoOut
-from .inscripcion import Inscripcion, InscripcionOut
+# 1. Importar todos los esquemas involucrados en el ciclo de dependencias
 
-# 2. Reconstruir los modelos para resolver las referencias.
-Docente.model_rebuild()
-DocenteOut.model_rebuild() # ✅ Reconstruir nuevo esquema
+from .producto_educativo import (
+    ProductoEducativo,
+    ProductoEducativoOut,
+    ProductoEducativoWithDetails  # 💡 Faltaba importar esta clase
+)
+from .docente import (
+    Docente, 
+    DocenteOut
+)
+from .inscripcion import (
+    Inscripcion, 
+    InscripcionOut
+)
+from .certificado import (
+    Certificado, 
+    CertificadoOut
+)
+from .participante import (
+    Participante, 
+    ParticipanteOut  # 💡 Faltaba importar esta clase
+)
+
+# (Importamos los otros esquemas también para ser consistentes)
+from . import administrador
+from . import auth
+
+
+# 2. Reconstruir TODOS los modelos que usan referencias de texto (comillas)
+#    para resolver las dependencias circulares.
+
+# --- De producto_educativo.py ---
 ProductoEducativo.model_rebuild()
-ProductoEducativoOut.model_rebuild() # ✅ Reconstruir nuevo esquema
+ProductoEducativoOut.model_rebuild()
+ProductoEducativoWithDetails.model_rebuild()  # 💡 Faltaba esta llamada
+
+# --- De docente.py ---
+Docente.model_rebuild()
+DocenteOut.model_rebuild()
+
+# --- De inscripcion.py ---
 Inscripcion.model_rebuild()
-InscripcionOut.model_rebuild() # ✅ Reconstruir nuevo esquema
+InscripcionOut.model_rebuild()
+
+# --- De certificado.py ---
 Certificado.model_rebuild()
-CertificadoOut.model_rebuild() # ✅ Reconstruir nuevo esquema
+CertificadoOut.model_rebuild()
+
+# --- De participante.py ---
 Participante.model_rebuild()
+ParticipanteOut.model_rebuild()  # 💡 Faltaba esta llamada
