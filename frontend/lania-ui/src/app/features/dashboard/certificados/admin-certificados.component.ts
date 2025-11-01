@@ -118,7 +118,8 @@ export default class AdminCertificadosComponent implements OnInit {
   // --- MÉTODOS AÑADIDOS PARA EL MODAL DE CREACIÓN ---
 
   loadProductosParaCrear(): void {
-    this.productoSvc.getAllWithDetails().subscribe({ //
+    // ⬇️ *** ESTA ES LA LÍNEA CORREGIDA ***
+    this.productoSvc.getAllProductosWithDetails().subscribe({ //
       // 💡 --- CORRECCIÓN 4: Usar el tipo 'ProductoEducativoWithDetails' ---
       next: (productos: ProductoEducativoWithDetails[]) => {
         this.allProductos = productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());

@@ -6,12 +6,13 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from app import models
-# --- ✅ CORRECCIÓN 2: Importar el esquema 'Out' ---
+# --- 💡 CORRECCIÓN 1: Importar el esquema 'WithDetails' ---
 from app.schemas.producto_educativo import (
     ProductoEducativo,
     ProductoEducativoCreate,
     ProductoEducativoUpdate,
-    ProductoEducativoOut  # Importación clave
+    ProductoEducativoOut,
+    ProductoEducativoWithDetails # 👈 AÑADIR ESTA
 )
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -22,13 +23,41 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin_user)]
 )
 
-# --- ✅ CORRECCIÓN 3: Usar 'ProductoEducativoOut' para la LISTA ---
+
 @router.get("/", response_model=List[ProductoEducativoOut])
 def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     productos = db.query(models.ProductoEducativo).options(
         joinedload(models.ProductoEducativo.docentes)
     ).order_by(models.ProductoEducativo.id.desc()).offset(skip).limit(limit).all()
     return productos
+
+
+# --- 💡 CORRECCIÓN 2: Añadir el nuevo endpoint AQUÍ ---
+# (Debe ir ANTES de "/{producto_id}" para que sea detectado primero)
+@router.get("/with-details", response_model=List[ProductoEducativoWithDetails])
+def read_productos_educativos_with_details(db: Session = Depends(get_db)):
+    """
+    Obtiene todos los productos educativos con sus relaciones
+    (docentes e inscripciones con participantes).
+    """
+    productos = db.query(models.ProductoEducativo).options(
+        # Cargar docentes asociados
+        joinedload(models.ProductoEducativo.docentes),
+        # Cargar inscripciones y, dentro de ellas, el participante
+        joinedload(models.ProductoEducativo.inscripciones)
+            .joinedload(models.Inscripcion.participante),
+        # Cargar inscripciones y, dentro de ellas, los certificados
+         joinedload(models.ProductoEducativo.inscripciones)
+            .joinedload(models.Inscripcion.certificados),
+        # Cargar docentes y sus certificados
+        joinedload(models.ProductoEducativo.docentes)
+            .joinedload(models.Docente.certificados)
+            
+    ).order_by(models.ProductoEducativo.fecha_inicio.desc()).all()
+    
+    return productos
+# --- FIN DE LA CORRECCIÓN ---
+
 
 @router.get("/{producto_id}", response_model=ProductoEducativo)
 def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
@@ -40,7 +69,7 @@ def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
     return db_producto
 
-# --- ✅ CORRECCIÓN 4: Usar 'ProductoEducativoOut' en la creación y el nombre 'docentes_ids' ---
+
 @router.post("/", response_model=ProductoEducativoOut, status_code=status.HTTP_201_CREATED)
 def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = Depends(get_db)):
     docentes = []
@@ -63,6 +92,7 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
     db.commit()
     db.refresh(db_producto)
     return db_producto
+
 
 @router.put("/{producto_id}", response_model=ProductoEducativoOut)
 def update_producto_educativo(producto_id: int, producto_update: ProductoEducativoUpdate, db: Session = Depends(get_db)):
@@ -89,6 +119,7 @@ def update_producto_educativo(producto_id: int, producto_update: ProductoEducati
     db.refresh(db_producto)
     return db_producto
 
+
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
@@ -98,7 +129,7 @@ def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return
 
-# --- ⬇️ AQUÍ COMIENZAN LAS MODIFICACIONES ⬇️ ---
+
 @router.post("/{producto_id}/upload-participantes", summary="Inscribir participantes desde un archivo Excel o CSV")
 def upload_participantes_file(
     producto_id: int,
@@ -115,7 +146,6 @@ def upload_participantes_file(
         if file.filename.endswith('.xlsx'):
             df = pd.read_excel(io.BytesIO(contents))
         elif file.filename.endswith('.csv'):
-            # Decodificar con utf-8, opcionalmente con 'latin1' si hay problemas de acentos
             try:
                 df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
             except UnicodeDecodeError:
@@ -123,7 +153,6 @@ def upload_participantes_file(
         else:
             raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use .xlsx o .csv")
 
-        # Columnas requeridas mínimas
         required_columns = ['nombre_completo', 'email_personal']
         if not all(col in df.columns for col in required_columns):
             raise HTTPException(
@@ -138,27 +167,20 @@ def upload_participantes_file(
             nombre = row['nombre_completo']
             email = row['email_personal']
 
-            # Saltar filas si los datos mínimos no están
             if pd.isna(nombre) or pd.isna(email):
                 continue
 
-            # --- ✅ NUEVA LÓGICA: LEER TODOS LOS CAMPOS ---
-            
-            # Leer los campos adicionales
             email_inst = row.get('email_institucional')
             telefono = row.get('telefono')
             whatsapp = row.get('whatsapp')
 
-            # Convertir valores de Pandas (NaN) a None y asegurar que sean strings
             email_inst_str = None if pd.isna(email_inst) else str(email_inst)
             telefono_str = None if pd.isna(telefono) else str(telefono)
             whatsapp_str = None if pd.isna(whatsapp) else str(whatsapp)
 
-            # Buscar al participante por email personal
             db_participante = db.query(models.Participante).filter(models.Participante.email_personal == str(email)).first()
             
             if not db_participante:
-                # --- 1. CREAR NUEVO PARTICIPANTE ---
                 db_participante = models.Participante(
                     nombre_completo=str(nombre), 
                     email_personal=str(email),
@@ -167,15 +189,12 @@ def upload_participantes_file(
                     whatsapp=whatsapp_str
                 )
                 db.add(db_participante)
-                # (Hacemos commit por cada uno para obtener el ID para la inscripción)
                 db.commit() 
                 db.refresh(db_participante)
                 creados += 1
             else:
-                # --- 2. ACTUALIZAR PARTICIPANTE EXISTENTE ---
                 db_participante.nombre_completo = str(nombre)
                 
-                # Actualizar solo si el campo viene en el CSV (no es None)
                 if email_inst_str is not None:
                     db_participante.email_institucional = email_inst_str
                 if telefono_str is not None:
@@ -183,10 +202,9 @@ def upload_participantes_file(
                 if whatsapp_str is not None:
                     db_participante.whatsapp = whatsapp_str
                 
-                db.commit() # Guardar cambios del participante
+                db.commit() 
                 db.refresh(db_participante)
             
-            # --- Lógica de Inscripción (se mantiene igual) ---
             inscripcion_existente = db.query(models.Inscripcion).filter(
                 models.Inscripcion.producto_educativo_id == producto_id,
                 models.Inscripcion.participante_id == db_participante.id
@@ -200,12 +218,10 @@ def upload_participantes_file(
                 db.add(nueva_inscripcion)
                 inscritos += 1
         
-        # Commit final para todas las inscripciones
         db.commit()
 
     except Exception as e:
         db.rollback()
-        # Proporcionar un error más detallado
         import traceback
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error al procesar el archivo: {str(e)}")
@@ -215,4 +231,3 @@ def upload_participantes_file(
         "nuevos_participantes_creados": creados,
         "nuevas_inscripciones_realizadas": inscritos
     }
-# --- ⬆️ AQUÍ TERMINAN LAS MODIFICACIONES ⬆️ ---
