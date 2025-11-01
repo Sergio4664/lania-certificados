@@ -4,6 +4,7 @@ import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List
+from app import schemas
 
 from app import models
 # --- 💡 CORRECCIÓN 1: Importar el esquema 'WithDetails' ---
@@ -33,31 +34,17 @@ def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Dep
 
 
 # --- 💡 CORRECCIÓN 2: Añadir el nuevo endpoint AQUÍ ---
-# (Debe ir ANTES de "/{producto_id}" para que sea detectado primero)
-@router.get("/with-details", response_model=List[ProductoEducativoWithDetails])
-def read_productos_educativos_with_details(db: Session = Depends(get_db)):
-    """
-    Obtiene todos los productos educativos con sus relaciones
-    (docentes e inscripciones con participantes).
-    """
-    productos = db.query(models.ProductoEducativo).options(
-        # Cargar docentes asociados
-        joinedload(models.ProductoEducativo.docentes),
-        # Cargar inscripciones y, dentro de ellas, el participante
-        joinedload(models.ProductoEducativo.inscripciones)
-            .joinedload(models.Inscripcion.participante),
-        # Cargar inscripciones y, dentro de ellas, los certificados
-         joinedload(models.ProductoEducativo.inscripciones)
-            .joinedload(models.Inscripcion.certificados),
-        # Cargar docentes y sus certificados
-        joinedload(models.ProductoEducativo.docentes)
-            .joinedload(models.Docente.certificados)
-            
-    ).order_by(models.ProductoEducativo.fecha_inicio.desc()).all()
-    
-    return productos
-# --- FIN DE LA CORRECCIÓN ---
-
+@router.get("/with-details", response_model=list[schemas.ProductoEducativo])
+def read_productos_educativos_with_details(
+    db: Session = Depends(get_db)
+):
+    # ... (tu lógica de query)
+   productos = db.query(models.ProductoEducativo).options(
+    joinedload(models.ProductoEducativo.docentes),
+    joinedload(models.ProductoEducativo.inscripciones) # <-- ASÍ DEBE QUEDAR
+).all()
+   print("PRODUCTOS ENCONTRADOS:", productos) # <--- AÑADE ESTO
+   return productos
 
 @router.get("/{producto_id}", response_model=ProductoEducativo)
 def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
