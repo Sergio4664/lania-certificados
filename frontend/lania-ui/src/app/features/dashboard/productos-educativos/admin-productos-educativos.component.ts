@@ -18,10 +18,17 @@ import { environment } from '@environments/environment';
 import { HttpErrorResponse } from '@angular/common/http';
 
 // Interfaces
-import { ProductoEducativo, ProductoEducativoCreate, ProductoEducativoUpdate } from '@shared/interfaces/producto-educativo.interface';
+// --- 💡 CORRECCIÓN 1: Importar 'ProductoEducativoWithDetails' desde su archivo correcto ---
+import { 
+  ProductoEducativo, 
+  ProductoEducativoCreate, 
+  ProductoEducativoUpdate, 
+  ProductoEducativoWithDetails 
+} from '@shared/interfaces/producto-educativo.interface';
 import { DocenteDTO } from '@shared/interfaces/docente.interfaces';
 import { Participante } from '@shared/interfaces/participante.interface';
 import { Inscripcion, InscripcionCreate } from '@shared/interfaces/inscripcion.interface';
+// --- 💡 CORRECCIÓN 1 (continuación): Quitar 'ProductoEducativoWithDetails' de esta importación ---
 import { Certificado, CertificadoCreate, EmisionMasivaResponse } from '@shared/interfaces/certificado.interface';
 
 
@@ -60,20 +67,21 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private certificadoSvc = inject(CertificadoService);
   private notificationSvc = inject(NotificationService);
   private fb = inject(FormBuilder);
-  private cdr = inject(ChangeDetectorRef); // <-- Asegúrate que ChangeDetectorRef esté inyectado
+  private cdr = inject(ChangeDetectorRef);
 
-  private productos: ProductoEducativo[] = [];
+  // --- 💡 CORRECCIÓN 2: Usar el tipo 'ProductoEducativoWithDetails' ---
+  private productos: ProductoEducativoWithDetails[] = [];
   docentes: DocenteDTO[] = [];
   participantes: Participante[] = [];
   certificados: Certificado[] = []; // Lista completa de todos los certificados
-  cursos: ProductoEducativo[] = [];
-  pildoras: ProductoEducativo[] = [];
-  inyecciones: ProductoEducativo[] = [];
+  cursos: ProductoEducativoWithDetails[] = [];
+  pildoras: ProductoEducativoWithDetails[] = [];
+  inyecciones: ProductoEducativoWithDetails[] = [];
   inscripcionesDelProducto: Inscripcion[] = [];
 
   showCourseForm = false;
-  editingCourse: ProductoEducativo | null = null;
-  selectedCourse: ProductoEducativo | null = null;
+  editingCourse: ProductoEducativoWithDetails | null = null;
+  selectedCourse: ProductoEducativoWithDetails | null = null;
   showAddParticipantForm = false;
   showCompetenciesModal = false;
   searchTerm: string = '';
@@ -135,18 +143,31 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   // --- CARGA DE DATOS ---
   loadInitialData() {
+    // --- 💡 CORRECCIÓN 4: Guardar ID para re-seleccionar después de recargar ---
+    const selectedCourseId = this.selectedCourse?.id; 
+
     forkJoin({
-      productos: this.productoSvc.getAll(),
+      // --- 💡 CORRECCIÓN 3: Llamar al servicio que trae los detalles ---
+      productos: this.productoSvc.getAllProductosWithDetails(),
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll()
     }).subscribe(({ productos, docentes, participantes }) => {
       this.productos = productos.sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
       this.docentes = docentes;
       this.participantes = participantes;
-      this.groupAndFilterProducts();
-      if (this.selectedCourse) {
-        this.loadParticipantsForCourse(this.selectedCourse.id);
+      this.groupAndFilterProducts(); // Esto actualiza this.cursos, pildoras, etc.
+      
+      if (selectedCourseId) {
+        // Si había un curso seleccionado, intentar encontrarlo y re-seleccionarlo
+        const reselectedCourse = this.productos.find(p => p.id === selectedCourseId);
+        if (reselectedCourse) {
+          this.selectedCourse = reselectedCourse;
+          // No es necesario recargar participantes si ya estaban
+        } else {
+          this.unselectCourse(); // El curso ya no existe
+        }
       }
+      
       this.cdr.markForCheck();
     });
   }
@@ -214,10 +235,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.create(payload).subscribe({
       next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.productos = [newProduct, ...this.productos].sort((a, b) => new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime());
-        this.groupAndFilterProducts();
+        // --- 💡 CORRECCIÓN 4: Recargar todos los datos para evitar error de tipos ---
+        this.loadInitialData();
         this.cancelCourseForm();
-        this.cdr.markForCheck();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al crear.')
     });
@@ -228,14 +248,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
       next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        this.productos = this.productos.map(p => p.id === updatedProduct.id ? updatedProduct : p);
-        this.groupAndFilterProducts();
+        // --- 💡 CORRECCIÓN 4: Recargar todos los datos. 'loadInitialData' re-seleccionará el curso ---
+        this.loadInitialData();
         this.cancelCourseForm();
-        if (this.selectedCourse && this.selectedCourse.id === updatedProduct.id) {
-            this.selectedCourse = updatedProduct;
-            this.loadParticipantsForCourse(this.selectedCourse.id);
-        }
-        this.cdr.markForCheck();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al actualizar.')
     });
@@ -257,7 +272,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   // --- GESTIÓN DEL FORMULARIO ---
-  editCourse(producto: ProductoEducativo) {
+  // --- 💡 CORRECCIÓN 2: Usar el tipo 'ProductoEducativoWithDetails' ---
+  editCourse(producto: ProductoEducativoWithDetails) {
     this.editingCourse = producto;
     const competenciasValueForForm = producto.competencias || '';
     this.courseForm.patchValue({
@@ -271,6 +287,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
     const formArray = this.courseForm.get('docente_ids') as FormArray;
     formArray.clear();
+    // 'producto' ahora es 'WithDetails', así que 'docentes' debería estar disponible
     (producto.docentes || []).forEach(docente => {
       formArray.push(this.fb.control(docente.id));
     });
@@ -340,15 +357,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: () => {
         this.notificationSvc.showSuccess('Inscripción eliminada.');
         this.inscripcionesDelProducto = this.inscripcionesDelProducto.filter(i => i.id !== inscripcionId);
-        // --- INICIO CORRECCIÓN (BORRADO INSCRIPCIÓN) ---
-        // Eliminar certificados asociados de la lista local para refresco instantáneo
         this.certificados = this.certificados.filter(c => 
             c.inscripcion_id !== inscripcionId && 
-            !(c.inscripcion && c.inscripcion.id === inscripcionId) // Doble chequeo por si el objeto inscripcion existe
+            !(c.inscripcion && c.inscripcion.id === inscripcionId)
         );
         this.cdr.markForCheck();
-        // --- FIN CORRECCIÓN (BORRADO INSCRIPCIÓN) ---
-        // this.loadCertificados(); // Ya no es necesario si actualizamos localmente
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
     });
@@ -402,7 +415,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- GESTIÓN DE CERTIFICADOS ---
 
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
-    // Busca certificado NORMAL (sin competencias)
     return this.certificados.find(c =>
         (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
         !c.con_competencias
@@ -410,10 +422,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   getCertificadoCompetenciasForInscripcion(inscripcionId: number): Certificado | undefined {
-    // Busca certificado DE COMPETENCIAS
     return this.certificados.find(c =>
         (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
-        c.con_competencias // Busca explícitamente que sea true
+        c.con_competencias
     );
   }
 
@@ -439,30 +450,18 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.certificadoSvc.createForParticipant(payload).subscribe({
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia ${tipo} emitida: ${newCert.folio}`);
-        console.log('Certificado recibido del backend:', newCert); // <-- DEBUG: Verifica el objeto
         
-        // --- INICIO CORRECCIÓN 1 (ACTUALIZACIÓN LOCAL) ---
         const index = this.certificados.findIndex(c =>
           (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
-          c.con_competencias === con_competencias // Compara el mismo tipo
+          c.con_competencias === con_competencias
         );
         if (index > -1) {
-          this.certificados.splice(index, 1); // Elimina el viejo si existe
+          this.certificados.splice(index, 1);
         }
 
-        // ==========================================================
-        // --- INICIO DE LA SOLUCIÓN (La que pediste) ---
-        // Forzamos el valor correcto de 'con_competencias' en el objeto recibido.
         newCert.con_competencias = con_competencias;
-        // --- FIN DE LA SOLUCIÓN ---
-        // ==========================================================
-
-        this.certificados.push(newCert); // Añade el nuevo (ahora corregido)
-        console.log('Lista de certificados actualizada:', this.certificados); // <-- DEBUG: Verifica la lista
-        this.cdr.markForCheck(); // Notifica a Angular
-        // --- FIN CORRECCIÓN 1 ---
-        
-        // this.loadCertificados(); // Comentado para UI instantánea
+        this.certificados.push(newCert);
+        this.cdr.markForCheck();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || `Error al emitir constancia ${tipo}.`)
     });
@@ -479,7 +478,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia de ponente emitida: ${newCert.folio}`);
         
-        // --- INICIO CORRECCIÓN 2 (ACTUALIZACIÓN LOCAL) ---
         const index = this.certificados.findIndex(c =>
             (c.docente?.id === docenteId || c.docente_id === docenteId) &&
             c.producto_educativo_id === this.selectedCourse?.id
@@ -489,9 +487,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
         }
         this.certificados.push(newCert);
         this.cdr.markForCheck();
-        // --- FIN CORRECCIÓN 2 ---
-
-        // this.loadCertificados(); // Comentado para UI instantánea
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al emitir constancia de ponente.')
     });
@@ -524,16 +519,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.certificadoSvc.delete(certificadoId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Certificado eliminado.');
-
-          // --- INICIO CORRECCIÓN 3 (ACTUALIZACIÓN LOCAL) ---
           const index = this.certificados.findIndex(c => c.id === certificadoId);
           if (index > -1) {
             this.certificados.splice(index, 1);
           }
           this.cdr.markForCheck();
-          // --- FIN CORRECCIÓN 3 ---
-
-          // this.loadCertificados(); // Comentado para UI instantánea
         },
         error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al eliminar el certificado.')
       });
@@ -579,16 +569,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
         return this.certificadoSvc.createForParticipant(payload).pipe(
           switchMap((newCert: Certificado) => {
             console.log(`Cert ${newCert.id} creado, enviando...`);
-            // --- INICIO CORRECCIÓN (MASIVO - ACTUALIZACIÓN LOCAL OPCIONAL) ---
-            // Añadir a la lista local aquí también si queremos UI update durante el proceso
             const index = this.certificados.findIndex(c => c.inscripcion_id === inscripcion.id && c.con_competencias);
-            if (index > -1) this.certificados.splice(index, 1);
-            // Aplicamos la misma corrección aquí por si acaso
-            newCert.con_competencias = true; 
+            if (index > -1) this.certificados.splice(index, 1);
+            newCert.con_competencias = true; 
             this.certificados.push(newCert);
-            // Considera si llamar markForCheck aquí es demasiado frecuente para muchos items
-            // this.cdr.markForCheck(); 
-            // --- FIN CORRECCIÓN (MASIVO) ---
             return this.certificadoSvc.sendEmail(newCert.id, 'personal');
           }),
           catchError(err => { console.error(`Error procesando a ${inscripcion.participante.nombre_completo}:`, err); this.notificationSvc.showError(`Error procesando a ${inscripcion.participante.nombre_completo}: ${err.error?.detail || 'Error'}`); return of({ error: true, inscripcionId: inscripcion.id }); })
@@ -601,11 +585,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
         const successes = results.filter(r => r && !r.error).length;
         const failures = results.length - successes;
         this.notificationSvc.showSuccess(`Proceso de competencias completado: ${successes} procesados exitosamente. ${failures > 0 ? failures + ' errores.' : ''}`);
-        // this.loadCertificados(); // Recargar al final asegura consistencia si no se actualizó durante el proceso
-        // Si no llamaste markForCheck en el switchMap, llámalo aquí una vez
         this.cdr.markForCheck(); 
         this.competencyRecipients.clear();
-        // this.cdr.markForCheck(); // Ya se llama arriba o no es necesario si loadCertificados se usa
       },
       error: (err) => {
         this.notificationSvc.showError('Ocurrió un error general durante el proceso de competencias.'); console.error("Error en el forkJoin de competencias:", err); this.loadCertificados();
@@ -614,7 +595,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   // --- MÉTODOS DE LA UI ---
-  selectCourse(course: ProductoEducativo) {
+  // --- 💡 CORRECCIÓN 2: Usar el tipo 'ProductoEducativoWithDetails' ---
+  selectCourse(course: ProductoEducativoWithDetails) {
     this.selectedCourse = course; this.competencyRecipients.clear(); this.selectedDocenteIds.clear();
     this.loadParticipantsForCourse(course.id); this.docenteEmailSelection = {};
   }
@@ -626,7 +608,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
   groupAndFilterProducts() {
     const term = this.searchTerm.toLowerCase();
     const filtered = this.searchTerm ? this.productos.filter(p => p.nombre.toLowerCase().includes(term)) : [...this.productos];
-    this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO'); this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA'); this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
+    // --- 💡 CORRECCIÓN 2: 'filtered' ahora es 'ProductoEducativoWithDetails[]' ---
+    this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO'); 
+    this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA'); 
+    this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
   }
 
   getCourseColor(id: number): string {
@@ -668,7 +653,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
           else { this.competenciesList = []; }
       } catch(e) { this.competenciesList = []; }
       if (this.competenciesList.length === 0) { this.competenciesList.push(''); }
-     this.showCompetenciesModal = true;
+     this.showCompetenciesModal = true;
   }
 
   saveCompetencies() {

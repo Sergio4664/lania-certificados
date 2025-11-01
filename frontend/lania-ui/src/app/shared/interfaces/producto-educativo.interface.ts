@@ -1,32 +1,39 @@
+// Ruta: frontend/lania-ui/src/app/shared/interfaces/producto-educativo.interface.ts
 import { DocenteDTO } from "./docente.interfaces";
 import { Inscripcion } from "./inscripcion.interface";
-// 💡 --- IMPORTACIÓN AÑADIDA ---
-import { Certificado } from "./certificado.interface";
+// El import de 'Certificado' no se usa en este archivo.
 
+/**
+* INTERFAZ BASE: Representa el producto simple, tal como viene de '.../productos-educativos/'
+* NO incluye las relaciones pesadas.
+*/
 export interface ProductoEducativo {
-  id: number;
-  nombre: string;
-  horas: number;
-  fecha_inicio: string; // O Date, si lo conviertes
-  fecha_fin: string;    // O Date, si lo conviertes
-  competencias: string;
-
-  // --- PROPIEDADES AÑADIDAS ---
+  id: number;
+  nombre: string;
+  horas: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+  competencias: string | null; // Es mejor permitir 'null' si puede venir vacío
   tipo_producto?: string;
-  modalidad?: string;
-  
-  // --- 💡 CORRECCIÓN: Añadir las relaciones ---
-  docentes: DocenteDTO[];
-  inscripciones: Inscripcion[];
+  modalidad?: string;
+  
+  // --- ❌ ESTAS PROPIEDADES NO VAN AQUÍ ---
+  // docentes: DocenteDTO[];
+  // inscripciones: Inscripcion[];
 }
 
-export type ProductoEducativoCreate = Omit<ProductoEducativo, 'id' | 'docentes' | 'inscripciones'> & {
-  docente_ids: number[];
+export type ProductoEducativoCreate = Omit<ProductoEducativo, 'id'> & {
+  docente_ids: number[];
 };
 
 export type ProductoEducativoUpdate = Partial<ProductoEducativoCreate>;
 
-// 💡 --- INTERFAZ AÑADIDA (Aunque no se use 'getAllWithDetails', la dejamos por si 'admin-productos' la necesita) ---
+/**
+* INTERFAZ DETALLADA: Hereda la base y AÑADE las relaciones.
+* Esta es la que usa el endpoint '.../with-details'.
+*/
 export interface ProductoEducativoWithDetails extends ProductoEducativo {
-  // Hereda todo de ProductoEducativo
+  // --- ✅ ESTAS PROPIEDADES SÍ VAN AQUÍ ---
+  docentes: DocenteDTO[];
+  inscripciones: Inscripcion[];
 }

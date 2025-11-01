@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/app/features/admin/productos-educativos/producto-educativo-create.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, FormControl, Validators } from '@angular/forms';
