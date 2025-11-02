@@ -28,7 +28,10 @@ router = APIRouter(
 def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     productos = db.query(models.ProductoEducativo).options(
         joinedload(models.ProductoEducativo.docentes)
-    ).order_by(models.ProductoEducativo.id.desc()).offset(skip).limit(limit).all()
+    ).order_by(models.ProductoEducativo.id.desc()
+    # --- ✅ CAMBIO 1: Filtrar solo los productos activos ---
+    ).filter(models.ProductoEducativo.is_active == True
+    ).offset(skip).limit(limit).all()
     return productos
 
 
@@ -39,6 +42,8 @@ def read_productos_educativos_with_details(
     productos = db.query(models.ProductoEducativo).options(
         joinedload(models.ProductoEducativo.docentes),
         joinedload(models.ProductoEducativo.inscripciones)
+    # --- ✅ CAMBIO 2: Filtrar solo los productos activos ---
+    ).filter(models.ProductoEducativo.is_active == True
     ).all()
     return productos
 
@@ -48,8 +53,15 @@ def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
         joinedload(models.ProductoEducativo.docentes),
         joinedload(models.ProductoEducativo.inscripciones)
     ).filter(models.ProductoEducativo.id == producto_id).first()
+    
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+    
+    # Opcional: Si no quieres que puedan ver un producto "eliminado" 
+    # ni siquiera por ID, descomenta esta línea:
+    # if not db_producto.is_active:
+    #     raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+        
     return db_producto
 
 
@@ -70,6 +82,7 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
         modalidad=producto.modalidad,
         competencias=producto.competencias,
         docentes=docentes
+        # is_active se pone en True por defecto gracias al modelo
     )
     db.add(db_producto)
     db.commit()
@@ -87,6 +100,10 @@ def update_producto_educativo(producto_id: int, producto_update: ProductoEducati
 
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+        
+    # Opcional: No permitir actualizar un producto "eliminado"
+    # if not db_producto.is_active:
+    #     raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
     # --- PRUEBA 1 ---
     # Imprime EXACTAMENTE lo que el frontend envió
@@ -136,14 +153,22 @@ def update_producto_educativo(producto_id: int, producto_update: ProductoEducati
 # --- ✨ FIN DE LA CORRECCIÓN ---
 
 
+# --- ✅ CAMBIO 3: Modificar la lógica de borrado ---
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
-    db.delete(db_producto)
+    
+    # --- Esta es la nueva lógica ---
+    # En lugar de: db.delete(db_producto)
+    db_producto.is_active = False
+    db.add(db_producto)
+    # --- Fin de la nueva lógica ---
+    
     db.commit()
     return
+# --- FIN DEL CAMBIO 3 ---
 
 
 @router.post("/{producto_id}/upload-participantes", summary="Inscribir participantes desde un archivo Excel o CSV")
@@ -155,6 +180,10 @@ def upload_participantes_file(
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+        
+    # Opcional: No permitir inscripciones a un producto "eliminado"
+    # if not db_producto.is_active:
+    #     raise HTTPException(status_code=400, detail="No se pueden inscribir participantes a un producto educativo eliminado")
 
     try:
         contents = file.file.read()

@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, Text, Enum
+# --- ✅ CAMBIO 1: Importar Boolean ---
+from sqlalchemy import Column, Integer, String, Date, Text, Enum, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 from .enums import TipoProductoEnum, ModalidadEnum # Importar los enums
@@ -15,9 +16,16 @@ class ProductoEducativo(Base):
     modalidad = Column(Enum(ModalidadEnum), nullable=True)
     competencias = Column(Text, nullable=True)
 
+    # --- ✅ CAMBIO 2: Añadir esta columna ---
+    # Por defecto, todos los nuevos registros estarán activos (True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    # --- FIN DEL CAMBIO ---
+
     docentes = relationship(
         "Docente",
         secondary="productos_educativos_docentes",
         back_populates="productos_educativos"
     )
+    
+    # Esta relación se queda exactamente como la tenías
     inscripciones = relationship("Inscripcion", back_populates="producto_educativo")
