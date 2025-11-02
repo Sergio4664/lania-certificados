@@ -7,13 +7,12 @@ from typing import List
 from app import schemas
 
 from app import models
-# --- 💡 CORRECCIÓN 1: Importar el esquema 'WithDetails' ---
 from app.schemas.producto_educativo import (
     ProductoEducativo,
     ProductoEducativoCreate,
     ProductoEducativoUpdate,
     ProductoEducativoOut,
-    ProductoEducativoWithDetails # 👈 ESTA IMPORTACIÓN YA ESTABA BIEN
+    ProductoEducativoWithDetails
 )
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -33,8 +32,6 @@ def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Dep
     return productos
 
 
-# --- 💡 CORRECCIÓN 2: Añadir el nuevo endpoint AQUÍ ---
-# 💡 *** ¡ESTA ES LA LÍNEA CORREGIDA! ***
 @router.get("/with-details", response_model=list[schemas.ProductoEducativoWithDetails])
 def read_productos_educativos_with_details(
     db: Session = Depends(get_db)
@@ -43,10 +40,6 @@ def read_productos_educativos_with_details(
         joinedload(models.ProductoEducativo.docentes),
         joinedload(models.ProductoEducativo.inscripciones)
     ).all()
-    
-    # Este print es útil para que veas en tu terminal del backend que SÍ se están cargando
-    # print("PRODUCTOS /WITH-DETAILS ENCONTRADOS:", productos) 
-    
     return productos
 
 @router.get("/{producto_id}", response_model=ProductoEducativo)
@@ -84,29 +77,46 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
     return db_producto
 
 
-# --- ✨ INICIO DE LA CORRECCIÓN DEFINITIVA ---
+# --- ✨ ESTA ES LA FUNCIÓN CORREGIDA ---
 @router.put("/{producto_id}", response_model=ProductoEducativoOut)
 def update_producto_educativo(producto_id: int, producto_update: ProductoEducativoUpdate, db: Session = Depends(get_db)):
-    db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
+    
+    db_producto = db.query(models.ProductoEducativo).options(
+        joinedload(models.ProductoEducativo.docentes) 
+    ).filter(models.ProductoEducativo.id == producto_id).first()
+
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
+
+    # --- PRUEBA 1 ---
+    # Imprime EXACTAMENTE lo que el frontend envió
+    print(f"--- INICIO UPDATE (Producto: {producto_id}) ---")
+    print(f"Datos recibidos del frontend: {producto_update.model_dump_json()}")
+    # --- FIN PRUEBA 1 ---
 
     update_data = producto_update.model_dump(exclude_none=True)
     
     if producto_update.docentes_ids is not None:
+        # --- PRUEBA 2 ---
+        print(f"El 'if' de docentes_ids SÍ se ejecutó.")
+        print(f"IDs de docentes recibidos: {producto_update.docentes_ids}")
+        # --- FIN PRUEBA 2 ---
+        
         docentes_ids = producto_update.docentes_ids
         docentes = db.query(models.Docente).filter(models.Docente.id.in_(docentes_ids)).all()
         
         if len(docentes) != len(docentes_ids):
              raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
         
-        # Asignamos la nueva lista de docentes
         db_producto.docentes = docentes
         
         if "docentes_ids" in update_data:
             del update_data["docentes_ids"]
             
     else:
+        # --- PRUEBA 3 ---
+        print(f"El 'if' de docentes_ids NO se ejecutó (docentes_ids es None).")
+        # --- FIN PRUEBA 3 ---
         if "docentes_ids" in update_data:
             del update_data["docentes_ids"]
 
@@ -115,19 +125,15 @@ def update_producto_educativo(producto_id: int, producto_update: ProductoEducati
         setattr(db_producto, key, value)
         
     
-    # --- ✅ ¡AQUÍ ESTÁ LA LÍNEA QUE FALTA! ---
-    # "Avisamos" a la sesión que este objeto se modificó.
     db.add(db_producto)
-    
-    # Ahora sí guardamos todo
     db.commit()
     db.refresh(db_producto)
     
-    # Este print ahora SÍ debería mostrar la lista correcta
+    print(f"--- FIN UPDATE ---")
     print(f"Producto {db_producto.id} actualizado. Docentes ahora: {[d.id for d in db_producto.docentes]}")
     
     return db_producto
-# --- ✨ FIN DE LA CORRECCIÓN DEFINITIVA ---
+# --- ✨ FIN DE LA CORRECCIÓN ---
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -107,7 +107,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docente_ids: this.fb.array([]),
+      // --- ✅ CAMBIO 1 (de 4) ---
+      docentes_ids: this.fb.array([]), // <--- Nombre en plural
       competencias: ['']
     }, {
       validators: dateRangeValidator
@@ -144,22 +145,20 @@ export default class AdminProductosEducativosComponent implements OnInit {
       productos: this.productoSvc.getAllProductosWithDetails(),
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll(),
-      certificados: this.certificadoSvc.getAll() // ✅ AGREGAR CARGA DE CERTIFICADOS
+      certificados: this.certificadoSvc.getAll()
     }).subscribe(({ productos, docentes, participantes, certificados }) => {
       this.productos = productos.sort((a, b) => 
         new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()
       );
       this.docentes = docentes;
       this.participantes = participantes;
-      this.certificados = certificados; // ✅ ACTUALIZAR CERTIFICADOS
+      this.certificados = certificados;
       this.groupAndFilterProducts();
       
-      // ✅ RE-SELECCIONAR Y RECARGAR TODO SI HABÍA UN CURSO SELECCIONADO
       if (selectedCourseId) {
         const reselectedCourse = this.productos.find(p => p.id === selectedCourseId);
         if (reselectedCourse) {
           this.selectedCourse = reselectedCourse;
-          // ✅ RECARGAR LAS INSCRIPCIONES DEL CURSO SELECCIONADO
           this.loadParticipantsForCourse(selectedCourseId);
         } else {
           this.unselectCourse();
@@ -170,7 +169,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // ✅ MÉTODO SIMPLIFICADO - YA NO ES NECESARIO
   loadCertificados() {
     this.certificadoSvc.getAll().subscribe({
       next: (certificadosData: Certificado[]) => {
@@ -233,7 +231,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.create(payload).subscribe({
       next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.loadInitialData(); // ✅ Recarga TODO incluyendo certificados
+        this.loadInitialData();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al crear.')
@@ -245,7 +243,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
       next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        this.loadInitialData(); // ✅ Recarga TODO incluyendo certificados
+        this.loadInitialData();
         this.cancelCourseForm();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al actualizar.')
@@ -280,7 +278,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
       modalidad: producto.modalidad,
       competencias: competenciasValueForForm
     });
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    // --- ✅ CAMBIO 2 (de 4) ---
+    const formArray = this.courseForm.get('docentes_ids') as FormArray; // <--- Nombre en plural
     formArray.clear();
     (producto.docentes || []).forEach(docente => {
       formArray.push(this.fb.control(docente.id));
@@ -308,13 +307,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
       nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
       tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL', competencias: ''
     });
-    (this.courseForm.get('docente_ids') as FormArray).clear();
+    // --- ✅ CAMBIO 3 (de 4) ---
+    (this.courseForm.get('docentes_ids') as FormArray).clear(); // <--- Nombre en plural
     this.editingCourse = null;
   }
 
   toggleDocenteSelection(docenteId: number, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
-    const formArray = this.courseForm.get('docente_ids') as FormArray;
+    // --- ✅ CAMBIO 4 (de 4) ---
+    const formArray = this.courseForm.get('docentes_ids') as FormArray; // <--- Nombre en plural
     if (isChecked) {
       if (!formArray.controls.some(control => control.value === docenteId)) {
         formArray.push(this.fb.control(docenteId));
