@@ -91,43 +91,39 @@ def update_producto_educativo(producto_id: int, producto_update: ProductoEducati
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
-    # Obtenemos los datos, excluyendo los que sean 'None'
     update_data = producto_update.model_dump(exclude_none=True)
     
-    # Manejamos los 'docentes_ids' manualmente, ya que es el campo problemático.
-    # Esta condición se activa si el frontend envía 'docentes_ids: [1, 2]' O 'docentes_ids: []'
     if producto_update.docentes_ids is not None:
-        
         docentes_ids = producto_update.docentes_ids
-        
-        # Buscamos los docentes en la DB
         docentes = db.query(models.Docente).filter(models.Docente.id.in_(docentes_ids)).all()
         
-        # Validamos que todos los IDs enviados existan
         if len(docentes) != len(docentes_ids):
              raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
         
-        # ✨ Asignamos la lista de docentes (nueva o vacía) al producto
+        # Asignamos la nueva lista de docentes
         db_producto.docentes = docentes
         
-        # Quitamos 'docentes_ids' del diccionario para que el loop de abajo no lo procese
         if "docentes_ids" in update_data:
             del update_data["docentes_ids"]
             
     else:
-        # Si 'docentes_ids' es None o no se envió, no hacemos nada y
-        # nos aseguramos de que no esté en 'update_data'.
         if "docentes_ids" in update_data:
             del update_data["docentes_ids"]
 
-    # Actualizamos el resto de los campos (nombre, fechas, horas, etc.)
+    # Actualizamos el resto de los campos
     for key, value in update_data.items():
         setattr(db_producto, key, value)
         
+    
+    # --- ✅ ¡AQUÍ ESTÁ LA LÍNEA QUE FALTA! ---
+    # "Avisamos" a la sesión que este objeto se modificó.
+    db.add(db_producto)
+    
+    # Ahora sí guardamos todo
     db.commit()
     db.refresh(db_producto)
     
-    # Añadimos un print para confirmar en la terminal del backend que se hizo el cambio
+    # Este print ahora SÍ debería mostrar la lista correcta
     print(f"Producto {db_producto.id} actualizado. Docentes ahora: {[d.id for d in db_producto.docentes]}")
     
     return db_producto

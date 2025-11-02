@@ -3,7 +3,16 @@
   <h2>Gestión de Productos Educativos</h2>
   <div class="header-actions">
   <div class="search-container">
-  <input type="text" [(ngModel)]="searchTerm" (input)="groupAndFilterProducts()" placeholder="Buscar por nombre...">
+  <label for="search-producto" class="visually-hidden">Buscar por nombre...</label>
+  <input
+  type="text"
+  id="search-producto"
+  name="search-producto"
+  [(ngModel)]="searchTerm"
+  (input)="groupAndFilterProducts()"
+  placeholder="Buscar por nombre..."
+  autocomplete="off"
+  >
   <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
   <circle cx="11" cy="11" r="8"></circle>
   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -19,36 +28,43 @@
  <div *ngIf="showCourseForm" class="form-card">
   <h3>{{ editingCourse ? 'Editar el Producto Educativo' : 'Crear Nuevo Producto Educativo' }}</h3>
   <form [formGroup]="courseForm" (ngSubmit)="onSubmitCourse()" class="form-grid">
+  
   <div class="form-group">
-  <label>Nombre del Producto</label>
-  <input formControlName="nombre" required>
+  <label for="producto-nombre">Nombre del Producto</label>
+  <input id="producto-nombre" name="producto-nombre" formControlName="nombre" required autocomplete="off">
   </div>
+  
   <div class="form-group">
-  <label>Horas</label>
-  <input type="number" formControlName="horas" required>
+  <label for="producto-horas">Horas</label>
+  <input id="producto-horas" name="producto-horas" type="number" formControlName="horas" required autocomplete="off">
   </div>
+  
   <div class="form-group">
-  <label>Fecha de Inicio</label>
-  <input type="date" formControlName="fecha_inicio" required>
+  <label for="producto-fecha-inicio">Fecha de Inicio</label>
+  <input id="producto-fecha-inicio" name="producto-fecha-inicio" type="date" formControlName="fecha_inicio" required autocomplete="off">
   </div>
+  
   <div class="form-group">
-  <label>Fecha de Fin</label>
-  <input type="date" formControlName="fecha_fin" required>
+  <label for="producto-fecha-fin">Fecha de Fin</label>
+  <input id="producto-fecha-fin" name="producto-fecha-fin" type="date" formControlName="fecha_fin" required autocomplete="off">
   </div>
+  
   <div *ngIf="courseForm.hasError('dateRangeInvalid') && (courseForm.get('fecha_fin')?.touched || courseForm.get('fecha_inicio')?.touched)" class="form-error full-width">
   <p>Error: La fecha de finalización no puede ser anterior a la fecha de inicio.</p>
   </div>
+  
   <div class="form-group">
-  <label>Tipo de Producto</label>
-  <select formControlName="tipo_producto" required>
+  <label for="producto-tipo">Tipo de Producto</label>
+  <select id="producto-tipo" name="producto-tipo" formControlName="tipo_producto" required>
   <option value="CURSO_EDUCATIVO">Curso Educativo</option>
   <option value="PILDORA_EDUCATIVA">Píldora Educativa</option>
   <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
   </select>
   </div>
+  
   <div class="form-group">
-  <label>Modalidad</label>
-  <select formControlName="modalidad" required>
+  <label for="producto-modalidad">Modalidad</label>
+  <select id="producto-modalidad" name="producto-modalidad" formControlName="modalidad" required>
   <option value="PRESENCIAL">Presencial</option>
   <option value="REMOTA">Remota</option>
   <option value="HIBRIDA">Híbrida</option>
@@ -56,6 +72,7 @@
   <option value="ESCOLARIZADA">Escolarizada</option>
   </select>
   </div>
+  
   <div class="form-group full-width" *ngIf="courseForm.get('tipo_producto')?.value === 'CURSO_EDUCATIVO'">
   <label>Competencias del Curso</label>
   <button type="button" class="secondary-btn icon-left" (click)="openCompetenciesModal()">
@@ -63,6 +80,7 @@
   {{ courseForm.get('competencias')?.value ? 'Editar Competencias' : 'Añadir Competencias' }}
   </button>
   </div>
+  
   <div class="form-group full-width">
   <label>Docentes Asignados</label>
   <div class="docentes-selection">
@@ -78,6 +96,7 @@
   </div>
   </div>
   </div>
+  
   <div class="form-actions">
   <button type="button" class="secondary-btn" (click)="cancelCourseForm()">Cancelar</button>
   <button type="submit" class="primary-btn" [disabled]="courseForm.invalid">{{ editingCourse ? 'Actualizar Producto' : 'Crear Producto' }}</button>
@@ -192,13 +211,15 @@
   <button class="primary-btn small-btn" (click)="showAddParticipantForm = !showAddParticipantForm">Inscribir Manualmente</button>
   <div *ngIf="showAddParticipantForm" class="form-card nested-form">
   <form (ngSubmit)="enrollParticipant()">
+  
   <div class="form-group">
-  <label>Seleccionar Participante</label>
-  <select [(ngModel)]="participantToAdd" name="participant_id" required>
+  <label for="participant-select">Seleccionar Participante</label>
+  <select id="participant-select" [(ngModel)]="participantToAdd" name="participant_id" required autocomplete="off">
   <option [ngValue]="null" disabled>-- Elige un participante --</option>
   <option *ngFor="let p of availableParticipants" [value]="p.id">{{ p.nombre_completo }} ({{p.email_personal}})</option>
   </select>
   </div>
+  
   <div class="form-actions">
   <button type="button" class="secondary-btn small-btn" (click)="showAddParticipantForm = false">Cancelar</button>
   <button type="submit" class="primary-btn small-btn" [disabled]="!participantToAdd">Inscribir</button>
@@ -208,8 +229,10 @@
   </div>
   <div class="upload-section">
   <button class="secondary-btn small-btn" (click)="descargarPlantilla()">Descargar Plantilla</button>
-  <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
+  
+  <input id="file-upload" name="file-upload" type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx" #fileInput hidden>
   <button class="secondary-btn small-btn" (click)="fileInput.click()">Importar desde Archivo</button>
+  
   <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
   <button class="primary-btn small-btn" (click)="uploadParticipants()" [disabled]="!selectedFile">Subir Archivo</button>
   </div>
@@ -391,7 +414,8 @@
   <p class="modal-instructions">Añade cada competencia en una línea separada.</p>
   <div class="competency-list">
   <div class="competency-item" *ngFor="let competency of competenciesList; let i = index; trackBy: trackByIndex">
-  <textarea [(ngModel)]="competenciesList[i]" placeholder="Escribe una competencia..." class="competency-input" rows="2"></textarea>
+  <label [for]="'competencia-' + i" class="visually-hidden">Competencia {{i + 1}}</label>
+  <textarea [id]="'competencia-' + i" [name]="'competencia-' + i" [(ngModel)]="competenciesList[i]" placeholder="Escribe una competencia..." class="competency-input" rows="2"></textarea>
   <button *ngIf="competenciesList.length > 1" type="button" class="icon-btn delete small-btn" (click)="removeCompetency(i)" title="Eliminar">🗑️</button>
   </div>
   </div>
