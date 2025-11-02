@@ -1,10 +1,10 @@
+# backend/app/routers/admin_inscripciones.py
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload  # 💡 1. IMPORTA JOINEDLOAD
 from typing import List
 
 from app.database import get_db
-from app.models.inscripciones import Inscripcion as InscripcionModel
-# FIX: Importa el esquema correcto que ya tiene todo anidado
+from app import models  # 💡 2. IMPORTA TUS MODELOS
 from app.schemas.inscripcion import Inscripcion, InscripcionCreate
 from app.routers.dependencies import get_current_admin_user
 
@@ -20,14 +20,25 @@ def get_all_inscripciones(db: Session = Depends(get_db)):
     Obtiene todas las inscripciones con la información del participante
     y del producto educativo anidada.
     """
-    return db.query(InscripcionModel).all()
+    # 💡 3. AÑADIMOS JOINEDLOAD AQUÍ TAMBIÉN (BUENA PRÁCTICA)
+    return db.query(models.Inscripcion).options(
+        joinedload(models.Inscripcion.participante),
+        joinedload(models.Inscripcion.producto_educativo)
+    ).all()
 
 @router.get("/producto/{producto_id}", response_model=List[Inscripcion])
 def get_inscripciones_by_producto(producto_id: int, db: Session = Depends(get_db)):
     """
     Obtiene todas las inscripciones para un producto educativo específico.
     """
-    inscripciones = db.query(InscripcionModel).filter(InscripcionModel.producto_educativo_id == producto_id).all()
+    # --- 💡 4. INICIO DE LA CORRECCIÓN ---
+    # Añadimos .options(joinedload(...)) para forzar al backend
+    # a que cargue la información del participante en la misma consulta.
+    inscripciones = db.query(models.Inscripcion).options(
+        joinedload(models.Inscripcion.participante)
+    ).filter(models.Inscripcion.producto_educativo_id == producto_id).all()
+    # --- 💡 FIN DE LA CORRECCIÓN ---
+    
     if not inscripciones:
         return []
     return inscripciones
@@ -37,15 +48,14 @@ def create_inscripcion(inscripcion: InscripcionCreate, db: Session = Depends(get
     """
     Crea una nueva inscripción.
     """
-    # (Opcional) Verificar si ya existe
-    db_inscripcion = db.query(InscripcionModel).filter(
-        InscripcionModel.producto_educativo_id == inscripcion.producto_educativo_id,
-        InscripcionModel.participante_id == inscripcion.participante_id
+    db_inscripcion = db.query(models.Inscripcion).filter(
+        models.Inscripcion.producto_educativo_id == inscripcion.producto_educativo_id,
+        models.Inscripcion.participante_id == inscripcion.participante_id
     ).first()
     if db_inscripcion:
         raise HTTPException(status_code=400, detail="El participante ya está inscrito en este producto.")
 
-    new_inscripcion = InscripcionModel(**inscripcion.model_dump())
+    new_inscripcion = models.Inscripcion(**inscripcion.model_dump())
     db.add(new_inscripcion)
     db.commit()
     db.refresh(new_inscripcion)
@@ -56,7 +66,7 @@ def delete_inscripcion(inscripcion_id: int, db: Session = Depends(get_db)):
     """
     Elimina una inscripción.
     """
-    db_inscripcion = db.query(InscripcionModel).filter(InscripcionModel.id == inscripcion_id).first()
+    db_inscripcion = db.query(models.Inscripcion).filter(models.Inscripcion.id == inscripcion_id).first()
     if not db_inscripcion:
         raise HTTPException(status_code=404, detail="Inscripción no encontrada.")
     
