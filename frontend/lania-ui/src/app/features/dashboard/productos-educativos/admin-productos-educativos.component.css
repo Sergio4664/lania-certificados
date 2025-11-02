@@ -10,6 +10,7 @@
   margin: 0 auto;
   padding: 2rem;
 }
+
 .module-header {
   display: flex;
   justify-content: space-between;
@@ -18,26 +19,31 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+
 .module-header h2 {
   color: #111827;
   font-size: 28px;
   font-weight: 700;
   margin: 0;
 }
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 16px;
 }
+
 .search-container {
   position: relative;
 }
+
 .search-container input {
   padding: 10px 10px 10px 35px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
   width: 250px;
 }
+
 .search-icon {
   position: absolute;
   left: 10px;
@@ -50,6 +56,7 @@
 .product-section {
   margin-bottom: 48px;
 }
+
 .section-title {
   font-size: 22px;
   font-weight: 600;
@@ -58,6 +65,7 @@
   border-bottom: 2px solid #e5e7eb;
   margin-bottom: 24px;
 }
+
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -75,24 +83,29 @@
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
+
 .course-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
+
 .course-card-header {
   padding: 20px;
   color: white;
   min-height: 80px;
 }
+
 .course-name {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
 }
+
 .course-card-body {
   padding: 20px;
   flex-grow: 1;
 }
+
 .detail-item {
   display: flex;
   gap: 8px;
@@ -100,43 +113,52 @@
   font-size: 14px;
   margin-bottom: 12px;
 }
+
 .detail-item strong {
   color: #111827;
   font-weight: 600;
-  min-width: 70px; /* Alineación */
+  min-width: 70px;
 }
+
 .detail-item.docentes {
   flex-direction: column;
   align-items: flex-start;
 }
+
 .docentes-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
 }
-.docente-tag-small, .no-docentes-small {
+
+.docente-tag-small,
+.no-docentes-small {
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 12px;
 }
+
 .docente-tag-small {
-  background: #e0e7ff; /* Indigo-100 */
-  color: #4338ca; /* Indigo-700 */
+  background: #e0e7ff;
+  color: #4338ca;
 }
+
 .no-docentes-small {
-  color: #6b7280; /* Gray-500 */
+  color: #6b7280;
   font-style: italic;
-  font-size: 12px; /* Consistencia */
+  font-size: 12px;
 }
+
 .course-card-footer {
   padding: 12px 20px;
-  background: #f9fafb; /* Gray-50 */
-  border-top: 1px solid #e5e7eb; /* Gray-200 */
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
+
 .icon-btn-card {
   width: 32px;
   height: 32px;
@@ -147,20 +169,22 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  color: #6b7280; /* Gray-500 */
+  color: #6b7280;
   background: transparent;
 }
+
 .icon-btn-card:hover {
-  background: #e5e7eb; /* Gray-200 */
+  background: #e5e7eb;
 }
+
 .no-data-card {
   grid-column: 1 / -1;
   text-align: center;
   padding: 32px;
-  color: #6b7280; /* Gray-500 */
+  color: #6b7280;
   font-style: italic;
-  background-color: #f9fafb; /* Gray-50 */
-  border: 2px dashed #d1d5db; /* Gray-300 */
+  background-color: #f9fafb;
+  border: 2px dashed #d1d5db;
   border-radius: 12px;
 }
 
@@ -170,38 +194,47 @@
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  border: 1px solid #e5e7eb; /* Gray-200 */
+  border: 1px solid #e5e7eb;
 }
+
 .form-card h3 {
-  color: #111827; /* Gray-900 */
+  color: #111827;
   margin: 0 0 24px 0;
   font-size: 20px;
   font-weight: 600;
 }
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
+
 .form-group {
   display: flex;
   flex-direction: column;
 }
+
 .form-group.full-width {
   grid-column: 1 / -1;
 }
+
 .form-group label {
-  color: #374151; /* Gray-700 */
+  color: #374151;
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 14px;
 }
-.form-group input, .form-group select, .form-group textarea {
+
+.form-group input,
+.form-group select,
+.form-group textarea {
   padding: 12px;
-  border: 1px solid #d1d5db; /* Gray-300 */
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
 }
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -209,17 +242,28 @@
   margin-top: 16px;
   justify-content: flex-end;
 }
+
+.form-error {
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #fca5a5;
+}
+
 .docentes-selection {
   border-radius: 8px;
   padding: 16px;
-  background: #f9fafb; /* Gray-50 */
-  border: 1px solid #e5e7eb; /* Gray-200 */
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
 }
+
 .docentes-checkboxes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
+
 .checkbox-item {
   display: flex;
   align-items: flex-start;
@@ -227,27 +271,32 @@
   padding: 10px;
   background: white;
   border-radius: 6px;
-  border: 1px solid #e2e8f0; /* Slate-200 */
+  border: 1px solid #e2e8f0;
 }
+
 .checkbox-item input[type="checkbox"] {
   margin-top: 4px;
   cursor: pointer;
   transform: scale(1.2);
 }
+
 .checkbox-item label {
   flex: 1;
   cursor: pointer;
-  font-size: 14px; /* Ajuste para consistencia */
+  font-size: 14px;
 }
+
 .checkbox-item label small {
   display: block;
-  color: #6b7280; /* Gray-500 */
+  color: #6b7280;
   font-size: 12px;
   margin-top: 2px;
 }
 
 /* --- 5. Estilos de Botones --- */
-.primary-btn, .secondary-btn, .btn-success {
+.primary-btn,
+.secondary-btn,
+.btn-success {
   border: none;
   padding: 10px 18px;
   border-radius: 8px;
@@ -258,195 +307,377 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px; /* Consistencia */
+  font-size: 14px;
 }
-.primary-btn { background-color: #4f46e5; color: white; } /* Indigo-600 */
-.primary-btn:hover { background-color: #4338ca; } /* Indigo-700 */
-.primary-btn:disabled { background-color: #a5b4fc; cursor: not-allowed; } /* Indigo-300 */
 
-.secondary-btn { background-color: #e5e7eb; color: #374151; } /* Gray-200, Gray-700 */
-.secondary-btn:hover { background-color: #d1d5db; } /* Gray-300 */
+.primary-btn {
+  background-color: #4f46e5;
+  color: white;
+}
 
-.btn-success { background-color: #16a34a; color: white; } /* Green-600 */
-.btn-success:hover { background-color: #15803d; } /* Green-700 */
+.primary-btn:hover {
+  background-color: #4338ca;
+}
 
-.small-btn { padding: 6px 12px; font-size: 12px; }
+.primary-btn:disabled {
+  background-color: #a5b4fc;
+  cursor: not-allowed;
+}
 
-/* Botones con icono a la izquierda */
+.secondary-btn {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.secondary-btn:hover {
+  background-color: #d1d5db;
+}
+
+.btn-success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #15803d;
+}
+
+.small-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
 .icon-left svg {
-  margin-right: 6px; /* Espacio entre icono y texto */
+  margin-right: 6px;
+}
+
+.btn-competencias {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.btn-competencias:hover {
+  background-color: #fee2e2;
 }
 
 /* --- 6. Estilos del Modal --- */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(17, 24, 39, 0.6);
   backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 1000;
-  padding: 1rem; /* Añadir padding por si el modal es muy grande */
+  padding: 1rem;
 }
+
 .modal-content {
   background: #f9fafb;
   border-radius: 12px;
   width: 95%;
-  max-width: 1500px; /* ✅ Aumentar aún más si es necesario */
-  max-height: 95vh; /* Permitir un poco más de altura */
-  display: flex; flex-direction: column;
+  max-width: 1500px;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
+
 .modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 24px; border-bottom: 1px solid #e5e7eb; background: white;
-  flex-shrink: 0; /* Evitar que el header se encoja */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
 }
-.modal-header h2 { margin: 0; font-size: 22px; color: #111827; }
-.close-btn { background: transparent; border: none; cursor: pointer; color: #6b7280; font-size: 24px; padding: 0; line-height: 1;}
-.close-btn:hover { color: #ef4444; }
 
-.modal-body { padding: 24px; overflow-y: auto; flex-grow: 1; }
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 24px;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
 .modal-footer {
-  display: flex; justify-content: flex-end; gap: 12px;
-  padding: 20px 24px; border-top: 1px solid #e5e7eb; background: white;
-  flex-shrink: 0; /* Evitar que el footer se encoja */
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
 }
+
 .modal-section {
-  background: white; padding: 20px; border-radius: 8px;
-  margin-bottom: 20px; border: 1px solid #e5e7eb;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
 }
-.modal-section h4 { margin: 0 0 16px 0; font-size: 18px; color: #1f2937; }
 
-/* Secciones dentro del modal */
-.add-participant-section, .upload-section {
-  display: flex; flex-wrap: wrap; align-items: center;
-  gap: 12px; margin-bottom: 16px;
+.modal-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #1f2937;
 }
-.nested-form { flex-basis: 100%; margin-top: 12px; padding: 16px; border: 1px dashed #d1d5db; }
-.upload-section span { font-size: 12px; color: #4b5563; }
 
+.add-participant-section,
+.upload-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-/* --- 7. Estilos de Tablas y Elementos del Modal --- */
+.nested-form {
+  flex-basis: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px dashed #d1d5db;
+}
+
+.upload-section span {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+/* --- 7. Estilos de Tablas --- */
 .data-table {
-  background: white; border: 1px solid #e5e7eb; border-radius: 8px;
-  overflow-x: auto; margin-bottom: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 20px;
 }
-.data-table table { width: 100%; border-collapse: collapse; table-layout: auto; } /* Permitir que el navegador ajuste el ancho */
 
-.data-table th, .data-table td {
-  padding: 10px 12px; /* Reducir padding ligeramente */
+.table-title {
+  padding: 16px 20px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
   vertical-align: middle;
-  /* ✅ ASEGURARSE QUE NO HAYA white-space: nowrap !important EN NINGÚN LADO para TD */
-  white-space: normal !important; /* Forzar wrapping en celdas */
-  word-wrap: break-word; /* Otra propiedad para forzar quiebre */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
-.data-table th {
-  background-color: #f9fafb; font-size: 12px; font-weight: 600;
-  color: #4b5563; text-transform: uppercase;
-  white-space: nowrap; /* Mantener nowrap para cabeceras */
-  position: sticky; top: 0; z-index: 1;
-}
-.data-table tbody tr:last-child td { border-bottom: none; }
 
-.checkbox-col { width: 40px; text-align: center !important; }
-.checkbox-col input { transform: scale(1.2); }
+.data-table th {
+  background-color: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.data-table td {
+  white-space: normal;
+  max-width: 250px;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.checkbox-col {
+  width: 40px;
+  text-align: center !important;
+}
+
+.checkbox-col input {
+  transform: scale(1.2);
+  cursor: pointer;
+}
 
 .actions-cell {
   vertical-align: middle;
-  min-width: 100px; /* Reducir min-width si es necesario */
+  min-width: 100px;
 }
-.actions-cell .send-actions { display: flex; gap: 6px; }
 
 .actions-content {
   display: flex;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
+.send-actions {
+  display: flex;
+  gap: 6px;
+}
 
-/* --- ✅ ESTILOS PARA LOS FOLIOS (AJUSTADOS) --- */
+/* --- 8. Estilos para Folios/Tags de Certificados --- */
 .serial-tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 6px; /* Reducir padding lateral */
-  border-radius: 6px; /* Menos redondeado */
-  font-family: monospace;
-  font-size: 11px; /* Más pequeño */
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
   font-weight: 600;
   color: white;
   border: 1px solid transparent;
   white-space: normal;
   word-break: break-word;
   margin-bottom: 4px;
-  line-height: 1.3;
-  max-width: 100%; /* Asegurar que no exceda el ancho de la celda */
+  line-height: 1.4;
+  max-width: 100%;
 }
+
 .serial-tag:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
-/* Ajustar texto dentro del tag si es necesario */
 .serial-tag span {
-    flex-grow: 1; /* Permitir que el texto ocupe espacio */
-    overflow-wrap: break-word; /* Asegurar quiebre dentro del span también */
+  flex-grow: 1;
+  overflow-wrap: break-word;
 }
-
 
 .serial-tag .icon-btn {
-  width: 1.2rem; /* Mantener tamaño */
+  width: 1.2rem;
   height: 1.2rem;
   padding: 0;
-  margin-left: 4px; /* Reducir margen */
+  margin-left: 4px;
   color: white !important;
   background: transparent !important;
   flex-shrink: 0;
 }
+
 .serial-tag .icon-btn:hover {
-   background: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
 }
 
-.folio-normal { background-color: #6366F1; border-color: #4f46e5; }
-.folio-competencias { background-color: #EF4444; border-color: #dc2626; }
-/* ---------------------------------- */
+.folio-normal {
+  background-color: #6366F1;
+  border-color: #4f46e5;
+}
 
+.folio-competencias {
+  background-color: #EF4444;
+  border-color: #dc2626;
+}
+
+/* --- 9. Botones de Iconos --- */
 .icon-btn {
-  padding: 0.4rem; /* Ligeramente más pequeño */
-  line-height: 1; border-radius: 50%; background: transparent;
-  border: none; cursor: pointer; display: inline-flex; align-items: center;
-  justify-content: center; transition: background-color 0.2s; color: #6b7280;
+  padding: 0.4rem;
+  line-height: 1;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  color: #6b7280;
 }
-.icon-btn.delete { color: #ef4444; }
-.icon-btn.delete:hover { background: #fee2e2; }
-.icon-btn.email { color: #0ea5e9; }
-.icon-btn.email:hover { background-color: #e0f2fe; }
 
-/* Clases específicas para botones */
-.btn-competencias { /* Estilo específico para botón Emitir Comp. */
-    background-color: #fef2f2; /* Red-50 */
-    color: #991b1b; /* Red-800 */
-    border: 1px solid #fecaca; /* Red-200 */
+.icon-btn.delete {
+  color: #ef4444;
 }
-.btn-competencias:hover {
-    background-color: #fee2e2; /* Red-100 */
+
+.icon-btn.delete:hover {
+  background: #fee2e2;
 }
-.email-competencias { /* Estilo específico para botón Reenviar Comp. */
-    color: #f97316; /* Orange-500 */
+
+.icon-btn.email {
+  color: #0ea5e9;
 }
+
+.icon-btn.email:hover {
+  background-color: #e0f2fe;
+}
+
+.email-competencias {
+  color: #f97316;
+}
+
 .email-competencias:hover {
-    background-color: #ffedd5; /* Orange-100 */
+  background-color: #ffedd5;
 }
 
+/* --- 10. Modal de Competencias --- */
+.competency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-/* --- 8. Modal de Competencias --- */
-.competency-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
-.competency-item { display: flex; align-items: center; gap: 12px; }
+.competency-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .competency-input {
-  flex-grow: 1; resize: vertical; padding: 12px; border: 1px solid #d1d5db;
-  border-radius: 8px; font-size: 14px; min-height: 40px;
+  flex-grow: 1;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  min-height: 40px;
 }
-.modal-instructions { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
 
-.no-data { text-align: center; font-style: italic; color: #6b7280; }
+.modal-instructions {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.no-data {
+  text-align: center;
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* --- 11. Scrollable Content --- */
+.scrollable-content {
+  width: 100%;
+}

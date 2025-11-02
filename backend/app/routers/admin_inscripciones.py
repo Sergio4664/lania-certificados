@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session, joinedload  # 💡 1. IMPORTA JOINEDLOAD
 from typing import List
 
 from app.database import get_db
-from app import models  # 💡 2. IMPORTA TUS MODELOS
-# FIX: Importa el esquema correcto que ya tiene todo anidado
+from app import models  # 💡 2. IMPORTA TUS MODELOS (usa 'models.' en lugar de 'InscripcionModel')
 from app.schemas.inscripcion import Inscripcion, InscripcionCreate
 from app.routers.dependencies import get_current_admin_user
 
@@ -49,7 +48,6 @@ def create_inscripcion(inscripcion: InscripcionCreate, db: Session = Depends(get
     """
     Crea una nueva inscripción.
     """
-    # (Opcional) Verificar si ya existe
     db_inscripcion = db.query(models.Inscripcion).filter(
         models.Inscripcion.producto_educativo_id == inscripcion.producto_educativo_id,
         models.Inscripcion.participante_id == inscripcion.participante_id
