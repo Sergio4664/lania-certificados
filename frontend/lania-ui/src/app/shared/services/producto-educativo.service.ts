@@ -13,39 +13,53 @@ import {
 } from '@shared/interfaces/producto-educativo.interface';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root'
 })
 export class ProductoEducativoService {
-  private http = inject(HttpClient);
-  private baseUrl = `${environment.apiUrl}/admin/productos-educativos`;
+  private http = inject(HttpClient);
+  // Dejamos la URL base sin la barra al final
+  private baseUrl = `${environment.apiUrl}/admin/productos-educativos`;
 
-  getAll(): Observable<ProductoEducativo[]> {
-    return this.http.get<ProductoEducativo[]>(this.baseUrl);
-  }
+  getAll(): Observable<ProductoEducativo[]> {
+    // --- ✨ CORRECCIÓN DE REDIRECCIÓN (307): Añadimos la barra al final ---
+    return this.http.get<ProductoEducativo[]>(`${this.baseUrl}/`);
+  }
 
   // --- 💡 CORRECCIÓN 2: Añadir el método que faltaba ---
   // Este método es llamado por 'admin-certificados.component.ts'
   // (Asegúrate que la ruta '/with-details' coincida con tu endpoint de backend)
   getAllProductosWithDetails(): Observable<ProductoEducativoWithDetails[]> {
-    return this.http.get<ProductoEducativoWithDetails[]>(`${this.baseUrl}/with-details`);
+    
+    // --- ✨ SOLUCIÓN AL PROBLEMA DE CACHÉ ---
+    // Añadimos un parámetro 'v' (de "versión") con la fecha actual.
+    // Esto hace que la URL sea única en cada petición 
+    // (ej: .../with-details?v=123456789)
+    // y obliga al navegador a no usar la caché y pedir los datos frescos.
+    const params = { v: new Date().getTime() };
+    
+    return this.http.get<ProductoEducativoWithDetails[]>(`${this.baseUrl}/with-details`, { params });
   }
   // --- FIN DE LA CORRECCIÓN ---
 
-  create(producto: ProductoEducativoCreate): Observable<ProductoEducativo> {
-    return this.http.post<ProductoEducativo>(this.baseUrl, producto);
-  }
+  create(producto: ProductoEducativoCreate): Observable<ProductoEducativo> {
+    // --- ✨ CORRECCIÓN DE REDIRECCIÓN (307): Añadimos la barra al final ---
+    return this.http.post<ProductoEducativo>(`${this.baseUrl}/`, producto);
+  }
 
-  update(id: number, producto: ProductoEducativoUpdate): Observable<ProductoEducativo> {
-    return this.http.put<ProductoEducativo>(`${this.baseUrl}/${id}`, producto);
-  }
+  update(id: number, producto: ProductoEducativoUpdate): Observable<ProductoEducativo> {
+    // Esta ruta ya es correcta (ej: .../productos-educativos/8)
+    return this.http.put<ProductoEducativo>(`${this.baseUrl}/${id}`, producto);
+  }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
-  }
-  
-  uploadParticipants(id: number, file: File): Observable<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post(`${this.baseUrl}/${id}/upload-participantes`, formData);
-  }
+  delete(id: number): Observable<void> {
+    // Esta ruta ya es correcta (ej: .../productos-educativos/8)
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+  
+  uploadParticipants(id: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Esta ruta ya es correcta
+    return this.http.post(`${this.baseUrl}/${id}/upload-participantes`, formData);
+  }
 }

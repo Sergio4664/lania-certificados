@@ -1,3 +1,4 @@
+# Ruta: backend/app/schemas/inscripcion.py
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, TYPE_CHECKING, List # 💡 Importar List
 
@@ -9,30 +10,30 @@ from .certificado import CertificadoOut
 
 class InscripcionBase(BaseModel):
   participante_id: int
-producto_educativo_id: int
+  producto_educativo_id: int  # <--- ✨ ¡CORRECCIÓN APLICADA AQUÍ!
 
 class InscripcionCreate(InscripcionBase):
- pass
+  pass
 
 # --- ✅ SOLUCIÓN: Esquema de salida sin recursión ---
 class InscripcionOut(InscripcionBase):
- id: int
-# --- 💡 CORRECCIÓN 2: Usar 'ParticipanteOut' para romper el ciclo ---
-participante: 'ParticipanteOut' # 👈 Usar el esquema simple 'Out'    
-producto_educativo: 'ProductoEducativoOut'
-certificados: List['CertificadoOut'] = [] # 👈 Cambiado a List (mejor práctica)
-model_config = ConfigDict(from_attributes=True)
+  id: int
+  # --- 💡 CORRECCIÓN 2: Usar 'ParticipanteOut' para romper el ciclo ---
+  participante: 'ParticipanteOut' # 👈 Usar el esquema simple 'Out'    
+  producto_educativo: 'ProductoEducativoOut'
+  certificados: List['CertificadoOut'] = [] # 👈 Cambiado a List (mejor práctica)
+  model_config = ConfigDict(from_attributes=True)
 
 # Esquema completo para vistas de detalle si fuera necesario
 class Inscripcion(InscripcionBase):
- id: int
- # --- 💡 CORRECCIÓN 3: Usar 'ParticipanteOut' aquí también por seguridad ---
-participante: 'ParticipanteOut' # 👈 Usar el esquema simple 'Out'
-
-producto_educativo: 'ProductoEducativoOut'
-certificados: List['CertificadoOut'] = [] # 👈 Cambiado a List (mejor práctica)
-
-model_config = ConfigDict(from_attributes=True)
+  id: int
+  # --- 💡 CORRECCIÓN 3: Usar 'ParticipanteOut' aquí también por seguridad ---
+  participante: 'ParticipanteOut' # 👈 Usar el esquema simple 'Out'
+  
+  producto_educativo: 'ProductoEducativoOut'
+  certificados: List['CertificadoOut'] = [] # 👈 Cambiado a List (mejor práctica)
+  
+  model_config = ConfigDict(from_attributes=True)
 
 class Config:
     from_attributes = True

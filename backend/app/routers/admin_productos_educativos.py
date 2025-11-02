@@ -45,7 +45,7 @@ def read_productos_educativos_with_details(
     ).all()
     
     # Este print es útil para que veas en tu terminal del backend que SÍ se están cargando
-    print("PRODUCTOS /WITH-DETAILS ENCONTRADOS:", productos) 
+    # print("PRODUCTOS /WITH-DETAILS ENCONTRADOS:", productos) 
     
     return productos
 
@@ -84,30 +84,54 @@ def create_producto_educativo(producto: ProductoEducativoCreate, db: Session = D
     return db_producto
 
 
+# --- ✨ INICIO DE LA CORRECCIÓN DEFINITIVA ---
 @router.put("/{producto_id}", response_model=ProductoEducativoOut)
 def update_producto_educativo(producto_id: int, producto_update: ProductoEducativoUpdate, db: Session = Depends(get_db)):
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if db_producto is None:
         raise HTTPException(status_code=404, detail="Producto educativo no encontrado")
 
-    update_data = producto_update.model_dump(exclude_unset=True)
+    # Obtenemos los datos, excluyendo los que sean 'None'
+    update_data = producto_update.model_dump(exclude_none=True)
     
-    if "docentes_ids" in update_data:
-        docentes_ids = update_data.pop("docentes_ids")
-        if docentes_ids is not None:
-            docentes = db.query(models.Docente).filter(models.Docente.id.in_(docentes_ids)).all()
-            if len(docentes) != len(docentes_ids):
-                raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
-            db_producto.docentes = docentes
-        else:
-            db_producto.docentes = []
+    # Manejamos los 'docentes_ids' manualmente, ya que es el campo problemático.
+    # Esta condición se activa si el frontend envía 'docentes_ids: [1, 2]' O 'docentes_ids: []'
+    if producto_update.docentes_ids is not None:
+        
+        docentes_ids = producto_update.docentes_ids
+        
+        # Buscamos los docentes en la DB
+        docentes = db.query(models.Docente).filter(models.Docente.id.in_(docentes_ids)).all()
+        
+        # Validamos que todos los IDs enviados existan
+        if len(docentes) != len(docentes_ids):
+             raise HTTPException(status_code=404, detail="Uno o más docentes no fueron encontrados")
+        
+        # ✨ Asignamos la lista de docentes (nueva o vacía) al producto
+        db_producto.docentes = docentes
+        
+        # Quitamos 'docentes_ids' del diccionario para que el loop de abajo no lo procese
+        if "docentes_ids" in update_data:
+            del update_data["docentes_ids"]
+            
+    else:
+        # Si 'docentes_ids' es None o no se envió, no hacemos nada y
+        # nos aseguramos de que no esté en 'update_data'.
+        if "docentes_ids" in update_data:
+            del update_data["docentes_ids"]
 
+    # Actualizamos el resto de los campos (nombre, fechas, horas, etc.)
     for key, value in update_data.items():
         setattr(db_producto, key, value)
         
     db.commit()
     db.refresh(db_producto)
+    
+    # Añadimos un print para confirmar en la terminal del backend que se hizo el cambio
+    print(f"Producto {db_producto.id} actualizado. Docentes ahora: {[d.id for d in db_producto.docentes]}")
+    
     return db_producto
+# --- ✨ FIN DE LA CORRECCIÓN DEFINITIVA ---
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
