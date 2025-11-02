@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   FormBuilder,
   FormGroup,
-  Validators,
+  Validators, // Importado para las validaciones
   FormsModule,
   FormArray,
   AbstractControl,
@@ -107,7 +107,14 @@ export default class AdminProductosEducativosComponent implements OnInit {
       fecha_fin: ['', Validators.required],
       tipo_producto: ['CURSO_EDUCATIVO', Validators.required],
       modalidad: ['PRESENCIAL', Validators.required],
-      docentes_ids: this.fb.array([]), // Nombre en plural
+      
+      // --- ✅ CAMBIO 1: Añadir validación de mínimo 1 docente ---
+      docentes_ids: this.fb.array(
+        [],
+        [Validators.required, Validators.minLength(1)] // Se requiere al menos un docente
+      ),
+      // --- FIN CAMBIO 1 ---
+
       competencias: ['']
     }, {
       validators: dateRangeValidator
@@ -136,6 +143,28 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return docenteIds.length > 0 && docenteIds.every(id => this.selectedDocenteIds.has(id));
   }
 
+  // --- ✅ CAMBIO 2: Añadir función helper para el checkbox ---
+  /**
+   * Verifica si un docente está seleccionado en el FormArray 'docentes_ids'.
+   * El HTML usará esto para el binding [checked] del formulario.
+   */
+  isDocenteSelected(docenteId: number): boolean {
+    // Cláusula de guarda por si el formulario aún no se inicializa
+    if (!this.courseForm) { 
+      return false; 
+    }
+    
+    const formArray = this.courseForm.get('docentes_ids') as FormArray;
+    
+    // Cláusula de guarda por si el formArray no existe
+    if (!formArray) { 
+      return false; 
+    }
+
+    return formArray.value.includes(docenteId);
+  }
+  // --- FIN CAMBIO 2 ---
+
   // --- CARGA DE DATOS ---
   loadInitialData() {
     const selectedCourseId = this.selectedCourse?.id;
@@ -160,6 +189,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
           this.selectedCourse = reselectedCourse;
           this.loadParticipantsForCourse(selectedCourseId);
         } else {
+          // Si el curso seleccionado ya no existe (ej. fue eliminado), se deselecciona
           this.unselectCourse();
         }
       }
@@ -194,6 +224,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- GESTIÓN DE PRODUCTOS (CRUD) ---
   onSubmitCourse() {
     if (this.courseForm.invalid) {
+      // Marcamos los campos como "tocados" para que muestren errores si es necesario
+      this.courseForm.markAllAsTouched(); 
       this.notificationSvc.showError("Por favor, complete todos los campos requeridos y corrija los errores.");
       return;
     }
@@ -230,8 +262,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.create(payload).subscribe({
       next: (newProduct) => {
         this.notificationSvc.showSuccess('Producto educativo creado.');
-        this.loadInitialData();
-        this.cancelCourseForm();
+        this.loadInitialData(); // Recarga los datos
+        this.cancelCourseForm(); // Cierra el formulario
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al crear.')
     });
@@ -242,52 +274,51 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.productoSvc.update(this.editingCourse.id, payload).subscribe({
       next: (updatedProduct) => {
         this.notificationSvc.showSuccess('Producto educativo actualizado.');
-        this.loadInitialData();
-        this.cancelCourseForm();
+        this.loadInitialData(); // Recarga los datos
+        this.cancelCourseForm(); // Cierra el formulario
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al actualizar.')
     });
   }
 
+  // --- ✅ CAMBIO 3: Asegurar que deleteCourse usa la lógica de Borrado Lógico ---
   /**
-   * ✅ --- ESTA ES LA FUNCIÓN MODIFICADA ---
    * Realiza un borrado lógico (soft delete) del producto educativo.
    * @param courseId El ID del producto a "eliminar".
    */
   deleteCourse(courseId: number) {
-    // 1. Buscamos el producto para mostrar su nombre en la confirmación
     const producto = this.productos.find(p => p.id === courseId);
     const nombreProducto = producto ? `"${producto.nombre}"` : "este producto educativo";
 
-    // 2. Mostramos el mensaje de confirmación mejorado
     const confirmacion = confirm(
       `¿Estás seguro de eliminar ${nombreProducto}?\n\nEl producto "desaparecerá" de las listas, pero las constancias y certificados asociados seguirán siendo válidos.`
     );
 
     if (confirmacion) {
-      // 3. Llamamos al servicio (que apunta al backend de borrado lógico)
       this.productoSvc.delete(courseId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Producto educativo eliminado.');
-
-          // 4. Recargamos la lista completa desde el servidor
-          // El backend ya no incluirá el producto "eliminado"
-          this.loadInitialData();
+          // Recargamos la lista completa desde el servidor.
+          // El backend ya no incluirá el producto "eliminado".
+          this.loadInitialData(); 
         },
         error: (err: HttpErrorResponse) => {
-          // 5. Mensaje de error genérico
           this.notificationSvc.showError(err.error?.detail || 'Error al eliminar el producto.');
         }
       });
     }
   }
-  // --- ✅ FIN DE LA FUNCIÓN MODIFICADA ---
+  // --- FIN CAMBIO 3 ---
 
 
   // --- GESTIÓN DEL FORMULARIO ---
   editCourse(producto: ProductoEducativoWithDetails) {
     this.editingCourse = producto;
     const competenciasValueForForm = producto.competencias || '';
+    
+    // Resetea el formulario para limpiar validadores y valores antiguos
+    this.resetCourseForm(); 
+    
     this.courseForm.patchValue({
       nombre: producto.nombre,
       horas: producto.horas,
@@ -298,18 +329,25 @@ export default class AdminProductosEducativosComponent implements OnInit {
       competencias: competenciasValueForForm
     });
 
-    const formArray = this.courseForm.get('docentes_ids') as FormArray; // Nombre en plural
-    formArray.clear();
+    const formArray = this.courseForm.get('docentes_ids') as FormArray;
+    // (Ya está limpio por el resetCourseForm)
+    // formArray.clear(); 
+    
     (producto.docentes || []).forEach(docente => {
       formArray.push(this.fb.control(docente.id));
     });
+    
     this.showCourseForm = true;
   }
 
   private formatDateForInput(date: string | Date | undefined): string {
     if (!date) return '';
     try {
-      return new Date(date).toISOString().split('T')[0];
+      // Asegura que la fecha se interprete correctamente
+      const d = new Date(date); 
+      // Ajusta por la zona horaria local para evitar que se mueva un día
+      const dUtc = new Date(d.getTime() + d.getTimezoneOffset() * 60000); 
+      return dUtc.toISOString().split('T')[0];
     } catch (e) {
       console.error("Error formateando fecha:", date, e);
       return '';
@@ -322,17 +360,27 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   resetCourseForm() {
-    this.courseForm.reset({
-      nombre: '', horas: 8, fecha_inicio: '', fecha_fin: '',
-      tipo_producto: 'CURSO_EDUCATIVO', modalidad: 'PRESENCIAL', competencias: ''
-    });
-    (this.courseForm.get('docentes_ids') as FormArray).clear(); // Nombre en plural
     this.editingCourse = null;
+    this.courseForm.reset({
+      nombre: '', 
+      horas: 8, 
+      fecha_inicio: '', 
+      fecha_fin: '',
+      tipo_producto: 'CURSO_EDUCATIVO', 
+      modalidad: 'PRESENCIAL', 
+      competencias: ''
+    });
+    // Limpia el FormArray
+    (this.courseForm.get('docentes_ids') as FormArray).clear(); 
+    // Limpia el estado de validación para que no muestre errores
+    this.courseForm.markAsPristine();
+    this.courseForm.markAsUntouched();
   }
 
   toggleDocenteSelection(docenteId: number, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
-    const formArray = this.courseForm.get('docentes_ids') as FormArray; // Nombre en plural
+    const formArray = this.courseForm.get('docentes_ids') as FormArray;
+
     if (isChecked) {
       if (!formArray.controls.some(control => control.value === docenteId)) {
         formArray.push(this.fb.control(docenteId));
@@ -343,6 +391,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
         formArray.removeAt(index);
       }
     }
+    
+    // Marca el control como "tocado" para que la validación se active
+    formArray.markAsTouched(); 
+    formArray.markAsDirty();
   }
 
   // GESTIÓN DE PARTICIPANTES E INSCRIPCIONES
