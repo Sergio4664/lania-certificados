@@ -13,7 +13,7 @@ from app.schemas.producto_educativo import (
     ProductoEducativoCreate,
     ProductoEducativoUpdate,
     ProductoEducativoOut,
-    ProductoEducativoWithDetails # 👈 AÑADIR ESTA
+    ProductoEducativoWithDetails # 👈 ESTA IMPORTACIÓN YA ESTABA BIEN
 )
 from app.database import get_db
 from app.routers.dependencies import get_current_admin_user
@@ -34,17 +34,20 @@ def read_productos_educativos(skip: int = 0, limit: int = 100, db: Session = Dep
 
 
 # --- 💡 CORRECCIÓN 2: Añadir el nuevo endpoint AQUÍ ---
-@router.get("/with-details", response_model=list[schemas.ProductoEducativo])
+# 💡 *** ¡ESTA ES LA LÍNEA CORREGIDA! ***
+@router.get("/with-details", response_model=list[schemas.ProductoEducativoWithDetails])
 def read_productos_educativos_with_details(
     db: Session = Depends(get_db)
 ):
-    # ... (tu lógica de query)
-   productos = db.query(models.ProductoEducativo).options(
-    joinedload(models.ProductoEducativo.docentes),
-    joinedload(models.ProductoEducativo.inscripciones) # <-- ASÍ DEBE QUEDAR
-).all()
-   print("PRODUCTOS ENCONTRADOS:", productos) # <--- AÑADE ESTO
-   return productos
+    productos = db.query(models.ProductoEducativo).options(
+        joinedload(models.ProductoEducativo.docentes),
+        joinedload(models.ProductoEducativo.inscripciones)
+    ).all()
+    
+    # Este print es útil para que veas en tu terminal del backend que SÍ se están cargando
+    print("PRODUCTOS /WITH-DETAILS ENCONTRADOS:", productos) 
+    
+    return productos
 
 @router.get("/{producto_id}", response_model=ProductoEducativo)
 def read_producto_educativo(producto_id: int, db: Session = Depends(get_db)):
