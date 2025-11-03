@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks # AÑADIDO: BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks 
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,7 +7,7 @@ from app.schemas.administrador import Administrador, AdministradorCreate, Admini
 from app.database import get_db
 from app.core.security import get_password_hash
 from app.routers.dependencies import get_current_admin_user
-from app.core.token_utils import create_and_send_password_reset_link # AÑADIDO: Importar la función unificada
+from app.core.token_utils import create_and_send_password_reset_link # Importar la función unificada
 
 router = APIRouter(
     prefix="/admin/administradores",

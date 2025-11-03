@@ -80,7 +80,8 @@ def send_password_reset_email(
     email: str, 
     token: str, 
     user_name: str,
-    is_admin_request: bool = False
+    # AÑADIDO: Recibe el tiempo de expiración en minutos
+    token_expire_minutes: int 
 ):
     """
     Envía un correo electrónico con un enlace de restablecimiento de contraseña.
@@ -102,7 +103,7 @@ def send_password_reset_email(
             
             <p>Si has recibido este correo por un administrador (opción 🔑), o si no solicitaste este cambio, puedes ignorar este correo electrónico.</p>
             
-            <p>Este enlace expirará en {settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES} minutos.</p>
+            <p>Este enlace expirará en {token_expire_minutes} minutos.</p> <!-- CORREGIDO: Usa el argumento pasado -->
             <p>Saludos cordiales,<br>El equipo de {settings.SMTP_SENDER_NAME}</p>
         </body>
     </html>

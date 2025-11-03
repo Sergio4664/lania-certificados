@@ -1,4 +1,3 @@
-//ruta: frontend/lania-ui/src/app/features/auth/reset-password/reset-password.component.ts
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Subscription } from 'rxjs'; // Necesario para gestionar la suscripción
 
 @Component({
   selector: 'app-reset-password',
@@ -30,6 +30,7 @@ export class ResetPasswordComponent implements OnInit {
   isLoading = false;
   token: string | null = null;
   hidePassword = true;
+  private routeSubscription: Subscription | undefined;
 
   constructor(
     private fb: FormBuilder,
@@ -44,11 +45,21 @@ export class ResetPasswordComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.paramMap.get('token');
-    if (!this.token) {
-      this.notificationService.showError('Token no válido. Por favor, solicita un nuevo enlace.');
-      this.router.navigate(['/login']);
-    }
+    // CORRECCIÓN CLAVE: Leer de queryParams para manejar el formato ?token=XYZ
+    this.routeSubscription = this.route.queryParams.subscribe(params => {
+        this.token = params['token'];
+        
+        if (!this.token) {
+            this.notificationService.showError('Token no válido o faltante. Por favor, solicita un nuevo enlace.');
+            this.router.navigate(['/login']);
+        }
+    });
+  }
+  
+  ngOnDestroy(): void {
+      if (this.routeSubscription) {
+          this.routeSubscription.unsubscribe();
+      }
   }
 
   onSubmit(): void {

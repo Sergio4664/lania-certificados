@@ -6,8 +6,8 @@ from fastapi import BackgroundTasks
 from app import models
 from app.services import email_service
 
-# Asumiendo que esta configuración está en tu config.py o settings
-PASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1 
+# Configuraciones de tiempo de expiración
+PASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1 # Token válido por 1 hora
 FRONTEND_RESET_PASSWORD_URL = "http://localhost:4200/reset-password"
 
 def create_and_send_password_reset_link(db: Session, user: models.Administrador, background_tasks: BackgroundTasks):
@@ -19,7 +19,7 @@ def create_and_send_password_reset_link(db: Session, user: models.Administrador,
     token_urlsafe = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token_urlsafe.encode()).hexdigest()
     
-    # 2. Configuración de Expiración
+    # 2. Configuración de Expiración (basada en la configuración local de este archivo)
     expires_delta = timedelta(hours=PASSWORD_RESET_TOKEN_EXPIRE_HOURS)
     expires_at = datetime.now(timezone.utc) + expires_delta
     
@@ -40,14 +40,15 @@ def create_and_send_password_reset_link(db: Session, user: models.Administrador,
         
     db.commit()
     
-    # 4. Preparar enlace y enviar correo (Usando BackgroundTasks)
-    reset_link = f"{FRONTEND_RESET_PASSWORD_URL}/{token_urlsafe}"
+    # 4. Preparar parámetros y enviar correo (Usando BackgroundTasks)
+    token_expire_minutes = PASSWORD_RESET_TOKEN_EXPIRE_HOURS * 60
     
     background_tasks.add_task(
         email_service.send_password_reset_email,
-        recipient_email=user.email_institucional,
+        email=user.email_institucional,     
         user_name=user.nombre_completo,
-        reset_link=reset_link
+        token=token_urlsafe,
+        token_expire_minutes=token_expire_minutes # Se pasa la duración
     )
     
     # Nota: No devolvemos nada, solo programamos la tarea

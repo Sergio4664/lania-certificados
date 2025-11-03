@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta, datetime, timezone
-import secrets
-import hashlib
+from datetime import timedelta # Se mantiene solo para /token
+# Importaciones eliminadas: secrets, hashlib, datetime, timezone
+# Ya no son necesarias aquí, se usan en token_utils.py
 
 from app.database import get_db
 from app import models
 from app.schemas.auth import Token, UserAuth, UserRole, ForgotPasswordRequest, ResetPasswordRequest
 from app.core import security
-from app.services import email_service
+# from app.services import email_service # Se elimina la importación directa
+
+from app.core.token_utils import create_and_send_password_reset_link # AÑADIDO: Importar la función centralizada
+import hashlib # Se mantiene para /reset-password
+from datetime import datetime, timezone # Se mantienen para /reset-password
 
 router = APIRouter(
     prefix="/auth",
@@ -66,34 +70,14 @@ async def forgot_password(request: ForgotPasswordRequest, background_tasks: Back
     
     # Bloqueo intencional para evitar enumeración de usuarios
     if not admin:
+        # Mensaje genérico para todos los casos
         return {"message": "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña."}
     
-    # Generación y almacenamiento del token
-    token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    expires_delta = timedelta(hours=1) # El tiempo de expiración debe ser centralizado en settings
-    expires_at = datetime.now(timezone.utc) + expires_delta
+    # Llama a la función centralizada: genera el token, lo guarda y programa el envío del correo.
+    # Esto reemplaza toda la lógica anterior de generación de token y envío de email.
+    create_and_send_password_reset_link(db, admin, background_tasks)
     
-    # Reutiliza o crea el token en la base de datos
-    existing_token = db.query(models.TokenRestablecimientoPassword).filter(models.TokenRestablecimientoPassword.email == request.email).first()
-    if existing_token:
-        existing_token.token = token_hash
-        existing_token.fecha_expiracion = expires_at
-    else:
-        db.add(models.TokenRestablecimientoPassword(email=request.email, token=token_hash, fecha_expiracion=expires_at))
-    
-    db.commit()
-    
-    # Preparar enlace y enviar correo
-    reset_link = f"http://localhost:4200/reset-password/{token}"
-    
-    background_tasks.add_task(
-        email_service.send_password_reset_email,
-        recipient_email=admin.email_institucional,
-        user_name=admin.nombre_completo,
-        reset_link=reset_link
-    )
-    
+    # El mensaje de respuesta se mantiene genérico para proteger contra enumeración.
     return {"message": "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña."}
 
 @router.post("/reset-password")
