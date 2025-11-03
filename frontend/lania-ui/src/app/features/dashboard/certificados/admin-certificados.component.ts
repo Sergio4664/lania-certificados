@@ -65,7 +65,7 @@ export default class AdminCertificadosComponent implements OnInit {
     this.loadProductosParaCrear(); 
   }
 
-  // --- Métodos para las Tablas (Sin cambios) ---
+  // --- Métodos para las Tablas ---
 
   loadCertificadosParticipantes(): void {
     this.isLoadingParticipantes = true;
@@ -143,7 +143,7 @@ export default class AdminCertificadosComponent implements OnInit {
     this.showCreateModal = false;
   }
 
-  // --- ✅ 1. FUNCIÓN CORREGIDA ---
+  // --- Lógica de filtrado ---
   onProductoSeleccionadoParaCrear(): void {
     const productoId = this.createForm.get('productoId')?.value;
     this.selectedProducto = this.allProductos.find(p => p.id === Number(productoId)) || null;
@@ -151,26 +151,17 @@ export default class AdminCertificadosComponent implements OnInit {
     if (this.selectedProducto) {
       const esCurso = this.selectedProducto.tipo_producto === 'CURSO_EDUCATIVO';
 
-      // Filtrar participantes (inscripciones)
       this.inscripcionesDelProducto = this.selectedProducto.inscripciones.filter(inscripcion => {
-        
-        // Revisa si el participante ya tiene un certificado "Normal"
         const tieneCertNormal = inscripcion.certificados?.some(c => !c.con_competencias);
         
         if (!esCurso) {
-          // Para Píldoras/Inyecciones: si ya tiene cert normal, se filtra.
           return !tieneCertNormal;
         }
 
-        // Para Cursos: revisamos también el de competencias
         const tieneCertCompetencias = inscripcion.certificados?.some(c => c.con_competencias);
-
-        // Se mantiene en la lista si le falta CUALQUIERA de los dos.
-        // Solo se filtra si tiene AMBOS.
         return !tieneCertNormal || !tieneCertCompetencias; 
       });
       
-      // Filtrar docentes (esta lógica no cambia)
       this.docentesDelProducto = this.selectedProducto.docentes.filter(d => 
         !d.certificados?.some((c: Certificado) => c.producto_educativo_id === this.selectedProducto?.id)
       );
@@ -180,57 +171,43 @@ export default class AdminCertificadosComponent implements OnInit {
       this.docentesDelProducto = [];
     }
     
-    // Resetear selecciones dependientes
     this.createForm.get('inscripcionId')?.reset();
     this.createForm.get('docenteId')?.reset();
-    // Llamamos a la nueva función para resetear el checkbox
     this.onParticipanteSeleccionadoParaCrear();
   }
 
-  // --- ✅ 2. NUEVA FUNCIÓN AÑADIDA ---
-  /**
-   * Se dispara al seleccionar un participante.
-   * Comprueba si ya tiene la constancia normal y fuerza
-   * la selección de "competencias" si es necesario.
-   */
+  // --- Lógica del checkbox ---
   onParticipanteSeleccionadoParaCrear(): void {
     const inscripcionId = this.createForm.get('inscripcionId')?.value;
     const conCompetenciasCtrl = this.createForm.get('conCompetencias');
 
     if (!inscripcionId || !this.selectedProducto || this.selectedProducto.tipo_producto !== 'CURSO_EDUCATIVO') {
-      // Si no es un curso o no hay participante, habilitamos y reseteamos el checkbox
       conCompetenciasCtrl?.setValue(false);
       conCompetenciasCtrl?.enable();
       return;
     }
 
-    // Buscar la inscripción seleccionada
     const inscripcion = this.inscripcionesDelProducto.find(i => i.id === Number(inscripcionId));
-    
-    // Comprobar si ya tiene la constancia normal
     const tieneCertNormal = inscripcion?.certificados?.some(c => !c.con_competencias);
 
     if (tieneCertNormal) {
-      // Si ya tiene la normal, solo puede estar aquí para la de competencias.
-      // Forzamos el check y lo deshabilitamos para evitar errores.
       conCompetenciasCtrl?.setValue(true);
       conCompetenciasCtrl?.disable();
     } else {
-      // Si no tiene la normal, puede emitir la normal (o de competencias si la marca).
-      // Habilitamos el checkbox y lo ponemos en falso.
       conCompetenciasCtrl?.setValue(false);
       conCompetenciasCtrl?.enable();
     }
   }
 
-  // --- ✅ 3. FUNCIÓN MODIFICADA ---
+  // --- ✅ FUNCIÓN CORREGIDA (usar getRawValue) ---
   onCreateSubmit(): void {
     if (this.createForm.invalid) {
       this.notificationSvc.showInfo('Por favor, complete todos los campos requeridos.');
       return;
     }
 
-    // Usamos getRawValue() para leer el valor del checkbox aunque esté deshabilitado
+    // --- ⬇️ ESTA ES LA CORRECCIÓN CLAVE ⬇️ ---
+    // Usamos getRawValue() para leer los valores de los campos deshabilitados (como conCompetencias)
     const { productoId, tipoDestinatario, inscripcionId, docenteId, conCompetencias } = this.createForm.getRawValue();
     let request$: Observable<Certificado>;
 
@@ -241,7 +218,7 @@ export default class AdminCertificadosComponent implements OnInit {
       }
       const payload: CertificadoCreate = {
         inscripcion_id: inscripcionId as number,
-        con_competencias: conCompetencias || false
+        con_competencias: conCompetencias || false // 'conCompetencias' ahora tendrá el valor correcto
       };
       request$ = this.certificadoSvc.createForParticipant(payload);
 
@@ -253,6 +230,7 @@ export default class AdminCertificadosComponent implements OnInit {
       const payload: CertificadoCreate = {
         docente_id: docenteId as number,
         producto_educativo_id: productoId as number
+        // 'conCompetencias' no aplica para docentes
       };
       request$ = this.certificadoSvc.createForDocente(payload);
     }
@@ -276,7 +254,7 @@ export default class AdminCertificadosComponent implements OnInit {
       }
     });
   }
-  // --- FIN DE CAMBIOS ---
+  // --- FIN DE LA CORRECCIÓN ---
 
 
   // --- Métodos Comunes (Reutilizados) ---
@@ -296,11 +274,25 @@ export default class AdminCertificadosComponent implements OnInit {
 
   reenviarCertificado(certificado: Certificado): void {
     const destinatario = certificado.inscripcion?.participante?.nombre_completo || certificado.docente?.nombre_completo || 'el destinatario';
-    const email = certificado.inscripcion?.participante?.email_personal || certificado.docente?.email_institucional || 'su correo';
+    
+    // Lógica de email mejorada
+    let emailType: 'institucional' | 'personal' = 'personal'; // Default para participante
+    let email = certificado.inscripcion?.participante?.email_personal;
+
+    if (certificado.docente) {
+      // Si es docente, preguntamos al usuario
+      const emailTypeChoice = prompt("Enviar a email: (institucional / personal)", "institucional")?.toLowerCase();
+      emailType = (emailTypeChoice === 'personal') ? 'personal' : 'institucional';
+      email = (emailType === 'personal') ? certificado.docente.email_personal : certificado.docente.email_institucional;
+    }
+    
+    email = email || 'correo no disponible';
 
     if (confirm(`¿Está seguro de reenviar el certificado ${certificado.folio} a ${destinatario} (${email})?`)) {
-      // Determinamos el email_type correcto para docentes
-      const emailType = certificado.docente ? 'institucional' : 'personal';
+       if (!email || email === 'correo no disponible') {
+        this.notificationSvc.showError(`El destinatario no tiene un email ${emailType} registrado.`);
+        return;
+      }
       
       this.certificadoSvc.sendEmail(certificado.id, emailType).subscribe({
         next: (res) => {
@@ -314,12 +306,13 @@ export default class AdminCertificadosComponent implements OnInit {
   }
 
   deleteCertificado(certificado: Certificado): void {
-    if (confirm(`¿Está seguro de eliminar el certificado con folio ${certificado.folio}?`)) {
+    if (confirm(`¿Está seguro de eliminar el certificado con folio ${certificado.folio}? Esta acción no se puede deshacer.`)) {
       this.certificadoSvc.delete(certificado.id).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Certificado eliminado.');
           this.loadCertificadosParticipantes();
           this.loadCertificadosDocentes();
+          this.loadProductosParaCrear(); // Recargar productos para el modal
         },
         error: (err: HttpErrorResponse) => this.handleError(err, 'Error al eliminar')
       });

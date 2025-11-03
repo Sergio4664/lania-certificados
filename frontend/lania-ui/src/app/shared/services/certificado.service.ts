@@ -1,4 +1,3 @@
-//Ruta: frontend/lania-ui/src/app/shared/services/certificado.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -20,7 +19,7 @@ export class CertificadoService {
   getAll(): Observable<Certificado[]> {
     // ✅ CORRECCIÓN: Añadir parámetros "cache-busting" para evitar caché del navegador
     const params = { v: new Date().getTime().toString() };
-    return this.http.get<Certificado[]>(this.apiUrl, { params });
+    return this.http.get<Certificado[]>(`${this.apiUrl}/`, { params });
   }
 
   // --- MÉTODOS AÑADIDOS PARA EL DASHBOARD ---
@@ -51,10 +50,11 @@ export class CertificadoService {
    * Llama al endpoint unificado /download/{folio}
    */
   getCertificadoBlob(folio: string): Observable<Blob> {
-    // Este no necesita "cache-buster" porque el folio es único
     return this.http.get(`${this.apiUrl}/download/${folio}`, { responseType: 'blob' });
   }
   
+  // --- (Métodos downloadCertificado y downloadCertificadoDocente eliminados) ---
+
   // --- MÉTODOS ORIGINALES DE GESTIÓN ---
 
   /**
@@ -84,11 +84,10 @@ export class CertificadoService {
   /**
    * Reenvía un certificado por email.
    * @param certificadoId - El ID del certificado a enviar.
-   * @param emailType - El tipo de email al que se enviará (personal o institucional).
+   * @param emailType - (Ignorado por el backend, pero requerido por 'admin-productos-educativos')
    */
   sendEmail(certificadoId: number, emailType: 'institucional' | 'personal'): Observable<any> {
-    // El backend determina el email correcto basado en el tipo de certificado (docente/participante).
-    // El argumento emailType se mantiene por compatibilidad, pero el backend podría no usarlo.
+    // El backend determina el email correcto (personal para participante, inst. para docente)
     return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, { email_type: emailType });
   }
 

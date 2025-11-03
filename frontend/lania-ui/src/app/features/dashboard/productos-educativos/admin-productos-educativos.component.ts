@@ -1,4 +1,3 @@
-// Ruta: frontend/lania-ui/src/app/features/dashboard/productos-educativos/admin-productos-educativos.component.ts
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import {
@@ -161,10 +160,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const selectedCourseId = this.selectedCourse?.id;
 
     forkJoin({
-      productos: this.productoSvc.getAllProductosWithDetails(),
+      productos: this.productoSvc.getAllProductosWithDetails(), // Llama al servicio (con anti-caché)
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll(),
-      certificados: this.certificadoSvc.getAll() // Carga inicial de certificados
+      certificados: this.certificadoSvc.getAll() // Carga inicial de certificados (con anti-caché)
     }).subscribe(({ productos, docentes, participantes, certificados }) => {
       this.productos = productos.sort((a, b) =>
         new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()
@@ -189,7 +188,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   }
 
   loadCertificados() {
-    // Este método ahora es llamado por 'selectCourse' para refrescar
+    // Este método ahora llama al servicio con anti-caché
     this.certificadoSvc.getAll().subscribe({
       next: (certificadosData: Certificado[]) => {
         this.certificados = certificadosData;
@@ -495,7 +494,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       next: (newCert: Certificado) => {
         this.notificationSvc.showSuccess(`Constancia ${tipo} emitida: ${newCert.folio}`);
 
-        // Quitamos el certificado viejo si existiera (para reemplazo)
         const index = this.certificados.findIndex(c =>
           (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
           c.con_competencias === con_competencias
@@ -570,7 +568,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.certificadoSvc.delete(certificadoId).subscribe({
         next: () => {
           this.notificationSvc.showSuccess('Certificado eliminado.');
-          // Elimina el certificado de la lista local
           const index = this.certificados.findIndex(c => c.id === certificadoId);
           if (index > -1) {
             this.certificados.splice(index, 1);
@@ -698,10 +695,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     // Muestra notificación de carga
     this.notificationSvc.showInfo('Actualizando lista de certificados...');
 
-    // Llama al servicio de certificados (que ahora tiene el anti-caché)
+    // Llama al servicio de certificados (que ahora debe tener el anti-caché)
     this.certificadoSvc.getAll().subscribe({
       next: (certificadosActualizados) => {
-        // Asigna la lista FRESCA
+        // Asigna la lista FRESCA de certificados
         this.certificados = certificadosActualizados;
         
         // Carga los participantes DESPUÉS de tener los certificados
