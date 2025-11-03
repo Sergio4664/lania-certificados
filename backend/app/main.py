@@ -1,7 +1,8 @@
-# Ruta: backend/app/main.py
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles 
+import os # Importar OS para manejar rutas de forma segura
+import sys # Importar sys para depuración
 
 from app.routers import (
     auth,
@@ -16,11 +17,11 @@ from app.routers import (
 
 app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-# --- Configuración de CORS (sin cambios) ---
+# --- Configuración de CORS ---
 origins = [
     "http://localhost",
     "http://localhost:4200",
-    "http://127.0.0.1:4200",
+    "http://127.0.0.0:4200",
 ]
 
 app.add_middleware(
@@ -31,14 +32,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Montar archivos estáticos de la API (logos, plantillas, etc.)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# --- ✅ REGISTRO DE RUTAS UNIFICADO Y LIMPIO ---
-# 1. Creamos un router principal que agrupará todas las demás rutas.
+# --- REGISTRO DE RUTAS API ---
 api_router = APIRouter()
-
-# 2. Incluimos cada router específico DENTRO del router principal.
-#    Nota: Estos no llevan prefijo aquí.
 api_router.include_router(auth.router)
 api_router.include_router(public_verify.router)
 api_router.include_router(admin_administradores.router)
@@ -48,11 +46,5 @@ api_router.include_router(admin_productos_educativos.router)
 api_router.include_router(admin_inscripciones.router)
 api_router.include_router(admin_certificados.router)
 
-# 3. Incluimos el router principal en la app con el prefijo global /api/v1.
-#    Esto aplica el prefijo a todas las rutas de una sola vez.
 app.include_router(api_router, prefix="/api/v1")
 
-
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido a la API del Sistema de Constancias LANIA"}
