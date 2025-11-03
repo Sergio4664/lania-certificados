@@ -1,169 +1,257 @@
-:host {
-  display: block;
-  padding: 2rem;
-  font-family: sans-serif;
+:host { 
+    display: block;
+    padding: 20px; 
+    /* El fondo blanco es necesario para que el efecto de tarjeta destaque */
+    background-color: #f8fafc; 
 }
 
-.container {
-  max-width: 1000px;
-  margin: auto;
+.admin-container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
+.admin-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0; 
 }
 
-h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
+.admin-header h1 { 
+    color: #1e293b; 
+    margin: 0; 
+    font-size: 28px; 
+    font-weight: 600; 
 }
 
-.form-card {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
+/* Contenedor principal de 2 columnas */
+.content-wrapper {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 24px;
+    align-items: flex-start;
 }
 
-.form-card h3 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+/* Estilos de Botones */
+
+.primary-btn { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white; 
+    border: none; 
+    padding: 12px 20px; 
+    border-radius: 8px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: transform 0.2s, box-shadow 0.2s; 
 }
 
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-/* --- ESTILOS AÑADIDOS PARA VALIDACIÓN --- */
-.form-group input.is-invalid {
-  border-color: #dc3545; /* Rojo para indicar error */
-}
-
-.invalid-feedback {
-  color: #dc3545;
-  font-size: 0.875em;
-  margin-top: 0.25rem;
-}
-/* --- FIN DE ESTILOS AÑADIDOS --- */
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-.data-table table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.data-table th,
-.data-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-.data-table th {
-  background-color: #f9f9f9;
-  font-weight: 600;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.contact-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-}
-
-.primary-btn, .secondary-btn, .icon-btn {
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.primary-btn {
-  background-color: #3f51b5;
-  color: white;
+.primary-btn:hover { 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4); 
 }
 
 .primary-btn:disabled {
-  background-color: #aaa;
-  cursor: not-allowed;
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
-.secondary-btn {
-  background-color: #f0f0f0;
+.secondary-btn { 
+    background: #f1f5f9; 
+    color: #64748b; 
+    border: 1px solid #e2e8f0; 
+    padding: 12px 20px; 
+    border-radius: 8px; 
+    font-weight: 500; 
+    cursor: pointer; 
+    transition: background 0.2s; 
 }
 
-.icon-btn {
-  padding: 0.5rem;
-  line-height: 1;
+.secondary-btn:hover { 
+    background: #e2e8f0; 
 }
 
-.edit {
-  background-color: #ffc107;
-  color: #333;
+/* Estilos de Formulario y Tarjeta */
+
+.form-card { 
+    flex: 1 1 400px; /* Columna izquierda */
+    background: white; 
+    border-radius: 12px; 
+    padding: 24px; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+    border: 1px solid #e2e8f0; 
 }
 
-.delete {
-  background-color: #f44336;
-  color: white;
+.form-card h3 { 
+    color: #1e293b; 
+    margin: 0 0 20px 0; 
+    font-size: 20px; 
+    font-weight: 600; 
 }
 
-.status {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+/* Se asume que en el HTML usarás una clase tipo 'form-grid' 
+   para envolver los form-group si quieres más de una columna dentro del formulario 
+*/
+form { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+    gap: 20px; 
 }
 
-.status-active {
-  background: #dcfce7;
-  color: #16a34a;
+.form-group { 
+    display: flex; 
+    flex-direction: column; 
+    margin-bottom: 0;
 }
 
-.status-inactive {
-  background: #fee2e2;
-  color: #b91c1c;
+.form-group label { 
+    color: #374151; 
+    font-weight: 600; 
+    margin-bottom: 8px; 
+    font-size: 14px; 
 }
+
+.form-group input { 
+    padding: 12px; 
+    border: 2px solid #e5e7eb; 
+    border-radius: 8px; 
+    font-size: 14px; 
+    transition: border-color 0.2s; 
+    box-sizing: border-box;
+    width: 100%; /* Asegura que no se desborde */
+}
+
+.form-group input:focus { 
+    outline: none; 
+    border-color: #3b82f6; 
+}
+
+.form-actions { 
+    display: flex; 
+    gap: 12px; 
+    /* grid-column: 1 / -1; ya no es necesario si se coloca fuera de la grilla */
+    margin-top: 16px; 
+    justify-content: flex-end;
+}
+
+/* Estilos de Validación */
 
 .form-group input.is-invalid {
-  border-color: #dc3545; /* Rojo para indicar error */
+    border-color: #ef4444; /* Rojo suave */
 }
 
 .invalid-feedback {
-  color: #dc3545;
-  font-size: 0.875em;
-  margin-top: 0.25rem;
+    color: #ef4444; 
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Estilos de Tabla */
+
+.data-table { 
+    flex: 2 1 500px; /* Columna derecha */
+    background: white; 
+    border-radius: 12px; 
+    overflow-x: auto; /* Para manejo en móviles */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+    border: 1px solid #e2e8f0;
+}
+
+.data-table table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    /* Quitamos el padding aquí y lo ponemos en el tbody/thead */
+}
+
+.data-table th { 
+    background: #f8fafc; 
+    padding: 16px; 
+    text-align: left; 
+    font-weight: 600; 
+    color: #374151; 
+    border-bottom: 1px solid #e2e8f0; 
+    white-space: nowrap;
+}
+
+.data-table td { 
+    padding: 16px; 
+    border-bottom: 1px solid #f1f5f9; 
+    color: #64748b; 
+    vertical-align: middle;
+}
+
+.data-table tbody tr:hover { 
+    background: #f8fafc; 
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.no-data {
+    text-align: center;
+    padding: 32px;
+    color: #9ca3af;
+    font-style: italic;
+    background: white; /* Asegura que el fondo sea blanco */
+    border-radius: 0 0 12px 12px;
+}
+
+/* Icon Buttons (Botones de acción de la tabla) */
+
+.icon-btn { 
+    width: 36px; 
+    height: 36px; 
+    border: none; 
+    border-radius: 50%; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all 0.2s; 
+    background-color: transparent;
+    font-size: 18px;
+}
+
+.icon-btn.edit { 
+    color: #f59e0b; /* Amarillo/Naranja */
+}
+.icon-btn.edit:hover {
+    background: #fef3c7; /* Fondo amarillo muy claro */
+}
+
+.icon-btn.delete { 
+    color: #dc2626; /* Rojo */
+}
+.icon-btn.delete:hover { 
+    background: #fecaca; /* Fondo rojo muy claro */
+}
+
+.icon-btn:disabled { 
+    opacity: 0.5; 
+    cursor: not-allowed; 
+    background: #f1f5f9 !important; 
+    color: #9ca3af !important; 
+}
+
+/* Media Query para Responsividad */
+@media (max-width: 900px) {
+  .content-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-card, .data-table {
+    flex: 1 1 100%; /* Ocupan todo el ancho */
+  }
 }

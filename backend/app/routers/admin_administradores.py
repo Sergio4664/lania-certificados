@@ -1,5 +1,4 @@
-# Ruta: backend/app/routers/admin_administradores.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks # AÑADIDO: BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -8,6 +7,7 @@ from app.schemas.administrador import Administrador, AdministradorCreate, Admini
 from app.database import get_db
 from app.core.security import get_password_hash
 from app.routers.dependencies import get_current_admin_user
+from app.core.token_utils import create_and_send_password_reset_link # AÑADIDO: Importar la función unificada
 
 router = APIRouter(
     prefix="/admin/administradores",
@@ -68,3 +68,27 @@ def delete_administrador(admin_id: int, db: Session = Depends(get_db)):
     db.delete(db_admin)
     db.commit()
     return {"detail": "Administrador eliminado exitosamente"}
+
+# -------------------------------------------------------------------------
+# RUTA AÑADIDA PARA RESTABLECIMIENTO DE CONTRASEÑA (Desde el Dashboard)
+# -------------------------------------------------------------------------
+
+@router.post("/{admin_id}/send-reset-link", status_code=status.HTTP_200_OK)
+def send_reset_link_to_admin(
+    admin_id: int, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db)
+):
+    """
+    Genera un token de restablecimiento de contraseña y envía el enlace 
+    al correo institucional del administrador especificado por ID.
+    """
+    admin = db.query(models.Administrador).filter(models.Administrador.id == admin_id).first()
+    
+    if not admin:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador no encontrado")
+
+    # Llama a la función centralizada para generar el token y enviar el correo
+    create_and_send_password_reset_link(db, admin, background_tasks)
+
+    return {"message": f"Enlace de restablecimiento enviado a {admin.email_institucional}."}
