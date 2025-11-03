@@ -64,7 +64,7 @@
     <div class="table-header">
       <h3>Certificados de Docentes</h3>
       <div class="search-container">
-         <input type="text" [(ngModel)]="searchTermDocentes" (input)="filterCertificadosDocentes()" placeholder="Buscar por folio, docente...">
+        <input type="text" [(ngModel)]="searchTermDocentes" (input)="filterCertificadosDocentes()" placeholder="Buscar por folio, docente...">
         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -147,13 +147,15 @@
         <div *ngIf="createForm.get('tipoDestinatario')?.value === 'participante'">
           <div class="form-group">
             <label for="inscripcionId">3. Seleccione al Participante (Inscripción):</label>
-            <select id="inscripcionId" formControlName="inscripcionId">
+            
+            <select id="inscripcionId" formControlName="inscripcionId" (change)="onParticipanteSeleccionadoParaCrear()">
+            
               <option [ngValue]="null" disabled>Seleccione un participante...</option>
               <option *ngFor="let inscripcion of inscripcionesDelProducto" [ngValue]="inscripcion.id">
                 {{ inscripcion.participante.nombre_completo }}
               </option>
               <option [ngValue]="null" *ngIf="inscripcionesDelProducto.length === 0" disabled>
-                -- No hay participantes sin certificado para este producto --
+                -- Todos los participantes ya tienen sus certificados --
               </option>
             </select>
           </div>
@@ -175,7 +177,7 @@
                 {{ docente.nombre_completo }}
               </option>
               <option [ngValue]="null" *ngIf="docentesDelProducto.length === 0" disabled>
-                -- No hay docentes sin constancia para este producto --
+                -- Todos los docentes ya tienen constancia para este producto --
               </option>
             </select>
           </div>

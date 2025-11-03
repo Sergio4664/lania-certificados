@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/app/shared/services/certificado.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -14,12 +15,12 @@ export class CertificadoService {
 
   /**
    * Obtiene todos los certificados del sistema.
-   * (Este método puede o no ser usado por el dashboard, 
-   * pero lo mantenemos por si es usado en otra parte).
+   * (Usado por el modal de 'Productos Educativos' para refrescar su lista).
    */
   getAll(): Observable<Certificado[]> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
-    return this.http.get<Certificado[]>(this.apiUrl);
+    // ✅ CORRECCIÓN: Añadir parámetros "cache-busting" para evitar caché del navegador
+    const params = { v: new Date().getTime().toString() };
+    return this.http.get<Certificado[]>(this.apiUrl, { params });
   }
 
   // --- MÉTODOS AÑADIDOS PARA EL DASHBOARD ---
@@ -29,8 +30,9 @@ export class CertificadoService {
    * (Usado por la primera tabla del dashboard).
    */
   getCertificadosParticipantes(): Observable<Certificado[]> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
-    return this.http.get<Certificado[]>(`${this.apiUrl}/participantes`);
+    // ✅ CORRECCIÓN: Añadir parámetros "cache-busting"
+    const params = { v: new Date().getTime().toString() };
+    return this.http.get<Certificado[]>(`${this.apiUrl}/participantes`, { params });
   }
 
   /**
@@ -38,30 +40,28 @@ export class CertificadoService {
    * (Usado por la segunda tabla del dashboard).
    */
   getCertificadosDocentes(): Observable<Certificado[]> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
-    return this.http.get<Certificado[]>(`${this.apiUrl}/docentes`);
+    // ✅ CORRECCIÓN: Añadir parámetros "cache-busting"
+    const params = { v: new Date().getTime().toString() };
+    return this.http.get<Certificado[]>(`${this.apiUrl}/docentes`, { params });
   }
 
-  // --- 💡 MÉTODO NUEVO PARA EL BOTÓN "👁️" ---
+  // --- MÉTODO NUEVO PARA EL BOTÓN "👁️" ---
   /**
    * Obtiene el archivo PDF de un certificado (participante O docente) como un Blob.
    * Llama al endpoint unificado /download/{folio}
    */
   getCertificadoBlob(folio: string): Observable<Blob> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
+    // Este no necesita "cache-buster" porque el folio es único
     return this.http.get(`${this.apiUrl}/download/${folio}`, { responseType: 'blob' });
   }
   
-  // --- (Métodos downloadCertificado y downloadCertificadoDocente eliminados) ---
-
   // --- MÉTODOS ORIGINALES DE GESTIÓN ---
 
   /**
-   * Crea un nuevo certificado para un participante (constancia normal).
-   * @param data - El payload que incluye el 'inscripcion_id' y 'producto_educativo_id'.
+   * Crea un nuevo certificado para un participante.
+   * @param data - El payload que incluye el 'inscripcion_id' y 'con_competencias'.
    */
   createForParticipant(data: CertificadoCreate): Observable<Certificado> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
     return this.http.post<Certificado>(`${this.apiUrl}/participante`, data);
   }
 
@@ -70,7 +70,6 @@ export class CertificadoService {
    * @param data - El payload que incluye el 'docente_id' y 'producto_educativo_id'.
    */
   createForDocente(data: CertificadoCreate): Observable<Certificado> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
     return this.http.post<Certificado>(`${this.apiUrl}/docente`, data);
   }
 
@@ -79,20 +78,18 @@ export class CertificadoService {
    * @param id - El ID del certificado a eliminar.
    */
   delete(id: number): Observable<void> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   /**
-   * 💡 CORRECCIÓN PARA ARREGLAR COMPILACIÓN DE 'admin-productos-educativos'
-   * Volvemos a aceptar 2 argumentos, aunque el backend solo usa el primero.
+   * Reenvía un certificado por email.
    * @param certificadoId - El ID del certificado a enviar.
-   * @param emailType - (Ignorado por el backend, pero requerido por 'admin-productos-educativos')
+   * @param emailType - El tipo de email al que se enviará (personal o institucional).
    */
   sendEmail(certificadoId: number, emailType: 'institucional' | 'personal'): Observable<any> {
-    // 💡 CORRECCIÓN de sintaxis: this.apiUrl
-    // El backend ignora el body, pero lo enviamos vacío para que la llamada POST sea válida.
-    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, {});
+    // El backend determina el email correcto basado en el tipo de certificado (docente/participante).
+    // El argumento emailType se mantiene por compatibilidad, pero el backend podría no usarlo.
+    return this.http.post(`${this.apiUrl}/${certificadoId}/enviar`, { email_type: emailType });
   }
 
   /**
@@ -100,7 +97,6 @@ export class CertificadoService {
    * @param productoId - El ID del producto educativo.
    */
   emitirYEnviarMasivamente(productoId: number): Observable<EmisionMasivaResponse> {
-    // Nota: Asegúrate de que este endpoint exista en tu backend si planeas usarlo.
     const url = `${environment.apiUrl}/admin/certificados/emitir-enviar-masivo/producto/${productoId}`;
     return this.http.post<EmisionMasivaResponse>(url, {});
   }
