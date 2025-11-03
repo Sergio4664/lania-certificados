@@ -78,19 +78,13 @@ def send_certificate_email(
     
 def send_password_reset_email(
     email: str, 
-    token: str, 
     user_name: str,
-    # AÑADIDO: Recibe el tiempo de expiración en minutos
-    token_expire_minutes: int 
+    token_expire_minutes: int,
+    reset_url: str # Aceptar la URL completa y lista para usar desde token_utils.py
 ):
     """
     Envía un correo electrónico con un enlace de restablecimiento de contraseña.
-    Esta función es llamada por la ruta 'forgot-password' y por el administrador.
     """
-    # Determinar la URL base del frontend
-    FRONTEND_URL = settings.FRONTEND_URL 
-    reset_url = f"{FRONTEND_URL}/auth/reset-password?token={token}"
-
     subject = "Restablecimiento de Contraseña - Sistema LANIA"
     
     # Crear el contenido del correo
@@ -99,11 +93,12 @@ def send_password_reset_email(
         <body>
             <p>Hola {user_name},</p>
             <p>Hemos recibido una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para continuar:</p>
+            
             <p><a href="{reset_url}" style="display: inline-block; padding: 10px 20px; margin: 10px 0; background-color: #3f51b5; color: white; text-decoration: none; border-radius: 5px;">Restablecer Contraseña</a></p>
             
             <p>Si has recibido este correo por un administrador (opción 🔑), o si no solicitaste este cambio, puedes ignorar este correo electrónico.</p>
             
-            <p>Este enlace expirará en {token_expire_minutes} minutos.</p> <!-- CORREGIDO: Usa el argumento pasado -->
+            <p>Este enlace expirará en {token_expire_minutes} minutos.</p> 
             <p>Saludos cordiales,<br>El equipo de {settings.SMTP_SENDER_NAME}</p>
         </body>
     </html>

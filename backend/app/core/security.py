@@ -1,7 +1,11 @@
+import jwt
 from datetime import datetime, timedelta, timezone
-from typing import Any, Union
+from typing import Any, Union, Optional
 from jose import jwt
 import bcrypt
+
+# Importar status y HTTPException para la función de decodificación (necesario si se implementa más adelante)
+from fastapi import HTTPException, status # Se añade si no existe
 
 from app.core.config import get_settings
 
@@ -10,17 +14,27 @@ settings = get_settings()
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-def create_access_token(subject: Union[dict, Any], expires_delta: timedelta = None) -> str:
+def create_access_token(subject: Union[dict, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Crea un nuevo token de acceso JWT."""
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = subject.copy()
-    to_encode.update({"exp": expire})
+    now = datetime.now(timezone.utc)
     
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    if expires_delta:
+        expire = now + expires_delta
+    else:
+        # Si no se especifica expiración, usar la predeterminada del sistema
+        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # 💡 CORRECCIÓN 1: Usar timestamp() para el formato JWT 'exp' y añadir 'iat' (issued at)
+    to_encode.update({"exp": expire.timestamp(), "iat": now.timestamp()})
+    
+    # 💡 CORRECCIÓN 2 (Soluciona el error 500): Llama a .get_secret_value() para obtener la clave como string
+    encoded_jwt = jwt.encode(
+        to_encode, 
+        settings.SECRET_KEY.get_secret_value(), # <--- LA CLAVE ES EXTRAÍDA CORRECTAMENTE
+        algorithm=ALGORITHM
+    )
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
