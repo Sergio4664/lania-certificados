@@ -4,8 +4,8 @@ from typing import Any, Union, Optional
 from jose import jwt
 import bcrypt
 
-# Importar status y HTTPException para la función de decodificación (necesario si se implementa más adelante)
-from fastapi import HTTPException, status # Se añade si no existe
+# Importar status y HTTPException para la función de decodificación
+from fastapi import HTTPException, status 
 
 from app.core.config import get_settings
 
@@ -26,13 +26,11 @@ def create_access_token(subject: Union[dict, Any], expires_delta: Optional[timed
         # Si no se especifica expiración, usar la predeterminada del sistema
         expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    # 💡 CORRECCIÓN 1: Usar timestamp() para el formato JWT 'exp' y añadir 'iat' (issued at)
     to_encode.update({"exp": expire.timestamp(), "iat": now.timestamp()})
     
-    # 💡 CORRECCIÓN 2 (Soluciona el error 500): Llama a .get_secret_value() para obtener la clave como string
     encoded_jwt = jwt.encode(
         to_encode, 
-        settings.SECRET_KEY.get_secret_value(), # <--- LA CLAVE ES EXTRAÍDA CORRECTAMENTE
+        settings.SECRET_KEY.get_secret_value(), # Esto funciona ahora con SecretStr de config.py
         algorithm=ALGORITHM
     )
     return encoded_jwt

@@ -22,8 +22,12 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Esta función ahora usará correctamente la 'settings' que obtuvimos arriba
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # 🎯 CORRECCIÓN: Se usa .get_secret_value() para obtener el valor de la clave secreta como un string.
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY.get_secret_value(), # <--- CORREGIDO
+            algorithms=[settings.ALGORITHM]
+        )
         email: str = payload.get("sub")
         role: str = payload.get("rol")
         if email is None or role is None:
