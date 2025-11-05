@@ -177,7 +177,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
         const reselectedCourse = this.productos.find(p => p.id === selectedCourseId);
         if (reselectedCourse) {
           this.selectedCourse = reselectedCourse;
-          // ✅ CORRECCIÓN 1: Usar la lista de inscripciones YA FILTRADA
+          // Usar la lista de inscripciones YA FILTRADA
           this.inscripcionesDelProducto = reselectedCourse.inscripciones;
         } else {
           this.unselectCourse();
@@ -195,7 +195,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
         this.certificados = certificadosData;
         console.log('Certificados recargados:', this.certificados.length);
         if (this.selectedCourse) {
-          // ✅ CORRECCIÓN 2: Usar getById (ahora implementado) para obtener inscripciones filtradas
+          // Usar getById para obtener inscripciones filtradas
           this.productoSvc.getById(this.selectedCourse.id).subscribe((courseDetails: ProductoEducativoWithDetails) => {
             this.inscripcionesDelProducto = courseDetails.inscripciones;
             this.cdr.markForCheck();
@@ -209,8 +209,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
       }
     });
   }
-
-  // ELIMINADA: La función loadParticipantsForCourse es redundante y se reemplaza por la lógica de loadInitialData/loadCertificados
 
   // --- GESTIÓN DE PRODUCTOS (CRUD) ---
   onSubmitCourse() {
@@ -295,11 +293,15 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   // --- GESTIÓN DEL FORMULARIO ---
   editCourse(producto: ProductoEducativoWithDetails) {
-    this.editingCourse = producto;
-    const competenciasValueForForm = producto.competencias || '';
-    
+    // 1. Resetear el formulario y el estado de edición anterior (sets this.editingCourse = null)
     this.resetCourseForm(); 
     
+    // 2. ✅ CORRECCIÓN CLAVE: Establecer el estado de edición *después* de resetear
+    this.editingCourse = producto; 
+
+    const competenciasValueForForm = producto.competencias || '';
+    
+    // 3. Aplicar los valores del producto a editar
     this.courseForm.patchValue({
       nombre: producto.nombre,
       horas: producto.horas,
@@ -675,11 +677,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
 
   // --- MÉTODOS DE LA UI ---
 
-  /**
-   * ✅ CORRECCIÓN CLAVE: Fuerza la recarga completa de todos los datos
-   * para asegurar que los participantes eliminados lógicamente sean excluidos
-   * en el detalle del producto.
-   */
   selectCourse(course: ProductoEducativoWithDetails) {
     this.selectedCourse = course; 
     this.competencyRecipients.clear(); 
@@ -687,8 +684,6 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.docenteEmailSelection = {};
 
     this.notificationSvc.showInfo('Recargando todos los datos para asegurar consistencia...');
-    // Al llamar a loadInitialData, se vuelve a poblar la lista global de productos y participantes,
-    // garantizando que el selectedCourse obtenga los datos filtrados del backend.
     this.loadInitialData();
   }
 
