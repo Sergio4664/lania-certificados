@@ -160,10 +160,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const selectedCourseId = this.selectedCourse?.id;
 
     forkJoin({
-      productos: this.productoSvc.getAllProductosWithDetails(), // Llama al servicio (con anti-caché)
+      productos: this.productoSvc.getAllProductosWithDetails(), 
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll(),
-      certificados: this.certificadoSvc.getAll() // Carga inicial de certificados (con anti-caché)
+      certificados: this.certificadoSvc.getAll() 
     }).subscribe(({ productos, docentes, participantes, certificados }) => {
       this.productos = productos.sort((a, b) =>
         new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()
@@ -177,7 +177,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
         const reselectedCourse = this.productos.find(p => p.id === selectedCourseId);
         if (reselectedCourse) {
           this.selectedCourse = reselectedCourse;
-          this.loadParticipantsForCourse(selectedCourseId);
+          // ✅ CORRECCIÓN 1: Usar la lista de inscripciones YA FILTRADA
+          this.inscripcionesDelProducto = reselectedCourse.inscripciones;
         } else {
           this.unselectCourse();
         }
@@ -194,9 +195,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
         this.certificados = certificadosData;
         console.log('Certificados recargados:', this.certificados.length);
         if (this.selectedCourse) {
-          // Si hay un curso seleccionado, refrescamos sus participantes
-          // para que usen la nueva lista de certificados
-          this.loadParticipantsForCourse(this.selectedCourse.id);
+          // ✅ CORRECCIÓN 2: Usar getById (ahora implementado) para obtener inscripciones filtradas
+          this.productoSvc.getById(this.selectedCourse.id).subscribe((courseDetails: ProductoEducativoWithDetails) => {
+            this.inscripcionesDelProducto = courseDetails.inscripciones;
+            this.cdr.markForCheck();
+          });
         }
         this.cdr.markForCheck();
       },
@@ -207,12 +210,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  loadParticipantsForCourse(courseId: number) {
-    this.inscripcionSvc.getByProductoId(courseId).subscribe(inscripciones => {
-      this.inscripcionesDelProducto = inscripciones;
-      this.cdr.markForCheck();
-    });
-  }
+  // ELIMINADA: La función loadParticipantsForCourse es redundante y se reemplaza por la lógica de loadInitialData/loadCertificados
 
   // --- GESTIÓN DE PRODUCTOS (CRUD) ---
   onSubmitCourse() {
@@ -383,7 +381,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.inscripcionSvc.create(payload).subscribe({
       next: (newInscripcion) => {
         this.notificationSvc.showSuccess('Participante inscrito.');
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
+        // Forzar recarga completa de datos para refrescar la lista de inscripciones filtrada.
+        this.loadInitialData();
         this.showAddParticipantForm = false;
         this.participantToAdd = null;
       },
@@ -401,8 +400,8 @@ export default class AdminProductosEducativosComponent implements OnInit {
           c.inscripcion_id !== inscripcionId &&
           !(c.inscripcion && c.inscripcion.id === inscripcionId)
         );
-        // Recarga los participantes para el modal
-        this.loadParticipantsForCourse(this.selectedCourse!.id);
+        // Forzar recarga completa para reflejar cambios.
+        this.loadInitialData();
       },
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'No se pudo eliminar.')
     });
@@ -437,14 +436,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
         this.notificationSvc.showSuccess(
           `Carga completada: ${nuevas_inscripciones_realizadas} inscripciones y ${nuevos_participantes_creados} nuevos participantes.`
         );
-        forkJoin({
-          participantes: this.participanteSvc.getAll(),
-          inscripciones: this.inscripcionSvc.getByProductoId(this.selectedCourse!.id)
-        }).subscribe(({ participantes, inscripciones }) => {
-          this.participantes = participantes;
-          this.inscripcionesDelProducto = inscripciones;
-          this.cdr.markForCheck();
-        });
+        // Forzar recarga completa de todos los datos
+        this.loadInitialData();
+        
         this.selectedFile = null;
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
@@ -682,9 +676,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
   // --- MÉTODOS DE LA UI ---
 
   /**
-   * ✅ --- ESTA ES LA FUNCIÓN CORREGIDA ---
-   * Se activa al seleccionar un producto. Recarga la lista de certificados
-   * para evitar problemas de caché y mostrar los datos más recientes.
+   * ✅ CORRECCIÓN CLAVE: Fuerza la recarga completa de todos los datos
+   * para asegurar que los participantes eliminados lógicamente sean excluidos
+   * en el detalle del producto.
    */
   selectCourse(course: ProductoEducativoWithDetails) {
     this.selectedCourse = course; 
@@ -692,26 +686,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.selectedDocenteIds.clear();
     this.docenteEmailSelection = {};
 
-    // Muestra notificación de carga
-    this.notificationSvc.showInfo('Actualizando lista de certificados...');
-
-    // Llama al servicio de certificados (que ahora debe tener el anti-caché)
-    this.certificadoSvc.getAll().subscribe({
-      next: (certificadosActualizados) => {
-        // Asigna la lista FRESCA de certificados
-        this.certificados = certificadosActualizados;
-        
-        // Carga los participantes DESPUÉS de tener los certificados
-        this.loadParticipantsForCourse(course.id); 
-      },
-      error: (err: HttpErrorResponse) => {
-        this.notificationSvc.showError(err.error?.detail || 'Error al actualizar certificados.');
-        // Aun si fallan los certificados, intenta cargar los participantes
-        this.loadParticipantsForCourse(course.id);
-      }
-    });
-    // La llamada original a loadParticipantsForCourse() se movió
-    // al bloque 'next' para asegurar que se ejecute después.
+    this.notificationSvc.showInfo('Recargando todos los datos para asegurar consistencia...');
+    // Al llamar a loadInitialData, se vuelve a poblar la lista global de productos y participantes,
+    // garantizando que el selectedCourse obtenga los datos filtrados del backend.
+    this.loadInitialData();
   }
 
   unselectCourse() {
