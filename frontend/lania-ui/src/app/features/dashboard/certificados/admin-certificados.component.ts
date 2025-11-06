@@ -195,7 +195,7 @@ export default class AdminCertificadosComponent implements OnInit {
   }
 
   /**
-    * ✅ FUNCIÓN CORREGIDA (Lógica del checkbox para forzar el faltante)
+    * ✅ CORRECCIÓN FINAL: Lógica del checkbox para forzar el tipo de certificado faltante.
     * Se dispara al seleccionar un participante.
     */
   onParticipanteSeleccionadoParaCrear(): void {
@@ -210,24 +210,26 @@ export default class AdminCertificadosComponent implements OnInit {
       return;
     }
 
-    // Buscamos la inscripción completa de la lista filtrada
-    const inscripcion = this.inscripcionesDelProducto.find(i => i.id === Number(inscripcionId));
+    // Buscamos la inscripción completa
+    const inscripcion = this.selectedProducto?.inscripciones.find(i => i.id === Number(inscripcionId));
     
     // Obtenemos el estado de AMBOS certificados
     const tieneCertNormal = inscripcion?.certificados?.some(c => !c.con_competencias);
     const tieneCertCompetencias = inscripcion?.certificados?.some(c => c.con_competencias);
 
     if (tieneCertNormal && !tieneCertCompetencias) {
-      // Caso 1: Tiene la normal, falta la de competencias -> Forzar a TRUE
+      // ESCENARIO 1: Tiene la normal, falta la de competencias.
+      // -> Forzar a TRUE (competencias) y deshabilitar.
       conCompetenciasCtrl?.setValue(true);
       conCompetenciasCtrl?.disable();
     } else if (!tieneCertNormal && tieneCertCompetencias) {
-      // Caso 2: Tiene la de competencias, falta la normal -> Forzar a FALSE
+      // ESCENARIO 2 (SU CASO): Tiene la de competencias, falta la normal.
+      // -> Forzar a FALSE (normal) y deshabilitar.
       conCompetenciasCtrl?.setValue(false); 
-      conCompetenciasCtrl?.disable(); // Deshabilitar para forzar la normal
+      conCompetenciasCtrl?.disable(); 
     } else {
-      // Caso 3: No tiene ninguno (o ambos faltan) -> Habilitar y resetear a False
-      // Nota: Si ambos ya existen, este participante no debería estar en la lista de selección.
+      // ESCENARIO 3: No tiene ninguno o algún otro caso.
+      // -> Habilitar y dejar que el usuario elija.
       conCompetenciasCtrl?.setValue(false);
       conCompetenciasCtrl?.enable();
     }
@@ -258,7 +260,7 @@ export default class AdminCertificadosComponent implements OnInit {
       const payload: CertificadoCreate = {
         inscripcion_id: inscripcionId as number,
         producto_educativo_id: productoId as number, // <-- ESTA LÍNEA ES LA SOLUCIÓN
-        con_competencias: conCompetencias || false // 'conCompetencias' ahora tendrá 'true' si estaba deshabilitado y marcado
+        con_competencias: conCompetencias || false // 'conCompetencias' ahora tendrá 'true' o 'false' según el estado forzado/elegido
       };
       // --- ✅ FIN DE LA CORRECCIÓN ---
 
