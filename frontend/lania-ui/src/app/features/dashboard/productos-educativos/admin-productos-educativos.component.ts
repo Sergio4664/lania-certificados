@@ -160,10 +160,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
     const selectedCourseId = this.selectedCourse?.id;
 
     forkJoin({
-      productos: this.productoSvc.getAllProductosWithDetails(), 
+      productos: this.productoSvc.getAllProductosWithDetails(), // Llama al servicio (con anti-caché)
       docentes: this.docenteSvc.getAll(),
       participantes: this.participanteSvc.getAll(),
-      certificados: this.certificadoSvc.getAll() 
+      certificados: this.certificadoSvc.getAll() // Carga inicial de certificados (con anti-caché)
     }).subscribe(({ productos, docentes, participantes, certificados }) => {
       this.productos = productos.sort((a, b) =>
         new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()
@@ -296,9 +296,9 @@ export default class AdminProductosEducativosComponent implements OnInit {
     // 1. Resetear el formulario y el estado de edición anterior (sets this.editingCourse = null)
     this.resetCourseForm(); 
     
-    // 2. ✅ CORRECCIÓN CLAVE: Establecer el estado de edición *después* de resetear
+    // ✅ CORRECCIÓN CLAVE: 2. Establecer el estado de edición *después* de resetear
     this.editingCourse = producto; 
-
+    
     const competenciasValueForForm = producto.competencias || '';
     
     // 3. Aplicar los valores del producto a editar

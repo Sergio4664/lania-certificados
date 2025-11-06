@@ -123,7 +123,7 @@ export default class ProductoEducativoCreateComponent implements OnInit {
       horas: formValue.horas,
       fecha_inicio: formValue.fecha_inicio,
       fecha_fin: formValue.fecha_fin,
-      docente_ids: selectedDocentesIds
+      docentes_ids: selectedDocentesIds
     };
 
     this.productoSvc.create(newProducto).subscribe({
