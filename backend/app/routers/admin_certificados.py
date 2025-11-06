@@ -5,21 +5,18 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.responses import FileResponse 
 from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import List, Optional # Importar Optional
+from typing import List, Optional
 
 from pathlib import Path
 
 from app.database import get_db
 from app import models
 
-# --- ✅ 1. CORRECCIÓN DE IMPORTACIÓN ---
-# Importamos solo los esquemas que sí existen en tu archivo
+# --- ✅ 1. CORREÇÃO DE IMPORTAÇÃO ---
 from app.schemas.certificado import (
     Certificado, 
     CertificadoCreate 
-    # Quitamos CertificadoCreateParticipante y Docente que no existen
 )
-# Asumimos que el schema de salida 'Certificado' es el que quieres usar
 CertificadoOut = Certificado
 # --- FIN DE CORRECCIÓN ---
 
@@ -36,7 +33,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[CertificadoOut] # Usamos el schema de salida
+    response_model=List[CertificadoOut] 
 )
 def read_all_certificados(db: Session = Depends(get_db)):
     """
@@ -61,7 +58,7 @@ def read_all_certificados(db: Session = Depends(get_db)):
 
 @router.get(
     "/participantes",
-    response_model=List[CertificadoOut], # Usamos el schema de salida
+    response_model=List[CertificadoOut], 
     summary="Obtener certificados de participantes"
 )
 def read_certificados_participantes(db: Session = Depends(get_db)):
@@ -87,7 +84,7 @@ def read_certificados_participantes(db: Session = Depends(get_db)):
 
 @router.get(
     "/docentes",
-    response_model=List[CertificadoOut], # Usamos el schema de salida
+    response_model=List[CertificadoOut], 
     summary="Obtener certificados de docentes"
 )
 def read_certificados_docentes(db: Session = Depends(get_db)):
@@ -108,7 +105,7 @@ def read_certificados_docentes(db: Session = Depends(get_db)):
     return certificados
 
 
-@router.get("/{certificado_id}", response_model=CertificadoOut) # Usamos el schema de salida
+@router.get("/{certificado_id}", response_model=CertificadoOut) 
 def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
     """
     Recupera un único certificado por su ID, cargando sus relaciones principales.
@@ -152,17 +149,18 @@ def issue_certificate_to_participant(
     if not db_inscripcion:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inscripción no encontrada")
 
-    # --- Lógica de comprobación de existencia CORREGIDA ---
+    # --- Lógica de comprobación de existencia CORREGIDA (LÍNEA CLAVE) ---
     con_competencias_check = certificado_create.con_competencias or False
     
     # Buscamos un certificado que coincida EXACTAMENTE en la inscripción Y el tipo
     existing_cert = db.query(models.Certificado).filter(
         models.Certificado.inscripcion_id == db_inscripcion.id,
-        models.Certificado.con_competencias == con_competencias_check # Esta es la lógica clave
+        models.Certificado.con_competencias == con_competencias_check # <-- ESTO PERMITE AMBOS
     ).first()
     
     if existing_cert:
         tipo_constancia = "con competencias" if con_competencias_check else "normal"
+        # ESTE É O ERRO 409 QUE ESTÁ RECEBENDO
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Ya existe un certificado {tipo_constancia} (Folio: {existing_cert.folio}) para esta inscripción."
