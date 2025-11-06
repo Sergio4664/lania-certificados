@@ -120,7 +120,7 @@ def generate_certificate_pdf(
         details_text = f"impartido el {course_date}."
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
-    # --- Firma, Fecha y QR (sin cambios) ---
+    # --- Firma, Fecha y QR (CORREGIDO) ---
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, 6.0 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
     c.line(center_x - 3.5 * cm, 5.8 * cm, center_x + 3.5 * cm, 5.8 * cm)
@@ -130,7 +130,8 @@ def generate_certificate_pdf(
     c.setFont("Helvetica", 9)
     c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
     
-    qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificar/{qr_token}")
+    # ✅ CORRECCIÓN: Cambiado de /verificar a /verificacion para coincidir con el frontend
+    qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}") 
     qr_image = ImageReader(BytesIO(qr_png_bytes))
     c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
     c.setFont("Helvetica", 7)
@@ -217,7 +218,7 @@ def generate_recognition_pdf(
             item_height = draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
             y_position -= (item_height + 0.1 * cm) # Espacio entre items
 
-    # --- Firma, Fecha y QR (sin cambios) ---
+    # --- Firma, Fecha y QR (CORREGIDO) ---
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, 6.0 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
     c.line(center_x - 3.5 * cm, 5.8 * cm, center_x + 3.5 * cm, 5.8 * cm)
@@ -227,7 +228,8 @@ def generate_recognition_pdf(
     c.setFont("Helvetica", 9)
     c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
     
-    qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificar/{qr_token}")
+    # ✅ CORRECCIÓN: Cambiado de /verificar a /verificacion para coincidir con el frontend
+    qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}")
     qr_image = ImageReader(BytesIO(qr_png_bytes))
     c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
     c.setFont("Helvetica", 7)
