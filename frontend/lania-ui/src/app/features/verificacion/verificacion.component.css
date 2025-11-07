@@ -11,8 +11,7 @@
 }
 
 .verificacion-container {
-  width: 100%;
-  max-width: 600px;
+  width: 100%;max-width: 600px; /* El contenedor principal tiene un ancho máximo de 600px */
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -75,7 +74,7 @@
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-sizing: border-box; /* Importante para que el padding no desborde */
+  box-sizing: border-box;
 }
 
 .form-group input.is-invalid {
@@ -139,17 +138,37 @@
   margin-top: 0;
 }
 
-/* --- CORRECCIÓN --- */
-/* Esta es la regla que fuerza las 2 columnas */
+/* --- CORRECCIÓN EN LA REGLA DE GRID --- */
+/* Usamos auto-fit/minmax para asegurar 2 columnas cuando haya espacio, 
+   o 1 columna si la pantalla es muy pequeña. */
 .resultado-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* <-- 2 columnas, siempre */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
   text-align: left;
   margin: 2rem 0;
 }
 
-/* He eliminado el bloque @media que forzaba 1 columna en pantallas pequeñas */
+/* Mantenemos la regla anterior de 1fr 1fr para asegurar 2 columnas 
+   en el ancho de 600px si los elementos se resisten al auto-fit. 
+   PERO si la regla de arriba no funciona, el problema es el 'max-width: 600px'
+   del contenedor principal, que ya está limitando el espacio.
+   
+   Si quieres forzar 2 columnas en ese ancho máximo:
+   .resultado-grid {
+     display: grid;
+     grid-template-columns: 1fr 1fr;
+     ...
+   }
+   
+   Y luego aplicar una media query para pantallas pequeñas:
+*/
+
+@media (max-width: 550px) { /* Añadimos media query para forzar 1 columna en móviles */
+    .resultado-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
 
 .grid-item {
@@ -223,6 +242,7 @@
 /* --- Spinner --- */
 .spinner {
   width: 18px;
+
   height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;

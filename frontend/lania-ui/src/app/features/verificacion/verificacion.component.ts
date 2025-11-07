@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/app/features/verificacion/verificacion.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
