@@ -18,26 +18,72 @@
   <div *ngIf="showForm" class="form-card">
     <h3>{{ isEditing ? 'Editar Participante' : 'Registrar Nuevo Participante' }}</h3>
     <form [formGroup]="participanteForm" (ngSubmit)="onSubmit()" class="form-grid">
+      
       <div class="form-group">
         <label for="nombre_completo">Nombre Completo *</label>
         <input id="nombre_completo" formControlName="nombre_completo" required>
+        <div *ngIf="f['nombre_completo'].invalid && (f['nombre_completo'].dirty || f['nombre_completo'].touched)" class="text-danger">
+          <div *ngIf="f['nombre_completo'].errors?.['required']">
+            El nombre completo es obligatorio.
+          </div>
+        </div>
       </div>
+      
       <div class="form-group">
         <label for="email_personal">Email Personal *</label>
         <input id="email_personal" type="email" formControlName="email_personal" required>
+        <div *ngIf="f['email_personal'].invalid && (f['email_personal'].dirty || f['email_personal'].touched)" class="text-danger">
+          <div *ngIf="f['email_personal'].errors?.['required']">
+            El email personal es obligatorio.
+          </div>
+          <div *ngIf="f['email_personal'].errors?.['email']">
+            El formato del email no es válido.
+          </div>
+          <div *ngIf="f['email_personal'].errors?.['forbiddenDomain']">
+            El dominio del correo electrónico no está permitido.
+          </div>
+        </div>
       </div>
+      
        <div class="form-group">
         <label for="email_institucional">Email Institucional</label>
-        <input id="email_institucional" formControlName="email_institucional">
+        <input id="email_institucional" type="email" formControlName="email_institucional">
+        <div *ngIf="f['email_institucional'].invalid && (f['email_institucional'].dirty || f['email_institucional'].touched)" class="text-danger">
+          <div *ngIf="f['email_institucional'].errors?.['email']">
+            El formato del email no es válido.
+          </div>
+          <div *ngIf="f['email_institucional'].errors?.['forbiddenDomain']">
+            El dominio del correo electrónico no está permitido.
+          </div>
+        </div>
       </div>
+      
        <div class="form-group">
         <label for="telefono">Teléfono</label>
         <input id="telefono" formControlName="telefono">
+        <div *ngIf="f['telefono'].invalid && (f['telefono'].dirty || f['telefono'].touched)" class="text-danger">
+          <div *ngIf="f['telefono'].errors?.['minlength']">
+            El número de teléfono debe tener un mínimo de 10 dígitos.
+          </div>
+          <div *ngIf="f['telefono'].errors?.['maxlength']">
+            El número de teléfono debe tener un máximo de 14 dígitos.
+          </div>
+        </div>
       </div>
+      
       <div class="form-group">
         <label for="whatsapp">WhatsApp</label>
         <input id="whatsapp" formControlName="whatsapp">
+        <div *ngIf="f['whatsapp'].invalid && (f['whatsapp'].dirty || f['whatsapp'].touched)" class="text-danger">
+          <div *ngIf="f['whatsapp'].errors?.['minlength']">
+            El número de WhatsApp debe tener un mínimo de 10 dígitos.
+          </div>
+          <div *ngIf="f['whatsapp'].errors?.['maxlength']">
+            El número de WhatsApp debe tener un máximo de 14 dígitos.
+          </div>
+        </div>
       </div>
+      
       <div class="form-actions">
         <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
         <button type="submit" class="primary-btn" [disabled]="participanteForm.invalid">{{ isEditing ? 'Actualizar' : 'Crear' }}</button>
