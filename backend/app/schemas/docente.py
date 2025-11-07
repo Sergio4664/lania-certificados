@@ -34,7 +34,8 @@ class DocenteValidation(BaseModel):
     model_config = ConfigDict(check_fields=False) 
     
     # VALIDACIÓN DE DOMINIOS DE CORREO
-    @field_validator('email_personal', 'email_institucional')
+    # CORRECCIÓN: Se añade 'check_fields=False' aquí para evitar PydanticUserError.
+    @field_validator('email_personal', 'email_institucional', check_fields=False)
     @classmethod
     def validate_email_domain(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
@@ -48,7 +49,8 @@ class DocenteValidation(BaseModel):
         return v
 
     # VALIDACIÓN DE TELÉFONO Y WHATSAPP (Mínimo 10, Máximo 14)
-    @field_validator('telefono', 'whatsapp', mode='before')
+    # CORRECCIÓN: Se añade 'check_fields=False' aquí para evitar PydanticUserError.
+    @field_validator('telefono', 'whatsapp', mode='before', check_fields=False)
     @classmethod
     def validate_phone_number_length(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
