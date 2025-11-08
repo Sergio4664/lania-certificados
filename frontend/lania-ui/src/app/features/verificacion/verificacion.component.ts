@@ -49,21 +49,21 @@ export default class VerificacionComponent implements OnInit {
 
   /**
    * MÉTODO PRINCIPAL PARA EL BOTÓN DE BÚSQUEDA
-   * Esto se llama cuando el formulario en el HTML hace (ngSubmit).
-   * Su única función es validar el input y llamar a `buscarPorFolio`.
-   * Ya NO usa `this.router.navigate`, que era la causa del "refresh".
+   * Se hace más segura la extracción del valor.
    */
   onBuscar(): void {
     
     console.log("1. Botón 'onBuscar' presionado.");
 
     if (this.folioControl.invalid) {
+      // Si es inválido, forzamos a que se muestre el error de validación
+      this.folioControl.markAsTouched(); 
       this.errorMessage = 'Por favor, ingresa un folio válido.';
       return;
     }
     
-    // Obtenemos el folio del control y quitamos espacios extra
-    const folio = this.folioControl.value!.trim(); 
+    // Obtenemos el folio del control. Usamos (?? '') para manejar null/undefined y trim() para limpiar espacios.
+    const folio = (this.folioControl.value ?? '').trim(); 
 
     console.log("2. Folio a buscar:", folio);
 
@@ -75,7 +75,6 @@ export default class VerificacionComponent implements OnInit {
 
   /**
    * MÉTODO QUE HACE LA LLAMADA AL SERVICIO
-   * Este método es llamado por onInit() O por onBuscar()
    */
   private buscarPorFolio(folio: string): void {
     console.log("3. Llamando a buscarPorFolio() con:", folio); 
@@ -87,13 +86,10 @@ export default class VerificacionComponent implements OnInit {
       finalize(() => {
         console.log("5. Finalize: Petición HTTP completada.");
         
-        // --- CORRECCIÓN para el error 'ExpressionChangedAfterItHasBeenCheckedError' ---
-        // Le da un "respiro" a Angular para actualizar la variable isLoading
-        // sin causar el error de doble chequeo en modo desarrollo.
+        // CORRECCIÓN para evitar 'ExpressionChangedAfterItHasBeenCheckedError'
         setTimeout(() => {
           this.isLoading = false;
         }, 0);
-        // --- FIN DE LA CORRECCIÓN ---
       })
     ).subscribe({
       next: (data) => {
@@ -114,13 +110,22 @@ export default class VerificacionComponent implements OnInit {
 
   /**
    * Resetea la vista para permitir otra búsqueda.
+   * CORREGIDO: Se añade el reinicio del estado de validación del formulario.
    */
   buscarOtro(): void {
+    // 1. Limpiar el estado de resultados/errores
     this.certificado = null;
     this.errorMessage = null;
     this.folioParam = null;
+
+    // 2. Limpiar el valor del control de formulario
     this.folioControl.setValue('');
-    // Navega a la ruta base sin folio, para limpiar la URL.
+
+    // 3. Reiniciar el estado de validación del control (CRUCIAL para búsquedas posteriores)
+    this.folioControl.markAsPristine(); 
+    this.folioControl.markAsUntouched();
+
+    // 4. Navegar a la ruta base sin folio, para limpiar la URL.
     this.router.navigate(['/verificacion']);
   }
 }
