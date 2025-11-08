@@ -18,6 +18,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin: 0 auto;
+  /* 👈 SOLUCIÓN: Centra el bloque horizontalmente */
 }
 
 /* --- Header --- */
@@ -138,6 +140,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e0e0e0;
   text-align: center;
+  display: block;
 }
 
 .resultado-card h2 {
@@ -145,25 +148,24 @@
   margin-top: 0;
 }
 
-/* --- CORRECCIÓN EN LA REGLA DE GRID PARA FORZAR 2 COLUMNAS --- */
-.resultado-grid {
-  display: grid;
-  /* CAMBIO: Se fuerza la división en 2 columnas iguales (1fr 1fr) */
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+/* SOLUCIÓN FLEXBOX PARA ALINEAR 2 CUADROS POR LÍNEA */
+.resultado-card .resultado-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  /* Alinea los ítems a la izquierda */
+  gap: 1.5rem;
   text-align: left;
   margin: 2rem 0;
 }
 
-/* Media query que mantiene la adaptación a 1 columna en móviles */
-@media (max-width: 550px) {
-  .resultado-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.resultado-card .resultado-grid .grid-item {
+  /* Ancho para que 2 ítems quepan con un espacio de 1.5rem entre ellos */
+  width: calc(50% - 0.75rem);
+  flex-grow: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
 
-
-.grid-item {
   background-color: #f9f9f9;
   padding: 1rem;
   border-radius: 4px;
@@ -183,6 +185,20 @@
   color: #333;
   word-wrap: break-word;
 }
+
+/* Media query para móviles (1 columna) */
+@media (max-width: 500px) {
+  .resultado-card .resultado-grid {
+    justify-content: flex-start;
+  }
+
+  .resultado-card .resultado-grid .grid-item {
+    width: 100%;
+  }
+}
+
+/* FIN DE LA SOLUCIÓN FLEXBOX */
+
 
 .valido-badge {
   display: inline-flex;
