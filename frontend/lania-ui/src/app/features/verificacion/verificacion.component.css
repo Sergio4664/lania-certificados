@@ -3,7 +3,8 @@
 :host {
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Alinea al inicio */
+  align-items: flex-start;
+  /* Alinea al inicio */
   min-height: 100vh;
   background-color: #f4f7f6;
   padding: 2rem;
@@ -11,7 +12,9 @@
 }
 
 .verificacion-container {
-  width: 100%;max-width: 600px; /* El contenedor principal tiene un ancho máximo de 600px */
+  width: 100%;
+  max-width: 600px;
+  /* El contenedor principal tiene un ancho máximo de 600px */
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -43,6 +46,7 @@
   color: var(--color-primary, #005f73);
   text-decoration: none;
 }
+
 .login-link:hover {
   text-decoration: underline;
 }
@@ -107,9 +111,11 @@
   background-color: var(--color-primary, #005f73);
   color: white;
 }
+
 .btn-primary:hover {
   background-color: var(--color-primary-dark, #004c5c);
 }
+
 .btn-primary:disabled {
   background-color: #a0a0a0;
   cursor: not-allowed;
@@ -119,6 +125,7 @@
   background-color: #6c757d;
   color: white;
 }
+
 .btn-secondary:hover {
   background-color: #5a6268;
 }
@@ -138,36 +145,21 @@
   margin-top: 0;
 }
 
-/* --- CORRECCIÓN EN LA REGLA DE GRID --- */
-/* Usamos auto-fit/minmax para asegurar 2 columnas cuando haya espacio, 
-   o 1 columna si la pantalla es muy pequeña. */
+/* --- CORRECCIÓN EN LA REGLA DE GRID PARA FORZAR 2 COLUMNAS --- */
 .resultado-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  /* CAMBIO: Se fuerza la división en 2 columnas iguales (1fr 1fr) */
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   text-align: left;
   margin: 2rem 0;
 }
 
-/* Mantenemos la regla anterior de 1fr 1fr para asegurar 2 columnas 
-   en el ancho de 600px si los elementos se resisten al auto-fit. 
-   PERO si la regla de arriba no funciona, el problema es el 'max-width: 600px'
-   del contenedor principal, que ya está limitando el espacio.
-   
-   Si quieres forzar 2 columnas en ese ancho máximo:
-   .resultado-grid {
-     display: grid;
-     grid-template-columns: 1fr 1fr;
-     ...
-   }
-   
-   Y luego aplicar una media query para pantallas pequeñas:
-*/
-
-@media (max-width: 550px) { /* Añadimos media query para forzar 1 columna en móviles */
-    .resultado-grid {
-        grid-template-columns: 1fr;
-    }
+/* Media query que mantiene la adaptación a 1 columna en móviles */
+@media (max-width: 550px) {
+  .resultado-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 
@@ -209,7 +201,8 @@
 }
 
 /* --- Tarjetas de Error y Carga --- */
-.error-card, .loading-card {
+.error-card,
+.loading-card {
   background: #fff;
   border: 1px solid #e0e0e0;
   padding: 1.5rem;
@@ -227,14 +220,17 @@
   border-color: #e74c3c;
   color: #b92c1c;
 }
+
 .error-card svg {
   stroke: #e74c3c;
   width: 32px;
   height: 32px;
 }
+
 .error-card strong {
   font-size: 1.2rem;
 }
+
 .error-card p {
   margin: 0;
 }
@@ -242,7 +238,6 @@
 /* --- Spinner --- */
 .spinner {
   width: 18px;
-
   height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
