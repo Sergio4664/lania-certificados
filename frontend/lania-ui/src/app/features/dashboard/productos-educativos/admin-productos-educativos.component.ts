@@ -674,6 +674,31 @@ export default class AdminProductosEducativosComponent implements OnInit {
       }
     });
   }
+  
+  // --- FUNCIÓN AGREGADA PARA LA NOTIFICACIÓN MANUAL POR WHATSAPP (INDIVIDUAL) ---
+  /**
+   * Genera y abre un enlace de WhatsApp Web individual para un número específico.
+   */
+  generateIndividualWhatsappLink(whatsappNumber: string | null | undefined, productName: string | null): void {
+    if (!whatsappNumber || whatsappNumber.trim() === '') {
+        this.notificationSvc.showInfo('El participante o docente no tiene un número de WhatsApp registrado.');
+        return;
+    }
+    if (!productName) {
+        this.notificationSvc.showError('No se pudo obtener el nombre del producto educativo.');
+        return;
+    }
+
+    const defaultMessage = `¡Hola de parte de LANIA! 👋 Solo un recordatorio sobre el curso *${productName}*. Por favor, revisa tu correo para detalles importantes.`;
+    const encodedMessage = encodeURIComponent(defaultMessage);
+    
+    // Limpia el número para asegurar que solo contenga dígitos.
+    const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    const whatsappLink = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
+
+    window.open(whatsappLink, '_blank');
+  }
+  // --- FIN DE LA FUNCIÓN AGREGADA ---
 
   // --- MÉTODOS DE LA UI ---
 

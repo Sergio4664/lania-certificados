@@ -290,6 +290,12 @@
                   <td class="actions-cell">
                     <div class="actions-content">
                       <ng-container *ngIf="getCertificadoForDocente(docente.id) as cert; else emitirConstanciaDocente">
+                        <button 
+                            class="icon-btn whatsapp" 
+                            (click)="generateIndividualWhatsappLink(docente.whatsapp, selectedCourse.nombre); $event.stopPropagation()" 
+                            title="Notificar por WhatsApp">
+                            <span style="font-size: 1.2em;">📞</span> 
+                        </button>
                         <button class="icon-btn email" (click)="enviarConstanciaDocente(cert.id, docente.id)" title="Reenviar Constancia">📧</button>
                       </ng-container>
                       <ng-template #emitirConstanciaDocente>
@@ -362,8 +368,15 @@
                   <td class="actions-cell">
                     <div class="actions-content">
                       <button class="icon-btn delete" (click)="removeParticipantFromCourse(inscripcion.id)" title="Eliminar Inscripción">🗑️</button>
+                      
                       <ng-container *ngIf="getCertificadoForInscripcion(inscripcion.id) as certNormal; else emitirConstanciaNormal">
-                        <button class="icon-btn email" (click)="sendCertificate(certNormal.id)" title="Reenviar Constancia Normal">📧</button>
+                          <button 
+                              class="icon-btn whatsapp" 
+                              (click)="generateIndividualWhatsappLink(inscripcion.participante.whatsapp, selectedCourse.nombre); $event.stopPropagation()" 
+                              title="Notificar por WhatsApp">
+                              <span style="font-size: 1.2em;">📞</span>
+                          </button>
+                          <button class="icon-btn email" (click)="sendCertificate(certNormal.id)" title="Reenviar Constancia Normal">📧</button>
                       </ng-container>
                       <ng-template #emitirConstanciaNormal>
                         <button class="secondary-btn small-btn" (click)="issueCertificate(inscripcion.id, false)">Emitir Normal</button>
@@ -373,9 +386,15 @@
                   <td *ngIf="selectedCourse.tipo_producto === 'CURSO_EDUCATIVO'" class="actions-cell">
                     <div class="actions-content">
                       <ng-container *ngIf="getCertificadoCompetenciasForInscripcion(inscripcion.id) as certComp; else emitirConstanciaComp">
-                        <button class="icon-btn email email-competencias"
-                                (click)="sendCertificate(certComp.id)" 
-                                title="Reenviar Reconocimiento Competencias">📧</button>
+                          <button 
+                              class="icon-btn whatsapp" 
+                              (click)="generateIndividualWhatsappLink(inscripcion.participante.whatsapp, selectedCourse.nombre); $event.stopPropagation()" 
+                              title="Notificar por WhatsApp">
+                              <span style="font-size: 1.2em;">📞</span>
+                          </button>
+                          <button class="icon-btn email email-competencias"
+                                  (click)="sendCertificate(certComp.id)" 
+                                  title="Reenviar Reconocimiento Competencias">📧</button>
                       </ng-container>
                       <ng-template #emitirConstanciaComp>
                         <button class="secondary-btn small-btn btn-competencias"
