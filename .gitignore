@@ -1,7 +1,8 @@
 .env.example
 node_modules/
 dist/
-.env
+#.env
 .angular/
 .gitignore/
-.backend/certificates/
+#.backend/certificates/
+#.backend/create_user.py
