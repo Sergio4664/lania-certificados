@@ -6,7 +6,7 @@
     <a routerLink="/login" class="login-link">Ir al Panel de Administración</a>
   </header>
 
-  <!-- BLOQUE DE RESULTADO (cuando se encuentra) -->
+  <!-- BLOQUE DE RESULTADO (cuando se encuentra) -->
   <div *ngIf="certificado; else searchBlock" class="resultado-card">
     <h2>Certificado Válido</h2>
     <div class="resultado-grid">
@@ -45,13 +45,13 @@
     </button>
   </div>
 
-  <!-- BLOQUE DE BÚSQUEDA (el estado inicial) -->
+  <!-- BLOQUE DE BÚSQUEDA (el estado inicial) -->
   <ng-template #searchBlock>
-    
-    <!-- Tarjeta 1: El formulario de búsqueda -->
+    
+    <!-- Tarjeta 1: El formulario de búsqueda -->
     <div class="search-card">
-      <!-- 1. El <form> ya no tiene (ngSubmit) -->
-      <form> 
+      <!-- CORRECCIÓN: Se agrega (ngSubmit)="onBuscar()" para capturar el evento Enter -->
+      <form (ngSubmit)="onBuscar()"> 
         <div class="form-group">
           <label for="folio">Folio de la Constancia</label>
           <input 
@@ -66,7 +66,7 @@
           </div>
         </div>
 
-        <!-- 2. El botón ahora tiene type="button" y (click)="onBuscar()" -->
+        <!-- El botón mantiene el (click) para cuando el usuario hace clic con el ratón -->
         <button 
           type="button" 
           (click)="onBuscar()"
@@ -87,13 +87,13 @@
       </form>
     </div>
 
-    <!-- Tarjeta 2: Mensaje de "Cargando" (hermano del search-card) -->
+    <!-- Tarjeta 2: Mensaje de "Cargando" (hermano del search-card) -->
     <div *ngIf="isLoading" class="loading-card">
       <span class="spinner"></span>
       <p>Buscando certificado...</p>
     </div>
 
-    <!-- Tarjeta 3: Mensaje de "Error" (hermano del search-card) -->
+    <!-- Tarjeta 3: Mensaje de "Error" (hermano del search-card) -->
     <div *ngIf="errorMessage && !isLoading" class="error-card">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
