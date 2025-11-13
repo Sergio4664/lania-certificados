@@ -165,13 +165,13 @@
 
 .grid-item {
   background-color: #f9f9f9;
-  /* MODIFICACIÓN CLAVE: Relleno muy reducido a 0.5rem para altura mínima */
-  padding: 0.5rem;
+  /* MODIFICADO para mejor alineación: Relleno aumentado para más espacio interno */
+  padding: 1rem; /* Antes: 0.5rem */
   border-radius: 6px;
   border: 1px solid #e0e0e0;
   box-sizing: border-box;
-  /* MODIFICACIÓN CLAVE: Reducimos el ancho de cada ítem a 40% (antes 50%) */
-  width: calc(40% - 0.5rem);
+  /* MODIFICADO para mejor alineación: Ancho ajustado a 50% con el gap */
+  width: calc(50% - 0.5rem); /* Antes: calc(40% - 0.5rem) */
   flex-shrink: 0;
   flex-grow: 0;
   min-width: 0;
@@ -179,8 +179,8 @@
 
 .grid-item strong {
   display: block;
-  /* Mantenemos fuente pequeña */
-  font-size: 0.7rem;
+  /* MODIFICADO para letras más grandes (etiqueta) */
+  font-size: 0.9rem; /* Antes: 0.7rem */
   color: #666;
   margin-bottom: 0.2rem;
   text-transform: uppercase;
@@ -189,8 +189,8 @@
 }
 
 .grid-item span {
-  /* MODIFICACIÓN CLAVE: Fuente del valor muy pequeña */
-  font-size: 0.8rem;
+  /* MODIFICADO para letras mucho más grandes (valor) */
+  font-size: 1.6rem; /* Antes: 0.8rem */
   color: #333;
   word-wrap: break-word;
   display: block;
@@ -219,11 +219,13 @@
   }
 
   .grid-item strong {
-    font-size: 0.7rem;
+    /* MODIFICADO para letras más grandes en móvil (etiqueta) */
+    font-size: 0.8rem; /* Antes: 0.7rem */
   }
 
   .grid-item span {
-    font-size: 0.85rem;
+    /* MODIFICADO para letras más grandes en móvil (valor) */
+    font-size: 1.2rem; /* Antes: 0.85rem */
   }
 }
 
