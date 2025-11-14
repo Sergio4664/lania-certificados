@@ -12,8 +12,8 @@
 
 .verificacion-container {
   width: 100%;
-  /* MANTENEMOS EL ANCHO GRANDE DE LA TARJETA BLANCA: 750px */
-  max-width: 750px;
+  /* ANCHO CALCULADO: 3 cuadros de 340px + 2 gaps de 1rem (16px) + padding de la tarjeta */
+  max-width: 1140px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -132,12 +132,15 @@
 /* --- Tarjeta de Resultado --- */
 .resultado-card {
   background: #fff;
-  padding: 2rem 1.25rem;
+  padding: 2rem 2rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e0e0e0;
-  /* Alineación de texto de la tarjeta principal */
-  text-align: left;
+  /* CENTRAMOS todo el contenido */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   box-sizing: border-box;
 }
@@ -150,12 +153,12 @@
   /* Centramos el título */
 }
 
-/* 👇 CONFIGURACIÓN DE CUADRÍCULA */
+/* 👇 CONFIGURACIÓN DE CUADRÍCULA - OPCIÓN 2: 3 COLUMNAS (3+2) */
 .resultado-grid {
   display: flex;
   flex-wrap: wrap;
-  /* Distribuimos a los extremos para dos columnas */
-  justify-content: space-between;
+  /* CENTRAMOS los elementos */
+  justify-content: center;
   text-align: left;
   margin: 1.5rem 0;
   width: 100%;
@@ -165,13 +168,13 @@
 
 .grid-item {
   background-color: #f9f9f9;
-  /* MODIFICADO para mejor alineación: Relleno aumentado para más espacio interno */
-  padding: 1rem; /* Antes: 0.5rem */
+  /* PADDING MÁS REDUCIDO */
+  padding: 0.5rem;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
   box-sizing: border-box;
-  /* MODIFICADO para mejor alineación: Ancho ajustado a 50% con el gap */
-  width: calc(50% - 0.5rem); /* Antes: calc(40% - 0.5rem) */
+  /* ANCHO REDUCIDO */
+  width: 300px;
   flex-shrink: 0;
   flex-grow: 0;
   min-width: 0;
@@ -179,18 +182,18 @@
 
 .grid-item strong {
   display: block;
-  /* MODIFICADO para letras más grandes (etiqueta) */
-  font-size: 0.9rem; /* Antes: 0.7rem */
+  /* TAMAÑO DE FUENTE MÁS PEQUEÑO para etiquetas */
+  font-size: 0.65rem;
   color: #666;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
 }
 
 .grid-item span {
-  /* MODIFICADO para letras mucho más grandes (valor) */
-  font-size: 1.6rem; /* Antes: 0.8rem */
+  /* TAMAÑO DE FUENTE MÁS PEQUEÑO para valores */
+  font-size: 1rem;
   color: #333;
   word-wrap: break-word;
   display: block;
@@ -219,28 +222,26 @@
   }
 
   .grid-item strong {
-    /* MODIFICADO para letras más grandes en móvil (etiqueta) */
-    font-size: 0.8rem; /* Antes: 0.7rem */
+    font-size: 0.8rem;
   }
 
   .grid-item span {
-    /* MODIFICADO para letras más grandes en móvil (valor) */
-    font-size: 1.2rem; /* Antes: 0.85rem */
+    font-size: 1.2rem;
   }
 }
 
 .valido-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   font-weight: 700;
   color: var(--color-success, #2a9d8f);
   border: 2px solid var(--color-success, #2a9d8f);
   padding: 0.5rem 1rem;
   border-radius: 20px;
-  margin-bottom: 1.5rem;
+  margin: 1.5rem auto;
   text-align: center;
-  /* Centramos el badge */
 }
 
 .valido-badge svg {
