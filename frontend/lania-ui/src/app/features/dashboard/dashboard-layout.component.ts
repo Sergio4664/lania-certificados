@@ -1,8 +1,7 @@
+// dashboard-layout.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-
-// Importamos el servicio de autenticación y la interfaz del usuario
 import { AuthService } from '@app/core/auth.service';
 import { CurrentUser } from '@app/shared/interfaces/auth.interface';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -10,7 +9,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 interface MenuItem {
   label: string;
   routerLink: string;
-  svgIcon: SafeHtml; // Usaremos SafeHtml para renderizar el SVG de forma segura
+  svgIcon: SafeHtml;
 }
 
 @Component({
@@ -26,13 +25,25 @@ export default class DashboardLayoutComponent implements OnInit {
 
   currentUser: CurrentUser | null = null;
   menuItems: MenuItem[] = [];
+  
+  // ✅ NUEVA PROPIEDAD para controlar el estado del menú
+  isSidebarOpen = false;
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
     this.buildMenu();
   }
 
-  // El menú se construye aquí para poder sanitizar los SVG de forma segura
+  // ✅ NUEVO MÉTODO para toggle del menú
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  // ✅ NUEVO MÉTODO para cerrar el menú al hacer clic en un enlace
+  closeSidebar() {
+    this.isSidebarOpen = false;
+  }
+
   private buildMenu() {
     this.menuItems = [
       { 
@@ -45,12 +56,12 @@ export default class DashboardLayoutComponent implements OnInit {
         routerLink: '/admin/productos-educativos', 
         svgIcon: this.sanitizer.bypassSecurityTrustHtml(`<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`) 
       },
-       { 
+      { 
         label: 'Constancias', 
         routerLink: '/admin/certificados', 
         svgIcon: this.sanitizer.bypassSecurityTrustHtml(`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>`) 
       },
-       { 
+      { 
         label: 'Docentes', 
         routerLink: '/admin/docentes', 
         svgIcon: this.sanitizer.bypassSecurityTrustHtml(`<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"></circle><path d="M5.5 21a7.5 7.5 0 0 1 13 0"></path></svg>`) 
@@ -67,16 +78,13 @@ export default class DashboardLayoutComponent implements OnInit {
       },
       {
         label: 'Verificación',
-        // Apunta a la ruta pública '/verificacion' definida en app.routes.ts
         routerLink: '/verificacion', 
         svgIcon: this.sanitizer.bypassSecurityTrustHtml(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`)
       }
-      //
     ];
   }
 
   logout() {
-    // La lógica de logout ahora está centralizada en el AuthService
     this.authService.logout();
   }
 }

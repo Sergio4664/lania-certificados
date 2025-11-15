@@ -1,6 +1,15 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
     <div class="header-content">
+      <!-- ✅ BOTÓN HAMBURGUESA (solo visible en móviles) -->
+      <button class="hamburger-btn" (click)="toggleSidebar()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
       <div class="logo-section">
         <h1>LANIA - CONSTANCIAS</h1>
         <p>Sistema de Gestión de Constancias</p>
@@ -18,13 +27,25 @@
       </div>
     </div>
   </header>
+
   <main class="dashboard-main">
-    <nav class="sidebar">
-      <a *ngFor="let item of menuItems" class="nav-item" [routerLink]="item.routerLink" routerLinkActive="active">
+    <!-- ✅ OVERLAY (se muestra cuando el menú está abierto en móvil) -->
+    <div class="sidebar-overlay" 
+         *ngIf="isSidebarOpen" 
+         (click)="closeSidebar()"></div>
+
+    <!-- ✅ SIDEBAR con clase dinámica para mostrar/ocultar -->
+    <nav class="sidebar" [class.sidebar-open]="isSidebarOpen">
+      <a *ngFor="let item of menuItems" 
+         class="nav-item" 
+         [routerLink]="item.routerLink" 
+         routerLinkActive="active"
+         (click)="closeSidebar()">
         <div class="nav-icon" [innerHTML]="item.svgIcon"></div>
         {{ item.label }}
       </a>
     </nav>
+
     <div class="content-area">
       <router-outlet></router-outlet>
     </div>

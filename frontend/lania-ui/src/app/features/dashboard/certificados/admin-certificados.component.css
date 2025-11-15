@@ -1,6 +1,6 @@
 /*
  * Estilos para Admin Certificados
- * Basado en los estilos de productos-educativos para mantener consistencia.
+ * CON SOPORTE COMPLETO PARA MÓVILES
  */
 
 :host {
@@ -23,6 +23,8 @@
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .module-header h2 {
@@ -34,9 +36,10 @@
 .header-actions {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
-/* --- 💡 ESTILOS AÑADIDOS PARA EL NUEVO BOTÓN "EMITIR" --- */
+/* --- Estilos de Botones --- */
 .btn {
   padding: 0.75rem 1.25rem;
   border: none;
@@ -72,12 +75,10 @@
 .btn-secondary:hover {
   background-color: #cbd5e0;
 }
-/* --- FIN DE ESTILOS AÑADIDOS --- */
-
 
 /* --- Estilos para las dos tablas y sus buscadores --- */
 .table-section {
-  margin-bottom: 2.5rem; /* Espacio entre las dos tablas */
+  margin-bottom: 2.5rem;
 }
 
 .table-header {
@@ -85,6 +86,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .table-header h3 {
@@ -103,7 +106,7 @@
 .search-container input {
   width: 300px;
   padding: 0.75rem 1rem;
-  padding-left: 2.75rem; /* Espacio para el icono */
+  padding-left: 2.75rem;
   border-radius: 8px;
   border: 1px solid #cbd5e0;
   font-size: 0.95rem;
@@ -128,7 +131,7 @@
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow-x: auto; /* Para responsividad */
+  overflow-x: auto;
   border: 1px solid #e2e8f0;
 }
 
@@ -142,7 +145,7 @@ th, td {
   text-align: left;
   border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
-  white-space: nowrap; /* Evita que el texto se rompa */
+  white-space: nowrap;
 }
 
 thead th {
@@ -187,8 +190,9 @@ td a:hover {
 /* Celdas de acciones */
 .actions-cell {
   display: flex;
-  gap: 0.5rem; /* Reducido para 3 botones */
+  gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .icon-btn {
@@ -201,7 +205,7 @@ td a:hover {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s, color 0.2s;
-  font-size: 1.25rem; /* Hace los emojis un poco más grandes */
+  font-size: 1.25rem;
 }
 
 .icon-btn:hover {
@@ -209,16 +213,15 @@ td a:hover {
 }
 
 .icon-btn.view {
-  color: #4A90E2; /* Mismo azul que los links de folio */
+  color: #4A90E2;
 }
 .icon-btn.view:hover {
-  color: #3182ce; /* Un azul un poco más oscuro */
+  color: #3182ce;
 }
 .icon-btn.email { color: #3182ce; }
 .icon-btn.delete { color: #e53e3e; }
 
-
-/* --- 💡 ESTILOS AÑADIDOS PARA EL MODAL DE CREACIÓN --- */
+/* --- Estilos para el Modal de Creación --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -230,6 +233,7 @@ td a:hover {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-content {
@@ -304,7 +308,7 @@ td a:hover {
   border-radius: 8px;
   border: 1px solid #cbd5e0;
   font-size: 0.95rem;
-  box-sizing: border-box; /* Importante */
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
@@ -319,6 +323,7 @@ td a:hover {
   display: flex;
   gap: 1.5rem;
   padding: 0.5rem 0;
+  flex-wrap: wrap;
 }
 
 .checkbox-label,
@@ -345,5 +350,195 @@ td a:hover {
   padding: 1.5rem 2rem;
   background-color: #f7fafc;
   border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
 }
-/* --- FIN DE ESTILOS AÑADIDOS --- */
+
+.loading-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: #718096;
+  font-style: italic;
+}
+
+/* ========================================
+   MEDIA QUERIES PARA MÓVILES
+   ======================================== */
+
+/* Tablets (≤1024px) */
+@media (max-width: 1024px) {
+  .module-content {
+    padding: 1.5rem;
+  }
+
+  .search-container input {
+    width: 250px;
+  }
+}
+
+/* Móviles y tablets pequeñas (≤768px) */
+@media (max-width: 768px) {
+  .module-content {
+    padding: 1rem;
+  }
+
+  .module-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .module-header h2 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-section {
+    margin-bottom: 2rem;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .table-header h3 {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-container input {
+    width: 100%;
+  }
+
+  /* Tablas con scroll horizontal */
+  .data-table {
+    font-size: 0.875rem;
+  }
+
+  .data-table table {
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .icon-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  /* Modal */
+  .modal-content {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.25rem;
+    max-height: calc(90vh - 200px);
+  }
+
+  .modal-footer {
+    padding: 1rem 1.25rem;
+    flex-direction: column;
+  }
+
+  .modal-footer button {
+    width: 100%;
+  }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Móviles pequeños (≤480px) */
+@media (max-width: 480px) {
+  .module-content {
+    padding: 0.75rem;
+  }
+
+  .module-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .table-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .form-group select,
+  .form-group input[type="text"] {
+    font-size: 0.875rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .no-data-card {
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .icon-btn {
+    font-size: 1.1rem;
+    padding: 6px;
+  }
+}
