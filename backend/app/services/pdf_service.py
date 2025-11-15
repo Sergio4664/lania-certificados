@@ -44,7 +44,6 @@ def get_pdfkit_config():
     settings = get_settings()
     if settings.WKHTMLTOPDF_PATH:
         # Crea la configuración usando la ruta de config.py
-        # ESTA ES LA PARTE QUE LEE LA RUTA: settings.WKHTMLTOPDF_PATH
         return pdfkit.configuration(wkhtmltopdf=settings.WKHTMLTOPDF_PATH)
     # Si no está definida, pdfkit buscará en el PATH del sistema
     return None
@@ -175,7 +174,7 @@ def generate_certificate_pdf(
     return pdf_bytes
 
 # --- ========================================================= ---
-# --- FUNCIÓN 2: RECONOCIMIENTO (MODIFICADA: AJUSTE DINÁMICO)
+# --- FUNCIÓN 2: RECONOCIMIENTO (MODIFICADA: ESPACIADO DE ITEMS)
 # --- ========================================================= ---
 
 def generate_recognition_pdf(
@@ -190,7 +189,7 @@ def generate_recognition_pdf(
 ) -> bytes:
     """
     Genera un PDF de RECONOCIMIENTO (solo para cursos con competencias).
-    Ajusta la posición de la firma dinámicamente según la lista de competencias.
+    Ajusta el espaciado de la lista de competencias y la posición de la firma.
     """
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
@@ -201,6 +200,7 @@ def generate_recognition_pdf(
     style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
     
     # --- ✅ 3. ESTILO PARA LA LISTA ---
+    # Se mantiene en 10px para que el texto sea más compacto
     style_competency = ParagraphStyle(name='Competency', fontName='Helvetica', fontSize=10, leading=12, alignment=TA_LEFT)
 
     # --- Elementos Estáticos (RECONOCIMIENTO) ---
@@ -228,48 +228,55 @@ def generate_recognition_pdf(
     height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
     y_position -= (height1 + 0.5 * cm) # Más espacio
     
-    # --- Dibujar la lista de competencias y rastrear Y ---
+    # ----------------------------------------------------------------------
+    # ✅ ZONA DE COMPETENCIAS ESTÁTICA Y CON ESPACIADO MEJORADO
+    # ----------------------------------------------------------------------
+    
+    # 1. Definir la coordenada Y más baja donde puede llegar la lista.
+    # El bloque de firma comienza en 5.0 cm, por lo que la lista debe terminar 4.0 cm por encima (en 9.0 cm).
+    Y_LIST_HARD_STOP = 9.0 * cm 
+    
+    # 2. Aumentar el margen entre ítems a 0.3 cm.
+    ITEM_VERTICAL_SPACING = 0.3 * cm 
+    
     list_left_margin = 3.5 * cm 
     list_max_width = 16 * cm 
     
     if competencies:
         for item in competencies:
             item_text = f"• {item}"
-            # Al llamar a draw_multiline_text, y_position se reduce por la altura del texto
-            item_height = draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
-            y_position -= (item_height + 0.1 * cm) # Restar la altura del párrafo y un pequeño margen
-    
-    # ----------------------------------------------------------------------
-    # ✅ LÓGICA DE POSICIONAMIENTO DINÁMICO para evitar saturación (FIRMA/FECHA)
-    # ----------------------------------------------------------------------
-    
-    # 1. Posición Mínima (Fija) para que el bloque de firma/fecha no suba demasiado
-    # Usamos 8.0 cm como una posición mínima para que la firma se vea profesional.
-    FIXED_BOTTOM_Y = 8.0 * cm
-    
-    # 2. Posición Calculada: Margen fijo (4 cm) después de la última competencia dibujada
-    # Cuanto más abajo quede y_position, más bajo será y_calculated_position
-    y_calculated_position = y_position - 4.0 * cm 
+            
+            # **Medir la altura ANTES de dibujar**
+            p_test = Paragraph(item_text, style_competency)
+            p_test.wrapOn(c, list_max_width, 10 * cm)
+            item_height = p_test.height
+            
+            # **Comprobar si el próximo elemento excede el límite**
+            if (y_position - item_height - ITEM_VERTICAL_SPACING) < Y_LIST_HARD_STOP:
+                # Si excede, detenemos el dibujo para proteger la firma estática.
+                break
 
-    # 3. Aplicar ajuste: El doctor se posiciona en la posición más baja entre el límite fijo (FIXED_BOTTOM_Y) 
-    # y la posición calculada después de la lista (y_calculated_position).
-    y_doctor = max(y_calculated_position, FIXED_BOTTOM_Y)
-        
-    # ----------------------------------------------------
-    # --- Dibujar Firma y Fecha en posición DINÁMICA ---
-    # ----------------------------------------------------
+            # Dibujar el elemento y reducir la posición Y
+            draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
+            y_position -= (item_height + ITEM_VERTICAL_SPACING) # Aumenta el espaciado
     
-    # Nombre del Doctor (Base para la firma)
+    # ----------------------------------------------------------------------
+    # 🎯 POSICIÓN FIJA (ESTÁTICA) DEL DOCTOR (5.0 cm)
+    # ----------------------------------------------------------------------
+    
+    Y_DOCTOR_BASE = 5.0 * cm
+    
+    # Nombre del Doctor (Fijo en 5.0 cm)
     c.setFont("Helvetica", 11)
-    c.drawCentredString(center_x, y_doctor, "Dr. Juan Manuel Gutiérrez Méndez")
-    c.line(center_x - 3.5 * cm, y_doctor - 0.2 * cm, center_x + 3.5 * cm, y_doctor - 0.2 * cm)
-    c.drawCentredString(center_x, y_doctor - 0.7 * cm, "Director de Proyectos")
+    c.drawCentredString(center_x, Y_DOCTOR_BASE, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.line(center_x - 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm, center_x + 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm) # 4.8 cm
+    c.drawCentredString(center_x, Y_DOCTOR_BASE - 0.7 * cm, "Director de Proyectos") # 4.3 cm
 
-    # Fecha de Expedición
-    y_date = y_doctor - 2.0 * cm # Baja 2 cm desde la posición del doctor
+    # Fecha de Expedición (Fija a 2.0 cm del nombre del doctor)
+    y_date = Y_DOCTOR_BASE - 2.0 * cm 
     issue_date_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
     c.setFont("Helvetica", 9)
-    c.drawCentredString(center_x, y_date, issue_date_str)
+    c.drawCentredString(center_x, y_date, issue_date_str) # 3.0 cm
     
     # QR y Folio (Se mantienen fijos en la parte inferior izquierda)
     qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}")
