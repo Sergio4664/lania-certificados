@@ -9,7 +9,6 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import ParagraphStyle
-# --- ✅ 1. AÑADIR 'TA_LEFT' para la lista ---
 from reportlab.lib.enums import TA_CENTER, TA_LEFT 
 from datetime import date
 import locale
@@ -50,18 +49,56 @@ def get_pdfkit_config():
 # -------------------------------------------------------------------
 
 
-# --- ✅ 2. MODIFICAR 'draw_multiline_text' para aceptar alineación izquierda ---
 def draw_multiline_text(c, text, x, y, max_width, style):
     p = Paragraph(text, style)
     p.wrapOn(c, max_width, 10 * cm)
     p_height = p.height
     
     if style.alignment == TA_LEFT:
-        p.drawOn(c, x, y - p_height) # Dibuja desde la 'x' dada (para listas)
+        p.drawOn(c, x, y - p_height)
     else:
-        p.drawOn(c, x - (max_width / 2), y - p_height) # Centra (para títulos)
+        p.drawOn(c, x - (max_width / 2), y - p_height)
         
     return p_height
+
+
+# --- ✅ NUEVA FUNCIÓN: CALCULAR TAMAÑO DE FUENTE DINÁMICO ---
+def calculate_dynamic_font_size(num_items: int, available_height_cm: float) -> tuple[int, float]:
+    """
+    Calcula el tamaño de fuente y el espaciado óptimos según el número de items.
+    
+    Args:
+        num_items: Número de competencias a mostrar
+        available_height_cm: Altura disponible en centímetros
+    
+    Returns:
+        tuple: (font_size, leading) - tamaño de fuente y espaciado entre líneas
+    """
+    # Convertir altura disponible a puntos (1 cm ≈ 28.35 puntos)
+    available_height_pts = available_height_cm * 28.35
+    
+    # Altura estimada por item (incluyendo espaciado)
+    estimated_height_per_item = available_height_pts / num_items
+    
+    # Definir rangos de tamaño de fuente según densidad
+    if num_items <= 5:
+        font_size = 10
+        leading = 14
+    elif num_items <= 8:
+        font_size = 9
+        leading = 12
+    elif num_items <= 12:
+        font_size = 8
+        leading = 10
+    elif num_items <= 16:
+        font_size = 7
+        leading = 9
+    else:  # Más de 16 items
+        font_size = 6
+        leading = 8
+    
+    return font_size, leading
+
 
 # --- ========================================================= ---
 # --- FUNCIÓN 1: CONSTANCIAS (La que ya tenías)
@@ -99,7 +136,7 @@ def generate_certificate_pdf(
     c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
     c.setFont("Helvetica-Bold", 36)
     c.setFillColorRGB(0.8, 0.2, 0.2)
-    c.drawCentredString(center_x, 20.2 * cm, "CONSTANCIA") # <-- TÍTULO
+    c.drawCentredString(center_x, 20.2 * cm, "CONSTANCIA")
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0, 0, 0)
     label = "al:" if entity_type == 'docente' else "a:"
@@ -139,7 +176,7 @@ def generate_certificate_pdf(
         details_text = f"impartido el {course_date}."
         draw_multiline_text(c, details_text, center_x, y_position, text_width, style_normal)
 
-    # --- Firma, Fecha y QR (CORREGIDO) ---
+    # --- Firma, Fecha y QR ---
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, 6.0 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
     c.line(center_x - 3.5 * cm, 5.8 * cm, center_x + 3.5 * cm, 5.8 * cm)
@@ -149,7 +186,6 @@ def generate_certificate_pdf(
     c.setFont("Helvetica", 9)
     c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
     
-    # ✅ CORRECCIÓN: Cambiado de /verificar a /verificacion para coincidir con el frontend
     qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}") 
     qr_image = ImageReader(BytesIO(qr_png_bytes))
     c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
@@ -159,7 +195,7 @@ def generate_certificate_pdf(
     c.save()
     packet.seek(0)
 
-    # --- Combinar con la plantilla (sin cambios) ---
+    # --- Combinar con la plantilla ---
     new_pdf = PdfReader(packet)
     with open(template_path, "rb") as f:
         existing_pdf = PdfReader(f)
@@ -173,8 +209,9 @@ def generate_certificate_pdf(
     
     return pdf_bytes
 
+
 # --- ========================================================= ---
-# --- FUNCIÓN 2: RECONOCIMIENTO (MODIFICADA: ESPACIADO DE ITEMS)
+# --- FUNCIÓN 2: RECONOCIMIENTO CON ÁREA DINÁMICA (MODIFICADA)
 # --- ========================================================= ---
 
 def generate_recognition_pdf(
@@ -185,100 +222,133 @@ def generate_recognition_pdf(
     template_path: str,
     serial: str,
     qr_token: str,
-    competencies: List[str] # <-- Requiere competencias
+    competencies: List[str]
 ) -> bytes:
     """
-    Genera un PDF de RECONOCIMIENTO (solo para cursos con competencias).
-    Ajusta el espaciado de la lista de competencias y la posición de la firma.
+    Genera un PDF de RECONOCIMIENTO con área dinámica para competencias.
+    Las competencias se ajustan automáticamente según su cantidad.
     """
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
     center_x = letter[0] / 2
 
-    # --- Estilos ---
-    style_normal = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
-    style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
-    
-    # --- ✅ 3. ESTILO PARA LA LISTA ---
-    # Se mantiene en 10px para que el texto sea más compacto
-    style_competency = ParagraphStyle(name='Competency', fontName='Helvetica', fontSize=10, leading=12, alignment=TA_LEFT)
+    # --- Estilos base ---
+    style_normal = ParagraphStyle(
+        name='Normal', 
+        fontName='Helvetica', 
+        fontSize=12, 
+        leading=20, 
+        alignment=TA_CENTER
+    )
+    style_participant_name = ParagraphStyle(
+        name='Participant', 
+        fontName='DancingScript-Bold', 
+        fontSize=38, 
+        leading=42, 
+        alignment=TA_CENTER
+    )
 
     # --- Elementos Estáticos (RECONOCIMIENTO) ---
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawCentredString(center_x, 21.3 * cm, "Otorga el presente") # <-- CAMBIO
+    c.drawCentredString(center_x, 21.3 * cm, "Otorga el presente")
     c.setFont("Helvetica-Bold", 36)
     c.setFillColorRGB(0.8, 0.2, 0.2)
-    c.drawCentredString(center_x, 20.2 * cm, "RECONOCIMIENTO") # <-- CAMBIO
+    c.drawCentredString(center_x, 20.2 * cm, "RECONOCIMIENTO")
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0, 0, 0)
-    c.drawCentredString(center_x, 18.8 * cm, "a:") # Siempre es 'a:'
+    c.drawCentredString(center_x, 18.8 * cm, "a:")
 
-    # --- Nombre (Participante) (sin cambios) ---
+    # --- Nombre (Participante) ---
     y_position = 18.2 * cm
-    participant_height = draw_multiline_text(c, participant_name, center_x, y_position, 18 * cm, style_participant_name)
+    participant_height = draw_multiline_text(
+        c, participant_name, center_x, y_position, 18 * cm, style_participant_name
+    )
     y_position -= (participant_height + 1.2 * cm)
 
-    # --- Lógica de Texto (RECONOCIMIENTO) ---
+    # --- Texto introductorio ---
     text_width = 18 * cm
-    
-    # Texto basado en "Ejemplo curso comptenecias (1).pdf"
     line1 = f'Por haber acreditado en el curso "{course_name}" ({hours} horas de trabajo), la evaluación de las competencias:'
     
     height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
-    y_position -= (height1 + 0.5 * cm) # Más espacio
+    y_position -= (height1 + 0.5 * cm)
     
     # ----------------------------------------------------------------------
-    # ✅ ZONA DE COMPETENCIAS ESTÁTICA Y CON ESPACIADO MEJORADO
+    # 🎯 ÁREA DINÁMICA PARA COMPETENCIAS
     # ----------------------------------------------------------------------
     
-    # 1. Definir la coordenada Y más baja donde puede llegar la lista.
-    # El bloque de firma comienza en 5.0 cm, por lo que la lista debe terminar 4.0 cm por encima (en 9.0 cm).
-    Y_LIST_HARD_STOP = 9.0 * cm 
+    # 1. Definir límites del cuadro de competencias
+    Y_COMPETENCIES_START = y_position  # Donde comienza el cuadro
+    Y_COMPETENCIES_END = 6.5 * cm      # Donde termina (antes de la firma) - MÁS ESPACIO
     
-    # 2. Aumentar el margen entre ítems a 0.3 cm.
-    ITEM_VERTICAL_SPACING = 0.3 * cm 
+    # 2. Calcular altura disponible
+    available_height_cm = (Y_COMPETENCIES_START - Y_COMPETENCIES_END) / cm
     
+    # 3. Calcular tamaño de fuente dinámico según número de competencias
+    num_competencies = len(competencies)
+    font_size, leading = calculate_dynamic_font_size(num_competencies, available_height_cm)
+    
+    # 4. Crear estilo dinámico para competencias
+    style_competency = ParagraphStyle(
+        name='Competency', 
+        fontName='Helvetica', 
+        fontSize=font_size, 
+        leading=leading, 
+        alignment=TA_LEFT,
+        leftIndent=0,
+        rightIndent=0
+    )
+    
+    # 5. Configuración del área de dibujo
     list_left_margin = 3.5 * cm 
-    list_max_width = 16 * cm 
+    list_max_width = 16 * cm
     
+    # 6. Espaciado proporcional según el tamaño de fuente
+    item_spacing = leading * 0.5  # Espaciado proporcional
+    
+    # 7. Dibujar todas las competencias con el tamaño ajustado
     if competencies:
         for item in competencies:
             item_text = f"• {item}"
             
-            # **Medir la altura ANTES de dibujar**
+            # Medir altura del item
             p_test = Paragraph(item_text, style_competency)
             p_test.wrapOn(c, list_max_width, 10 * cm)
             item_height = p_test.height
             
-            # **Comprobar si el próximo elemento excede el límite**
-            if (y_position - item_height - ITEM_VERTICAL_SPACING) < Y_LIST_HARD_STOP:
-                # Si excede, detenemos el dibujo para proteger la firma estática.
+            # Verificar si hay espacio suficiente
+            if (y_position - item_height) < Y_COMPETENCIES_END:
+                # Si no hay espacio, no dibujar más (aunque con el cálculo dinámico esto no debería pasar)
                 break
-
-            # Dibujar el elemento y reducir la posición Y
-            draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
-            y_position -= (item_height + ITEM_VERTICAL_SPACING) # Aumenta el espaciado
+            
+            # Dibujar el item
+            draw_multiline_text(
+                c, item_text, list_left_margin, y_position, 
+                list_max_width, style_competency
+            )
+            
+            # Avanzar la posición vertical
+            y_position -= (item_height + item_spacing)
     
     # ----------------------------------------------------------------------
-    # 🎯 POSICIÓN FIJA (ESTÁTICA) DEL DOCTOR (5.0 cm)
+    # 🎯 FIRMA Y PIE DE PÁGINA (POSICIÓN FIJA)
     # ----------------------------------------------------------------------
     
     Y_DOCTOR_BASE = 5.0 * cm
     
-    # Nombre del Doctor (Fijo en 5.0 cm)
+    # Nombre del Doctor
     c.setFont("Helvetica", 11)
     c.drawCentredString(center_x, Y_DOCTOR_BASE, "Dr. Juan Manuel Gutiérrez Méndez")
-    c.line(center_x - 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm, center_x + 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm) # 4.8 cm
-    c.drawCentredString(center_x, Y_DOCTOR_BASE - 0.7 * cm, "Director de Proyectos") # 4.3 cm
+    c.line(center_x - 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm, center_x + 3.5 * cm, Y_DOCTOR_BASE - 0.2 * cm)
+    c.drawCentredString(center_x, Y_DOCTOR_BASE - 0.7 * cm, "Director de Proyectos")
 
-    # Fecha de Expedición (Fija a 2.0 cm del nombre del doctor)
+    # Fecha de Expedición
     y_date = Y_DOCTOR_BASE - 2.0 * cm 
     issue_date_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
     c.setFont("Helvetica", 9)
-    c.drawCentredString(center_x, y_date, issue_date_str) # 3.0 cm
+    c.drawCentredString(center_x, y_date, issue_date_str)
     
-    # QR y Folio (Se mantienen fijos en la parte inferior izquierda)
+    # QR y Folio
     qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}")
     qr_image = ImageReader(BytesIO(qr_png_bytes))
     c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
@@ -288,7 +358,7 @@ def generate_recognition_pdf(
     c.save()
     packet.seek(0)
 
-    # --- Combinar con la plantilla (sin cambios) ---
+    # --- Combinar con la plantilla ---
     new_pdf = PdfReader(packet)
     with open(template_path, "rb") as f:
         existing_pdf = PdfReader(f)
