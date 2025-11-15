@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # ✅ CORRECCIÓN: Se añade la variable que estaba en .env pero faltaba aquí
     BREVO_API_KEY: Optional[str] = None
 
+    # Necesario si el binario no está en el PATH del sistema.
+    WKHTMLTOPDF_PATH: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

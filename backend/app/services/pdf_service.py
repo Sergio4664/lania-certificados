@@ -17,6 +17,12 @@ from app.services.qr_service import generate_qr_png
 from typing import Optional, List
 from app.models.producto_educativo import TipoProductoEnum
 
+# 🚀 NUEVOS IMPORTS PARA SOPORTE DE WKHTMLTOPDF
+import pdfkit 
+from app.core.config import get_settings 
+# ----------------------------------------------
+
+
 # --- Registro de Fuentes y Configuración (sin cambios) ---
 try:
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'app/fonts/DancingScript-Bold.ttf'))
@@ -30,6 +36,20 @@ except locale.Error:
         locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')
     except locale.Error:
         pass
+
+
+# --- CONFIGURACIÓN DE WKHTMLTOPDF (Nueva función de ayuda que lee la ruta) ---
+def get_pdfkit_config():
+    """Configura pdfkit con la ruta de wkhtmltopdf si está definida en config.py."""
+    settings = get_settings()
+    if settings.WKHTMLTOPDF_PATH:
+        # Crea la configuración usando la ruta de config.py
+        # ESTA ES LA PARTE QUE LEE LA RUTA: settings.WKHTMLTOPDF_PATH
+        return pdfkit.configuration(wkhtmltopdf=settings.WKHTMLTOPDF_PATH)
+    # Si no está definida, pdfkit buscará en el PATH del sistema
+    return None
+# -------------------------------------------------------------------
+
 
 # --- ✅ 2. MODIFICAR 'draw_multiline_text' para aceptar alineación izquierda ---
 def draw_multiline_text(c, text, x, y, max_width, style):
@@ -155,7 +175,7 @@ def generate_certificate_pdf(
     return pdf_bytes
 
 # --- ========================================================= ---
-# --- FUNCIÓN 2: RECONOCIMIENTO (NUEVA)
+# --- FUNCIÓN 2: RECONOCIMIENTO (MODIFICADA: AJUSTE DINÁMICO)
 # --- ========================================================= ---
 
 def generate_recognition_pdf(
@@ -170,6 +190,7 @@ def generate_recognition_pdf(
 ) -> bytes:
     """
     Genera un PDF de RECONOCIMIENTO (solo para cursos con competencias).
+    Ajusta la posición de la firma dinámicamente según la lista de competencias.
     """
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
@@ -177,7 +198,6 @@ def generate_recognition_pdf(
 
     # --- Estilos ---
     style_normal = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=12, leading=20, alignment=TA_CENTER)
-    # style_bold = ParagraphStyle(name='Bold', fontName='Helvetica-Bold', fontSize=26, leading=30, alignment=TA_CENTER) # No se usa en reconocimiento
     style_participant_name = ParagraphStyle(name='Participant', fontName='DancingScript-Bold', fontSize=38, leading=42, alignment=TA_CENTER)
     
     # --- ✅ 3. ESTILO PARA LA LISTA ---
@@ -208,27 +228,50 @@ def generate_recognition_pdf(
     height1 = draw_multiline_text(c, line1, center_x, y_position, text_width, style_normal)
     y_position -= (height1 + 0.5 * cm) # Más espacio
     
-    # --- Dibujar la lista de competencias ---
+    # --- Dibujar la lista de competencias y rastrear Y ---
     list_left_margin = 3.5 * cm 
     list_max_width = 16 * cm 
     
     if competencies:
         for item in competencies:
             item_text = f"• {item}"
+            # Al llamar a draw_multiline_text, y_position se reduce por la altura del texto
             item_height = draw_multiline_text(c, item_text, list_left_margin, y_position, list_max_width, style_competency)
-            y_position -= (item_height + 0.1 * cm) # Espacio entre items
+            y_position -= (item_height + 0.1 * cm) # Restar la altura del párrafo y un pequeño margen
+    
+    # ----------------------------------------------------------------------
+    # ✅ LÓGICA DE POSICIONAMIENTO DINÁMICO para evitar saturación (FIRMA/FECHA)
+    # ----------------------------------------------------------------------
+    
+    # 1. Posición Mínima (Fija) para que el bloque de firma/fecha no suba demasiado
+    # Usamos 8.0 cm como una posición mínima para que la firma se vea profesional.
+    FIXED_BOTTOM_Y = 8.0 * cm
+    
+    # 2. Posición Calculada: Margen fijo (4 cm) después de la última competencia dibujada
+    # Cuanto más abajo quede y_position, más bajo será y_calculated_position
+    y_calculated_position = y_position - 4.0 * cm 
 
-    # --- Firma, Fecha y QR (CORREGIDO) ---
+    # 3. Aplicar ajuste: El doctor se posiciona en la posición más baja entre el límite fijo (FIXED_BOTTOM_Y) 
+    # y la posición calculada después de la lista (y_calculated_position).
+    y_doctor = max(y_calculated_position, FIXED_BOTTOM_Y)
+        
+    # ----------------------------------------------------
+    # --- Dibujar Firma y Fecha en posición DINÁMICA ---
+    # ----------------------------------------------------
+    
+    # Nombre del Doctor (Base para la firma)
     c.setFont("Helvetica", 11)
-    c.drawCentredString(center_x, 6.0 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
-    c.line(center_x - 3.5 * cm, 5.8 * cm, center_x + 3.5 * cm, 5.8 * cm)
-    c.drawCentredString(center_x, 5.3 * cm, "Director de Proyectos")
+    c.drawCentredString(center_x, y_doctor, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.line(center_x - 3.5 * cm, y_doctor - 0.2 * cm, center_x + 3.5 * cm, y_doctor - 0.2 * cm)
+    c.drawCentredString(center_x, y_doctor - 0.7 * cm, "Director de Proyectos")
 
+    # Fecha de Expedición
+    y_date = y_doctor - 2.0 * cm # Baja 2 cm desde la posición del doctor
     issue_date_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
     c.setFont("Helvetica", 9)
-    c.drawCentredString(center_x, 4.0 * cm, issue_date_str)
+    c.drawCentredString(center_x, y_date, issue_date_str)
     
-    # ✅ CORRECCIÓN: Cambiado de /verificar a /verificacion para coincidir con el frontend
+    # QR y Folio (Se mantienen fijos en la parte inferior izquierda)
     qr_png_bytes = generate_qr_png(f"http://localhost:4200/verificacion/{qr_token}")
     qr_image = ImageReader(BytesIO(qr_png_bytes))
     c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask='auto')
