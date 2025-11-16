@@ -143,9 +143,13 @@ export default class AdminParticipantesComponent implements OnInit {
     this.showForm = true;
   }
 
-  deleteParticipant(id: number): void {
-    if (confirm('¿Estás seguro de que quieres eliminar a este participante?')) {
-      this.participanteService.delete(id).subscribe({
+  /**
+   * Elimina un participante mostrando su nombre completo en el mensaje de confirmación.
+   * 🚨 CAMBIO: Ahora recibe el objeto 'participante' completo.
+   */
+  deleteParticipant(participante: Participante): void {
+    if (confirm(`¿Estás seguro de que quieres eliminar a ${participante.nombre_completo}?`)) {
+      this.participanteService.delete(participante.id).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante eliminado correctamente.');
           this.loadParticipants(); // Recargar la lista

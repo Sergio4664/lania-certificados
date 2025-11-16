@@ -1,12 +1,14 @@
 <div class="login-container">
   <div class="login-card">
     <div class="header-section">
+      <!-- Reemplaza con la ruta real de tu logo -->
       <h1>LANIA</h1>
       <p>Laboratorio Nacional de Informática Avanzada</p>
       <h2>Sistema de Constancias</h2>
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- Muestra el mensaje de error si existe -->
       <div *ngIf="error" class="error-message">
         <mat-icon>error_outline</mat-icon>
         <span>{{ error }}</span>
@@ -43,15 +45,25 @@
           </svg>
           Contraseña
         </label>
-        <input 
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="Ingrese su contraseña"
-          [class.input-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
-          required 
-        />
-         <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')" class="input-error">
+        
+        <!-- ESTRUCTURA PARA EL CAMPO DE CONTRASEÑA con visibilidad -->
+        <div class="password-input-container">
+          <input 
+            id="password"
+            [type]="showPassword ? 'text' : 'password'" 
+            formControlName="password"
+            placeholder="Ingrese su contraseña"
+            [class.input-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+            required 
+          > <!-- FIX: La etiqueta input está cerrada correctamente aquí. -->
+          
+          <!-- Botón para alternar visibilidad -->
+          <button type="button" class="toggle-password-btn" (click)="togglePasswordVisibility()">
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
+        
+        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')" class="input-error">
           La contraseña es requerida.
         </div>
       </div>

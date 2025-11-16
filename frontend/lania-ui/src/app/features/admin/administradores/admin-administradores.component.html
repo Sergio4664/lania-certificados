@@ -24,7 +24,7 @@
         </div>
 
         <div class="form-group">
-          <label for="email">Email (Empresa) *</label>
+          <label for="email">Email (Personal) *</label>
           <input id="email" type="email" formControlName="email"
                  [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].invalid }">
           <div *ngIf="f['email'].touched && f['email'].invalid" class="invalid-feedback">
@@ -99,19 +99,16 @@
             <td>{{ admin.email_institucional }}</td>
             <td>{{ admin.telefono }}</td>
             <td class="action-buttons">
-              <!-- 👇 NUEVO BOTÓN PARA RESTABLECER CONTRASEÑA 👇 -->
+              <!-- Botón para Restablecer Contraseña -->
               <button class="icon-btn key-btn" (click)="sendResetLink(admin.id)" title="Restablecer Contraseña">
-                <!-- Usamos el emoji, pero en una app real se recomienda un SVG -->
                 🔑
               </button>
-              <!-- 👆 FIN DEL NUEVO BOTÓN 👆 -->
-
+              
               <button class="icon-btn edit" (click)="toggleForm(admin)">
-                <!-- Reemplazar con el icono SVG de editar que uses (ej. lápiz) -->
                 ✏️
               </button>
-              <button class="icon-btn delete" (click)="deleteAdmin(admin.id)">
-                <!-- Reemplazar con el icono SVG de eliminar que uses (ej. papelera) -->
+              <button class="icon-btn delete" (click)="deleteAdmin(admin)">
+                <!-- 🚨 CAMBIO AQUÍ: Se pasa el objeto 'admin' completo -->
                 🗑️
               </button>
             </td>

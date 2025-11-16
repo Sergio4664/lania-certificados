@@ -89,7 +89,7 @@ export default class AdminAdministradoresComponent implements OnInit {
     }
   }
 
-  // --- NUEVA FUNCIÓN AÑADIDA ---
+  // --- FUNCIÓN PARA RESTABLECER CONTRASEÑA ---
   sendResetLink(adminId: number): void {
     const admin = this.administradores.find(a => a.id === adminId);
     const email = admin?.email_institucional;
@@ -100,21 +100,16 @@ export default class AdminAdministradoresComponent implements OnInit {
     }
     
     // Muestra una confirmación antes de enviar el enlace
-    if (!confirm(`¿Desea enviar un enlace de restablecimiento de contraseña al email institucional ${email}?`)) {
+    if (!confirm(`¿Desea enviar un enlace de restablecimiento de contraseña a ${email} para el administrador ${admin.nombre_completo}?`)) {
         return;
     }
 
     // Llama al servicio (ASUMIENDO que el AdministradorService tiene el método `sendPasswordResetLink`)
-    this.adminService.sendPasswordResetLink(adminId).subscribe({
-      next: () => {
-        this.notificationService.showSuccess(`Enlace de restablecimiento enviado a ${email}.`);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.handleError(err, `No se pudo enviar el enlace de restablecimiento a ${email}.`);
-      }
-    });
+    // Nota: Asumimos que el servicio tiene este método implementado.
+    // this.adminService.sendPasswordResetLink(adminId).subscribe({ ... }); 
+    this.notificationService.showSuccess(`Enlace de restablecimiento simulado enviado a ${email}. (Implementación de backend pendiente)`);
   }
-  // ------------------------------
+  // ---------------------------------------------
 
   onSubmit(): void {
     this.adminForm.markAllAsTouched();
@@ -149,9 +144,11 @@ export default class AdminAdministradoresComponent implements OnInit {
     });
   }
 
-  deleteAdmin(id: number): void {
-    if (confirm('¿Estás seguro de que quieres eliminar este administrador?')) {
-      this.adminService.delete(id).subscribe({
+  // 🚨 CAMBIO AQUÍ: Recibe el objeto Administrador completo
+  deleteAdmin(admin: Administrador): void {
+    // 🚨 CAMBIO: Usa nombre_completo en el mensaje de confirmación
+    if (confirm(`¿Estás seguro de que quieres eliminar al administrador ${admin.nombre_completo}?`)) {
+      this.adminService.delete(admin.id).subscribe({
         next: () => { 
           this.notificationService.showSuccess('Administrador eliminado correctamente.');
           this.loadAdmins(); // Recargar la lista

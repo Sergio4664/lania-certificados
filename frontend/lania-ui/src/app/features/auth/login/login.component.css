@@ -24,6 +24,12 @@
   margin-bottom: 30px;
 }
 
+.login-logo-img {
+  width: 80px;
+  height: auto;
+  margin: 0 auto 10px;
+}
+
 .header-section h1 {
   color: #221C53;
   margin: 10px 0 5px 0;
@@ -65,6 +71,14 @@
   font-size: 14px;
 }
 
+/* Contenedor del campo de contraseña para posicionar el botón del ojo */
+.password-input-container {
+  position: relative;
+  /* Clave para posicionar el botón de forma absoluta */
+  display: flex;
+  width: 100%;
+}
+
 .form-group input {
   width: 100%;
   padding: 15px;
@@ -74,6 +88,8 @@
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
+  /* Espacio a la derecha para el botón de alternar (40px + 10px margen) */
+  padding-right: 50px;
 }
 
 .form-group input:focus {
@@ -83,10 +99,34 @@
   background: white;
 }
 
+/* Estilos para el botón de mostrar/ocultar contraseña */
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  /* Separación del borde derecho del input */
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #667eea;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password-btn:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+}
+
 .form-group input.input-invalid {
   border-color: #e74c3c;
 }
-    
+
 .input-error {
   color: #c0392b;
   font-size: 12px;
@@ -124,6 +164,21 @@
   cursor: not-allowed;
 }
 
+/* Animación del spinner (mat-spinner) */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .error-message {
   background: rgba(231, 76, 60, 0.1);
   border: 1px solid rgba(231, 76, 60, 0.3);
@@ -157,4 +212,47 @@
   color: #666;
   font-size: 12px;
   margin: 0;
+}
+
+/* ------------------------------------------------------------- */
+/* S T Y L E S   R E S P O N S I V E S   (Móvil)                 */
+/* ------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .login-container {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: none;
+    padding: 30px 20px;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  .header-section {
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+
+  .header-section h1 {
+    font-size: 28px;
+  }
+
+  .form-group input {
+    padding: 12px;
+    /* Ajustar padding-right para el botón del ojo en móvil */
+    padding-right: 40px;
+  }
+
+  .login-btn {
+    padding: 14px;
+  }
+
+  .footer {
+    margin-top: 20px;
+  }
 }
