@@ -13,7 +13,7 @@
 
 .verificacion-container {
   width: 100%;
-  max-width: 500px;
+  max-width: 500px; /* Ancho de "caja de login" */
   background: #ffffff;
   border-radius: 16px;
   padding: 1rem 1.5rem;
@@ -24,7 +24,7 @@
   margin: 0 auto;
 }
 
-/* --- Tarjeta de Resultado Compacta --- */
+/* --- Tarjeta de Resultado (Contenedor) --- */
 .resultado-card {
   background: transparent;
   padding: 0;
@@ -195,26 +195,17 @@
 }
 
 /* --- Tarjeta de Resultado (Compacta) --- */
-.resultado-card {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
-}
-
 .resultado-card h2 {
   color: #38a169;
   margin: 0 0 0.25rem 0;
   font-size: 1.1rem;
   font-weight: 700;
 }
+
+/* * -------------------------------------------
+ * ESTA ES LA SECCIÓN CORREGIDA
+ * -------------------------------------------
+ */
 
 /* Grid en 2 COLUMNAS - SIN cuadros, solo texto */
 .resultado-grid {
@@ -242,6 +233,20 @@
 .grid-item:hover {
   background-color: transparent;
 }
+
+/* --- LA CORRECCIÓN PARA 5 ELEMENTOS --- */
+/* Forzamos al 3er elemento (Producto Educativo)
+   a ocupar las 2 columnas */
+.grid-item:nth-child(3) {
+  grid-column: 1 / 3; /* Ocupa de la columna 1 a la 3 */
+}
+
+/* Mantenemos el hover transparente para consistencia */
+.grid-item:nth-child(3):hover {
+  background-color: transparent;
+}
+/* --- FIN DE LA SECCIÓN CORREGIDA --- */
+
 
 .grid-item strong {
   display: block;
@@ -371,6 +376,16 @@
     padding: 0.35rem 0.5rem;
   }
 
+  /* * IMPORTANTE RESPONSIVE: 
+   * Hacemos que en móvil, el 3er item vuelva a ocupar 1 columna
+   * si el diseño se rompe. Pero si se ve bien en 2, puedes
+   * borrar esta regla.
+  */
+  .grid-item:nth-child(3) {
+    grid-column: auto; /* Vuelve a la normalidad */
+  }
+
+
   .grid-item strong {
     font-size: 0.56rem;
   }
@@ -410,5 +425,11 @@
 
   .grid-item {
     padding: 0.35rem 0.5rem;
+  }
+  
+  /* En 1 columna, nos aseguramos que OTRA VEZ
+     el 3er item se comporte normal */
+  .grid-item:nth-child(3) {
+    grid-column: auto;
   }
 }
