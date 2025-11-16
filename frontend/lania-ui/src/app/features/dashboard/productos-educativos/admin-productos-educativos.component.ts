@@ -369,11 +369,11 @@ export default class AdminProductosEducativosComponent implements OnInit {
     this.editingCourse = null;
     this.courseForm.reset({
       nombre: '', 
-      horas: 8, 
+      horas: 2, 
       fecha_inicio: '', 
       fecha_fin: '',
-      tipo_producto: 'CURSO_EDUCATIVO', 
-      modalidad: 'PRESENCIAL', 
+      tipo_producto: 'PILDORA_EDUCATIVA', 
+      modalidad: 'REMOTA', 
       competencias: ''
     });
     (this.courseForm.get('docentes_ids') as FormArray).clear(); 
