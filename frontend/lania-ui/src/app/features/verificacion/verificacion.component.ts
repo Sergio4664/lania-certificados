@@ -18,7 +18,6 @@ import { finalize } from 'rxjs/operators';
   ],
   templateUrl: './verificacion.component.html',
   styleUrls: ['./verificacion.component.css'],
-  encapsulation: ViewEncapsulation.None
 })
 export default class VerificacionComponent implements OnInit {
 

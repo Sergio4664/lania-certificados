@@ -1,5 +1,5 @@
 /* Estilos para /features/verificacion/verificacion.component.css */
-/* 🎨 DISEÑO ULTRA COMPACTO - TAMAÑO DEL LOGIN */
+/* 🎨 DISEÑO ULTRA COMPACTO v5 (Ancho 550px, Parrilla 3x2) */
 
 :host {
   display: flex;
@@ -13,14 +13,15 @@
 
 .verificacion-container {
   width: 100%;
-  max-width: 500px; /* Ancho de "caja de login" */
+  /* --- CAMBIO 1: Más ancho para que quepan 3 columnas --- */
+  max-width: 550px; 
   background: #ffffff;
   border-radius: 16px;
-  padding: 1rem 1.5rem;
+  padding: 0.8rem 1.25rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.4rem;
   margin: 0 auto;
 }
 
@@ -47,35 +48,20 @@
   border-radius: 0;
   box-shadow: none;
   border: none;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
 }
 
+/* --- CAMBIO 2: Forzamos los márgenes a cero --- */
 .verificacion-header h1 {
-  margin: 0;
+  margin: 0 !important; /* <-- ARREGLO DEL ESPACIO */
   font-size: 1.15rem;
   font-weight: 700;
   color: #2d3748;
   letter-spacing: -0.3px;
 }
 
-.verificacion-header .brand {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #2d3748;
-  margin-bottom: 0.02rem;
-  letter-spacing: 2px;
-}
-
-.verificacion-header .subtitle {
-  font-size: 0.68rem;
-  color: #718096;
-  margin-bottom: 0.15rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
 .verificacion-header p {
-  margin: 0 0 0.15rem 0;
+  margin: 0 0 0.1rem 0 !important; /* <-- ARREGLO DEL ESPACIO */
   font-size: 0.78rem;
   color: #718096;
   line-height: 1.1;
@@ -106,20 +92,20 @@
 }
 
 .form-group {
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.4rem;
 }
 
 .form-group label {
   display: block;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
   color: #2d3748;
   font-size: 0.82rem;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.55rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   font-size: 0.88rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -143,7 +129,7 @@
 .invalid-feedback {
   color: #e53e3e;
   font-size: 0.72rem;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
   display: block;
 }
 
@@ -153,7 +139,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem 1rem;
+  padding: 0.45rem 1rem;
   font-size: 0.88rem;
   font-weight: 600;
   border: none;
@@ -197,7 +183,7 @@
 /* --- Tarjeta de Resultado (Compacta) --- */
 .resultado-card h2 {
   color: #38a169;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.2rem 0;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -207,13 +193,13 @@
  * -------------------------------------------
  */
 
-/* Grid en 2 COLUMNAS - SIN cuadros, solo texto */
 .resultado-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 1.5rem;
-  row-gap: 0.6rem;
-  margin: 0.3rem 0 0.4rem 0;
+  /* --- CAMBIO 3: 3 columnas para el layout 3x2 --- */
+  grid-template-columns: 1fr 1fr 1fr; 
+  column-gap: 0.75rem; /* Espacio entre columnas */
+  row-gap: 0.4rem;   /* Espacio entre filas */
+  margin: 0.2rem 0 0.3rem 0; 
   width: 100%;
   box-sizing: border-box;
 }
@@ -234,32 +220,21 @@
   background-color: transparent;
 }
 
-/* --- LA CORRECCIÓN PARA 5 ELEMENTOS --- */
-/* Forzamos al 3er elemento (Producto Educativo)
-   a ocupar las 2 columnas */
-.grid-item:nth-child(3) {
-  grid-column: 1 / 3; /* Ocupa de la columna 1 a la 3 */
-}
-
-/* Mantenemos el hover transparente para consistencia */
-.grid-item:nth-child(3):hover {
-  background-color: transparent;
-}
-/* --- FIN DE LA SECCIÓN CORREGIDA --- */
-
+/* (Se eliminó la regla .grid-item:nth-child(3) 
+   para que funcione la parrilla de 3 columnas) */
 
 .grid-item strong {
   display: block;
   font-size: 0.62rem;
   color: #718096;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
 }
 
 .grid-item span {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: #2d3748;
   font-weight: 500;
   word-wrap: break-word;
@@ -281,7 +256,7 @@
   background: #f0fff4;
   padding: 0.38rem 0.85rem;
   border-radius: 50px;
-  margin: 0.3rem 0 0.45rem 0;
+  margin: 0.2rem 0 0.3rem 0;
 }
 
 .valido-badge svg {
@@ -352,7 +327,8 @@
 }
 
 /* --- Responsive --- */
-@media (max-width: 540px) {
+/* A partir de 560px hacia abajo, cambiamos el layout */
+@media (max-width: 560px) {
   .verificacion-container {
     max-width: 100%;
     padding: 0.9rem 1.1rem;
@@ -366,7 +342,7 @@
     font-size: 1.25rem;
   }
 
-  /* Mantener 2 columnas en tablets */
+  /* Volver a 2 columnas en tablets */
   .resultado-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.3rem;
@@ -375,16 +351,14 @@
   .grid-item {
     padding: 0.35rem 0.5rem;
   }
-
+  
   /* * IMPORTANTE RESPONSIVE: 
-   * Hacemos que en móvil, el 3er item vuelva a ocupar 1 columna
-   * si el diseño se rompe. Pero si se ve bien en 2, puedes
-   * borrar esta regla.
+   * Volvemos a necesitar la regla del 3er item
+   * para el layout 2-1-2 de tablet
   */
   .grid-item:nth-child(3) {
-    grid-column: auto; /* Vuelve a la normalidad */
+    grid-column: 1 / 3; /* Vuelve a 2 columnas */
   }
-
 
   .grid-item strong {
     font-size: 0.56rem;
@@ -427,8 +401,7 @@
     padding: 0.35rem 0.5rem;
   }
   
-  /* En 1 columna, nos aseguramos que OTRA VEZ
-     el 3er item se comporte normal */
+  /* En 1 columna, se comporta normal */
   .grid-item:nth-child(3) {
     grid-column: auto;
   }
