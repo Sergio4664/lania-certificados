@@ -318,19 +318,8 @@
   }
   .verificacion-header h1 { font-size: 1.05rem; }
 
-  /* Volver a 2 columnas en tablets */
-  .resultado-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.3rem;
-  }
-  .grid-item { padding: 0.35rem 0.5rem; }
-  
-  /* Resetear todos los spans de columna */
-  .grid-item:nth-child(1) { grid-column: auto; }
-  .grid-item:nth-child(2) { grid-column: auto; }
-  .grid-item:nth-child(3) { grid-column: 1 / span 2; } /* 3ro en ancho completo */
-  .grid-item:nth-child(4) { grid-column: auto; }
-  .grid-item:nth-child(5) { grid-column: auto; }
+  /* --- SECCIÓN CORREGIDA --- */
+  /* Se eliminaron las reglas de grid que rompían el diseño 3x2 */
 
   .grid-item strong { font-size: 0.56rem; }
   .grid-item span { font-size: 0.81rem; }
