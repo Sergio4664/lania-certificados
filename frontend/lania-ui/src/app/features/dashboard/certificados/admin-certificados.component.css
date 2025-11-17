@@ -192,7 +192,8 @@ td a:hover {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
 }
 
 .icon-btn {
@@ -440,13 +441,14 @@ td a:hover {
   }
 
   .actions-cell {
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
-    align-items: stretch;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .icon-btn {
-    width: 100%;
+    width: auto;
     justify-content: center;
     padding: 8px;
     border-radius: 6px;
