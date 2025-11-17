@@ -56,17 +56,22 @@ def read_all_certificados(db: Session = Depends(get_db)):
     return certificados
 
 
+# 🔄 FUNCIÓN MODIFICADA: Implementa skip y limit para paginación fija de 15
 @router.get(
     "/participantes",
     response_model=List[CertificadoOut], 
-    summary="Obtener certificados de participantes"
+    summary="Obtener certificados de participantes (paginado)"
 )
-def read_certificados_participantes(db: Session = Depends(get_db)):
+def read_certificados_participantes(
+    db: Session = Depends(get_db),
+    skip: int = 0,             # ✅ Offset para la paginación (Atrás/Siguiente)
+    limit: int = 15            # ✅ Límite de resultados por página
+):
     """
     Recupera solo los certificados de participantes (con inscripcion_id),
-    cargando todas las relaciones anidadas necesarias para el dashboard.
+    ordenados por ID descendente, con paginación (skip/limit).
     """
-    certificados = (
+    query = (
         db.query(models.Certificado)
         .filter(models.Certificado.inscripcion_id.isnot(None)) # Filtra solo participantes
         .options(
@@ -77,22 +82,30 @@ def read_certificados_participantes(db: Session = Depends(get_db)):
             .selectinload(models.Inscripcion.producto_educativo)
         )
         .order_by(models.Certificado.id.desc())
-        .all()
+        .offset(skip) # Aplicar offset
+        .limit(limit) # Aplicar límite
     )
+    
+    certificados = query.all()
     return certificados
 
 
+# 🔄 FUNCIÓN MODIFICADA: Implementa skip y limit para paginación fija de 15
 @router.get(
     "/docentes",
     response_model=List[CertificadoOut], 
-    summary="Obtener certificados de docentes"
+    summary="Obtener certificados de docentes (paginado)"
 )
-def read_certificados_docentes(db: Session = Depends(get_db)):
+def read_certificados_docentes(
+    db: Session = Depends(get_db),
+    skip: int = 0,              # ✅ Offset para la paginación (Atrás/Siguiente)
+    limit: int = 15             # ✅ Límite de resultados por página
+):
     """
     Recupera solo los certificados de docentes (con docente_id),
-    cargando todas las relaciones anidadas necesarias para el dashboard.
+    ordenados por ID descendente, con paginación (skip/limit).
     """
-    certificados = (
+    query = (
         db.query(models.Certificado)
         .filter(models.Certificado.docente_id.isnot(None)) # Filtra solo docentes
         .options(
@@ -100,8 +113,11 @@ def read_certificados_docentes(db: Session = Depends(get_db)):
             selectinload(models.Certificado.producto_educativo) 
         )
         .order_by(models.Certificado.id.desc())
-        .all()
+        .offset(skip) # Aplicar offset
+        .limit(limit) # Aplicar límite
     )
+    
+    certificados = query.all()
     return certificados
 
 

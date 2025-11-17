@@ -90,6 +90,11 @@ export default class AdminParticipantesComponent implements OnInit {
   currentParticipantId: number | null = null;
   searchTerm: string = '';
   isLoading = false;
+  
+  // ✅ NUEVAS PROPIEDADES para control de límite
+  readonly PARTICIPANTES_LIMIT = 15;
+  showAllParticipants = false; // Estado para controlar si se muestra la lista completa
+
 
   constructor() {
     // 🚨 CAMBIO: Aplicación de validadores personalizados
@@ -113,11 +118,32 @@ export default class AdminParticipantesComponent implements OnInit {
     this.loadParticipants();
   }
 
+  // 🔄 FUNCIÓN MODIFICADA: Usa el límite condicional
   loadParticipants() {
-    this.participanteService.getAll().subscribe(data => {
-      this.participantes = data; 
-      this.filteredParticipants = data;
+    this.isLoading = true;
+    
+    // Si showAllParticipants es true, pasamos 'undefined' como límite para obtener toda la lista.
+    // Si es false, pasamos el límite de 15.
+    const finalLimit = this.showAllParticipants ? undefined : this.PARTICIPANTES_LIMIT;
+
+    // ✅ Pasamos el límite al servicio (skip es 0 por defecto)
+    this.participanteService.getAll(0, finalLimit).subscribe({
+        next: (data) => {
+            this.participantes = data; 
+            this.filterParticipants();
+            this.isLoading = false;
+        },
+        error: (err: HttpErrorResponse) => {
+            this.isLoading = false;
+            this.handleError(err, 'Error al cargar participantes');
+        }
     });
+  }
+  
+  // ✅ NUEVA FUNCIÓN: Lógica para "Ver Más"
+  verMasParticipantes(): void {
+    this.showAllParticipants = true;
+    this.loadParticipants(); 
   }
 
   filterParticipants(): void {
@@ -152,7 +178,9 @@ export default class AdminParticipantesComponent implements OnInit {
       this.participanteService.delete(participante.id).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante eliminado correctamente.');
-          this.loadParticipants(); // Recargar la lista
+          // ✅ Resetear estado de visualización a limitado y recargar
+          this.showAllParticipants = false; 
+          this.loadParticipants(); 
         },
         error: (err: HttpErrorResponse) => {
           this.handleError(err, 'No se pudo eliminar al participante');
@@ -175,6 +203,8 @@ export default class AdminParticipantesComponent implements OnInit {
       this.participanteService.update(this.currentParticipantId, formData).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante actualizado exitosamente.');
+          // ✅ Resetear estado de visualización a limitado y recargar
+          this.showAllParticipants = false;
           this.loadParticipants();
           this.toggleForm();
         },
@@ -184,6 +214,8 @@ export default class AdminParticipantesComponent implements OnInit {
       this.participanteService.create(formData).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante creado exitosamente.');
+          // ✅ Resetear estado de visualización a limitado y recargar
+          this.showAllParticipants = false;
           this.loadParticipants();
           this.toggleForm();
         },

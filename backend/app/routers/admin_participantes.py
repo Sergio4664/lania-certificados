@@ -32,7 +32,7 @@ def create_participante(participante: ParticipanteCreate, db: Session = Depends(
     return db_participante
 
 @router.get("/", response_model=List[Participante])
-def read_participantes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_participantes(skip: int = 0, limit: int = 15, db: Session = Depends(get_db)): # ✅ Límite cambiado a 15
     # 🌟 CORRECCIÓN 1: Filtrar para mostrar solo los participantes NO eliminados.
     participantes = db.query(models.Participante).filter(
         models.Participante.is_deleted == False

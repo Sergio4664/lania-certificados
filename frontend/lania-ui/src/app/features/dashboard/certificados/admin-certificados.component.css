@@ -140,7 +140,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 1rem 1.5rem;
   text-align: left;
   border-bottom: 1px solid #edf2f7;
@@ -172,6 +173,7 @@ td a {
   text-decoration: none;
   font-weight: 500;
 }
+
 td a:hover {
   text-decoration: underline;
 }
@@ -216,11 +218,44 @@ td a:hover {
 .icon-btn.view {
   color: #4A90E2;
 }
+
 .icon-btn.view:hover {
   color: #3182ce;
 }
-.icon-btn.email { color: #3182ce; }
-.icon-btn.delete { color: #e53e3e; }
+
+.icon-btn.email {
+  color: #3182ce;
+}
+
+.icon-btn.delete {
+  color: #e53e3e;
+}
+
+/* --- NUEVOS ESTILOS PARA LA PAGINACIÓN --- */
+.pagination-controls {
+  /* Las propiedades de flex ya están en el HTML, pero es bueno dejarlas aquí también 
+       para asegurar la compatibilidad y estética si se quitan del HTML. */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: #4a5568;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* --- FIN NUEVOS ESTILOS --- */
+
 
 /* --- Estilos para el Modal de Creación --- */
 .modal-overlay {
@@ -252,6 +287,7 @@ td a:hover {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -281,6 +317,7 @@ td a:hover {
   cursor: pointer;
   transition: color 0.2s;
 }
+
 .modal-close-btn:hover {
   color: #718096;
 }
@@ -362,8 +399,8 @@ td a:hover {
 }
 
 /* ========================================
-   MEDIA QUERIES PARA MÓVILES
-   ======================================== */
+   MEDIA QUERIES PARA MÓVILES
+   ======================================== */
 
 /* Tablets (≤1024px) */
 @media (max-width: 1024px) {
@@ -426,6 +463,22 @@ td a:hover {
     width: 100%;
   }
 
+  /* Paginación en móvil: usar un diseño más compacto */
+  .pagination-controls {
+    gap: 0.5rem;
+  }
+
+  .pagination-controls button {
+    /* Permitir que los botones se vean más pequeños */
+    padding: 0.5rem 0.8rem;
+  }
+
+  .page-info {
+    /* Asegurar que la información de página se vea bien */
+    font-size: 0.85rem;
+  }
+
+
   /* Tablas con scroll horizontal */
   .data-table {
     font-size: 0.875rem;
@@ -435,7 +488,8 @@ td a:hover {
     min-width: 600px;
   }
 
-  th, td {
+  th,
+  td {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
   }
@@ -507,7 +561,8 @@ td a:hover {
     font-size: 0.875rem;
   }
 
-  th, td {
+  th,
+  td {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }

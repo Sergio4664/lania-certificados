@@ -1,5 +1,6 @@
+// Ruta: frontend/lania-ui/src/app/shared/services/participante.service.ts
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http'; // ✅ Importar HttpParams
 import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Participante, ParticipanteCreate, ParticipanteUpdate } from '@shared/interfaces/participante.interface';
@@ -11,8 +12,22 @@ export class ParticipanteService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/admin/participantes`;
 
-  getAll(): Observable<Participante[]> {
-    return this.http.get<Participante[]>(this.apiUrl);
+  /**
+   * Obtiene la lista de participantes, con opciones de paginación o límite.
+   * Si no se especifica 'limit', la API usará su valor por defecto de 15.
+   */
+  getAll(skip: number = 0, limit?: number): Observable<Participante[]> {
+    let params = new HttpParams();
+    // Siempre enviar 'skip' (offset)
+    params = params.set('skip', skip.toString());
+    
+    // ✅ Solo agregar 'limit' si se proporciona (si es undefined, FastAPI usa su valor por defecto)
+    if (limit !== undefined) {
+      params = params.set('limit', limit.toString());
+    }
+    
+    // Incluir los parámetros en la solicitud GET
+    return this.http.get<Participante[]>(this.apiUrl, { params });
   }
 
   create(participante: ParticipanteCreate): Observable<Participante> {
