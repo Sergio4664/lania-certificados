@@ -74,7 +74,6 @@
 /* Contenedor del campo de contraseña para posicionar el botón del ojo */
 .password-input-container {
   position: relative;
-  /* Clave para posicionar el botón de forma absoluta */
   display: flex;
   width: 100%;
 }
@@ -88,7 +87,10 @@
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
-  /* Espacio a la derecha para el botón de alternar (40px + 10px margen) */
+}
+
+/* Espacio extra a la derecha solo para el campo de contraseña */
+.password-input-container input {
   padding-right: 50px;
 }
 
@@ -103,7 +105,6 @@
 .toggle-password-btn {
   position: absolute;
   right: 10px;
-  /* Separación del borde derecho del input */
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
@@ -112,7 +113,7 @@
   color: #667eea;
   padding: 8px;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -121,6 +122,10 @@
 
 .toggle-password-btn:hover {
   background-color: rgba(102, 126, 234, 0.1);
+}
+
+.toggle-password-btn:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .form-group input.input-invalid {
@@ -164,7 +169,7 @@
   cursor: not-allowed;
 }
 
-/* Animación del spinner (mat-spinner) */
+/* Animación del spinner */
 .spinner {
   animation: spin 1s linear infinite;
 }
@@ -173,7 +178,6 @@
   0% {
     transform: rotate(0deg);
   }
-
   100% {
     transform: rotate(360deg);
   }
@@ -206,6 +210,11 @@
   color: #667eea;
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.2s;
+}
+
+.forgot-password-link:hover {
+  color: #764ba2;
 }
 
 .footer p {
@@ -215,44 +224,233 @@
 }
 
 /* ------------------------------------------------------------- */
-/* S T Y L E S   R E S P O N S I V E S   (Móvil)                 */
+/* RESPONSIVE - Tablets (≤768px)                                 */
 /* ------------------------------------------------------------- */
 
 @media (max-width: 768px) {
   .login-container {
-    padding: 0;
+    padding: 15px;
     align-items: flex-start;
   }
 
   .login-card {
     width: 100%;
     max-width: none;
-    padding: 30px 20px;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
+    padding: 35px 25px;
+    border-radius: 16px;
   }
 
   .header-section {
-    margin-top: 30px;
-    margin-bottom: 20px;
+    margin-top: 20px;
+    margin-bottom: 25px;
   }
 
   .header-section h1 {
     font-size: 28px;
   }
 
+  .header-section p {
+    font-size: 12px;
+  }
+
+  .header-section h2 {
+    font-size: 20px;
+  }
+
   .form-group input {
-    padding: 12px;
-    /* Ajustar padding-right para el botón del ojo en móvil */
-    padding-right: 40px;
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .password-input-container input {
+    padding-right: 45px;
+  }
+
+  .toggle-password-btn {
+    right: 8px;
+    padding: 6px;
+  }
+
+  .toggle-password-btn svg {
+    width: 18px;
+    height: 18px;
   }
 
   .login-btn {
     padding: 14px;
+    font-size: 15px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .footer {
+    margin-top: 25px;
+    padding-top: 15px;
+  }
+
+  .forgot-password-link {
+    font-size: 14px;
+  }
+
+  .footer p {
+    font-size: 11px;
+  }
+}
+
+/* ------------------------------------------------------------- */
+/* RESPONSIVE - Móviles (≤480px)                                 */
+/* ------------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 0;
+  }
+
+  .login-card {
+    padding: 30px 20px;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    min-height: 100vh;
+  }
+
+  .header-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .header-section h1 {
+    font-size: 26px;
+    letter-spacing: 1.5px;
+  }
+
+  .header-section p {
+    font-size: 11px;
+    margin-bottom: 15px;
+  }
+
+  .header-section h2 {
+    font-size: 18px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .form-group label svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .form-group input {
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .password-input-container input {
+    padding-right: 42px;
+  }
+
+  .toggle-password-btn {
+    right: 6px;
+    padding: 5px;
+  }
+
+  .toggle-password-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .input-error {
+    font-size: 11px;
+  }
+
+  .login-btn {
+    padding: 13px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .btn-content {
+    gap: 6px;
+  }
+
+  .btn-content svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .error-message {
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  .error-message svg {
+    width: 18px;
+    height: 18px;
   }
 
   .footer {
     margin-top: 20px;
+    padding-top: 15px;
+  }
+
+  .forgot-password-link {
+    font-size: 13px;
+    margin-bottom: 15px;
+  }
+
+  .footer p {
+    font-size: 10px;
+  }
+}
+
+/* ------------------------------------------------------------- */
+/* RESPONSIVE - Móviles muy pequeños (≤360px)                    */
+/* ------------------------------------------------------------- */
+
+@media (max-width: 360px) {
+  .login-card {
+    padding: 25px 18px;
+  }
+
+  .header-section {
+    margin-top: 15px;
+  }
+
+  .header-section h1 {
+    font-size: 24px;
+  }
+
+  .header-section p {
+    font-size: 10px;
+  }
+
+  .header-section h2 {
+    font-size: 17px;
+  }
+
+  .form-group input {
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  .password-input-container input {
+    padding-right: 40px;
+  }
+
+  .login-btn {
+    padding: 12px;
+    font-size: 13px;
   }
 }
