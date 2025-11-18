@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router'; // ✅ Importar Router
 import { forkJoin } from 'rxjs';
 
 // Importamos todos los servicios e interfaces necesarios
@@ -29,6 +30,7 @@ export default class AdminOverviewComponent implements OnInit {
   private certificadoService = inject(CertificadoService);
   private docenteService = inject(DocenteService);
   private administradorService = inject(AdministradorService);
+  private router = inject(Router); // ✅ Inyectar Router
 
   // Propiedades para almacenar los datos, con nombres en español
   productos: ProductoEducativo[] = [];
@@ -70,5 +72,42 @@ export default class AdminOverviewComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  // ✅ NUEVOS MÉTODOS DE NAVEGACIÓN
+  
+  /**
+   * Navega al dashboard de Productos Educativos
+   */
+  navigateToProductos(): void {
+    this.router.navigate(['/dashboard/productos-educativos']);
+  }
+
+  /**
+   * Navega al dashboard de Participantes
+   */
+  navigateToParticipantes(): void {
+    this.router.navigate(['/dashboard/participantes']);
+  }
+
+  /**
+   * Navega al dashboard de Docentes
+   */
+  navigateToDocentes(): void {
+    this.router.navigate(['/dashboard/docentes']);
+  }
+
+  /**
+   * Navega al dashboard de Certificados
+   */
+  navigateToCertificados(): void {
+    this.router.navigate(['/dashboard/certificados']);
+  }
+
+  /**
+   * Navega al dashboard de Administradores
+   */
+  navigateToAdministradores(): void {
+    this.router.navigate(['/dashboard/administradores']);
   }
 }

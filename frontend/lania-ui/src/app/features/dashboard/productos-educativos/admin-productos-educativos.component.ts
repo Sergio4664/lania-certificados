@@ -65,13 +65,33 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
+    Math = Math; // Exponer Math para usarlo en el template
+
+
   private productos: ProductoEducativoWithDetails[] = [];
   docentes: DocenteDTO[] = [];
   participantes: Participante[] = [];
   certificados: Certificado[] = [];
+  
+  // Arrays completos (filtrados)
   cursos: ProductoEducativoWithDetails[] = [];
   pildoras: ProductoEducativoWithDetails[] = [];
   inyecciones: ProductoEducativoWithDetails[] = [];
+  
+  
+  // ✅ NUEVAS PROPIEDADES PARA PAGINACIÓN
+  readonly ITEMS_PER_PAGE = 3;
+  
+  // Índices de página actual para cada tipo
+  cursosPage = 0;
+  pildorasPage = 0;
+  inyeccionesPage = 0;
+  
+  // Arrays paginados (que se mostrarán en la vista)
+  cursosPaginados: ProductoEducativoWithDetails[] = [];
+  pildorasPaginadas: ProductoEducativoWithDetails[] = [];
+  inyeccionesPaginadas: ProductoEducativoWithDetails[] = [];
+  
   inscripcionesDelProducto: Inscripcion[] = [];
 
   showCourseForm = false;
@@ -151,9 +171,86 @@ export default class AdminProductosEducativosComponent implements OnInit {
     return formArray.value.includes(docenteId);
   }
 
-  // ✅ ═══════════════════════════════════════════════════════════════
-  // ✅ MÉTODO 1: loadInitialData() - MODIFICADO CON NORMALIZACIÓN
-  // ✅ ═══════════════════════════════════════════════════════════════
+  // ✅ NUEVOS MÉTODOS PARA PAGINACIÓN
+  
+  /**
+   * Actualiza los arrays paginados según las páginas actuales
+   */
+  private updatePaginatedArrays(): void {
+    this.cursosPaginados = this.cursos.slice(
+      this.cursosPage * this.ITEMS_PER_PAGE,
+      (this.cursosPage + 1) * this.ITEMS_PER_PAGE
+    );
+    
+    this.pildorasPaginadas = this.pildoras.slice(
+      this.pildorasPage * this.ITEMS_PER_PAGE,
+      (this.pildorasPage + 1) * this.ITEMS_PER_PAGE
+    );
+    
+    this.inyeccionesPaginadas = this.inyecciones.slice(
+      this.inyeccionesPage * this.ITEMS_PER_PAGE,
+      (this.inyeccionesPage + 1) * this.ITEMS_PER_PAGE
+    );
+  }
+  
+  // Métodos de navegación para CURSOS
+  nextPageCursos(): void {
+    if ((this.cursosPage + 1) * this.ITEMS_PER_PAGE < this.cursos.length) {
+      this.cursosPage++;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  prevPageCursos(): void {
+    if (this.cursosPage > 0) {
+      this.cursosPage--;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  // Métodos de navegación para PÍLDORAS
+  nextPagePildoras(): void {
+    if ((this.pildorasPage + 1) * this.ITEMS_PER_PAGE < this.pildoras.length) {
+      this.pildorasPage++;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  prevPagePildoras(): void {
+    if (this.pildorasPage > 0) {
+      this.pildorasPage--;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  // Métodos de navegación para INYECCIONES
+  nextPageInyecciones(): void {
+    if ((this.inyeccionesPage + 1) * this.ITEMS_PER_PAGE < this.inyecciones.length) {
+      this.inyeccionesPage++;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  prevPageInyecciones(): void {
+    if (this.inyeccionesPage > 0) {
+      this.inyeccionesPage--;
+      this.updatePaginatedArrays();
+    }
+  }
+  
+  // Getters para saber si hay más páginas
+  get hasMoreCursos(): boolean {
+    return (this.cursosPage + 1) * this.ITEMS_PER_PAGE < this.cursos.length;
+  }
+  
+  get hasMorePildoras(): boolean {
+    return (this.pildorasPage + 1) * this.ITEMS_PER_PAGE < this.pildoras.length;
+  }
+  
+  get hasMoreInyecciones(): boolean {
+    return (this.inyeccionesPage + 1) * this.ITEMS_PER_PAGE < this.inyecciones.length;
+  }
+
   loadInitialData() {
     const selectedCourseId = this.selectedCourse?.id;
 
@@ -169,23 +266,10 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.docentes = docentes;
       this.participantes = participantes;
       
-      // ✅ CORRECCIÓN CRÍTICA: Normalizar con_competencias a booleano estricto
       this.certificados = certificados.map(cert => ({
         ...cert,
         con_competencias: cert.con_competencias === true
       }));
-      
-      // 📊 Logs para debugging
-      console.log('═══════════════════════════════════════════════════');
-      console.log('📊 CERTIFICADOS CARGADOS:', this.certificados.length);
-      console.log('🎓 CON COMPETENCIAS:', this.certificados.filter(c => c.con_competencias === true).length);
-      console.log('📜 NORMALES:', this.certificados.filter(c => c.con_competencias !== true).length);
-      
-      // Mostrar detalles de cada certificado
-      this.certificados.forEach(cert => {
-        console.log(`  ID: ${cert.id}, Folio: ${cert.folio}, con_competencias: ${cert.con_competencias} (tipo: ${typeof cert.con_competencias})`);
-      });
-      console.log('═══════════════════════════════════════════════════');
       
       this.groupAndFilterProducts();
 
@@ -203,29 +287,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // ✅ ═══════════════════════════════════════════════════════════════
-  // ✅ MÉTODO 2: loadCertificados() - MODIFICADO CON NORMALIZACIÓN
-  // ✅ ═══════════════════════════════════════════════════════════════
   loadCertificados() {
     this.certificadoSvc.getAll().subscribe({
       next: (certificadosData: Certificado[]) => {
-        // ✅ CORRECCIÓN CRÍTICA: Normalizar con_competencias a booleano estricto
         this.certificados = certificadosData.map(cert => ({
           ...cert,
           con_competencias: cert.con_competencias === true
         }));
-        
-        // 📊 Logs para debugging
-        console.log('═══════════════════════════════════════════════════');
-        console.log('🔄 CERTIFICADOS RECARGADOS:', this.certificados.length);
-        console.log('🎓 CON COMPETENCIAS:', this.certificados.filter(c => c.con_competencias === true).length);
-        console.log('📜 NORMALES:', this.certificados.filter(c => c.con_competencias !== true).length);
-        
-        // Mostrar detalles de cada certificado
-        this.certificados.forEach(cert => {
-          console.log(`  ID: ${cert.id}, Folio: ${cert.folio}, con_competencias: ${cert.con_competencias} (tipo: ${typeof cert.con_competencias})`);
-        });
-        console.log('═══════════════════════════════════════════════════');
         
         if (this.selectedCourse) {
           this.productoSvc.getById(this.selectedCourse.id).subscribe((courseDetails: ProductoEducativoWithDetails) => {
@@ -476,50 +544,18 @@ export default class AdminProductosEducativosComponent implements OnInit {
     });
   }
 
-  // ✅ ═══════════════════════════════════════════════════════════════
-  // ✅ MÉTODO 3: getCertificadoForInscripcion() - CON LOGS
-  // ✅ ═══════════════════════════════════════════════════════════════
   getCertificadoForInscripcion(inscripcionId: number): Certificado | undefined {
-    const cert = this.certificados.find(c =>
+    return this.certificados.find(c =>
       (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
       c.con_competencias !== true
     );
-    
-    if (cert) {
-      console.log(`🔍 getCertificadoForInscripcion(${inscripcionId}):`, {
-        id: cert.id,
-        folio: cert.folio,
-        con_competencias: cert.con_competencias,
-        tipo_certificado: cert.con_competencias === true ? '❌ COMPETENCIAS (ERROR!)' : '✅ NORMAL'
-      });
-    } else {
-      console.log(`🔍 getCertificadoForInscripcion(${inscripcionId}): ❌ No encontrado`);
-    }
-    
-    return cert;
   }
 
-  // ✅ ═══════════════════════════════════════════════════════════════
-  // ✅ MÉTODO 4: getCertificadoCompetenciasForInscripcion() - CON LOGS
-  // ✅ ═══════════════════════════════════════════════════════════════
   getCertificadoCompetenciasForInscripcion(inscripcionId: number): Certificado | undefined {
-    const cert = this.certificados.find(c =>
+    return this.certificados.find(c =>
       (c.inscripcion_id === inscripcionId || (c.inscripcion && c.inscripcion.id === inscripcionId)) &&
       c.con_competencias === true
     );
-    
-    if (cert) {
-      console.log(`🔍 getCertificadoCompetenciasForInscripcion(${inscripcionId}):`, {
-        id: cert.id,
-        folio: cert.folio,
-        con_competencias: cert.con_competencias,
-        tipo_certificado: cert.con_competencias === true ? '✅ COMPETENCIAS' : '❌ NORMAL (ERROR!)'
-      });
-    } else {
-      console.log(`🔍 getCertificadoCompetenciasForInscripcion(${inscripcionId}): ❌ No encontrado`);
-    }
-    
-    return cert;
   }
 
   getCertificadoForDocente(docenteId: number): Certificado | undefined {
@@ -792,9 +828,18 @@ export default class AdminProductosEducativosComponent implements OnInit {
   groupAndFilterProducts() {
     const term = this.searchTerm.toLowerCase();
     const filtered = this.searchTerm ? this.productos.filter(p => p.nombre.toLowerCase().includes(term)) : [...this.productos];
+    
     this.cursos = filtered.filter(p => p.tipo_producto === 'CURSO_EDUCATIVO'); 
     this.pildoras = filtered.filter(p => p.tipo_producto === 'PILDORA_EDUCATIVA'); 
     this.inyecciones = filtered.filter(p => p.tipo_producto === 'INYECCION_EDUCATIVA');
+    
+    // ✅ Resetear las páginas a 0 cuando se filtra
+    this.cursosPage = 0;
+    this.pildorasPage = 0;
+    this.inyeccionesPage = 0;
+    
+    // ✅ Actualizar los arrays paginados
+    this.updatePaginatedArrays();
   }
 
   getCourseColor(id: number): string {

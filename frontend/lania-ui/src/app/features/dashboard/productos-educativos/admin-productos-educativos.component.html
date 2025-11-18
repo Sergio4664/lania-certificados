@@ -56,7 +56,7 @@
       <div class="form-group">
         <label for="producto-tipo">Tipo de Producto</label>
         <select id="producto-tipo" name="producto-tipo" formControlName="tipo_producto" required>
-          <option value="PILDORA_EDUCATIVA">Inyección Educativa</option>
+          <option value="INYECCION_EDUCATIVA">Inyección Educativa</option>
           <option value="PILDORA_EDUCATIVA">Píldora Educativa</option>
           <option value="CURSO_EDUCATIVO">Curso Educativo</option>
         </select>
@@ -102,7 +102,7 @@
         <div *ngIf="courseForm.get('docentes_ids')?.hasError('minLength') && (courseForm.get('docentes_ids')?.touched || courseForm.get('docentes_ids')?.dirty)" class="form-error">
           <p>Debe seleccionar al menos un docente.</p>
         </div>
-        </div>
+      </div>
 
       <div class="form-actions">
         <button type="button" class="secondary-btn" (click)="cancelCourseForm()">Cancelar</button>
@@ -111,10 +111,37 @@
     </form>
   </div>
 
+  <!-- ========================================= -->
+  <!-- SECCIÓN: CURSOS EDUCATIVOS CON PAGINACIÓN -->
+  <!-- ========================================= -->
   <div class="product-section">
-    <h3 class="section-title">Cursos Educativos</h3>
+    <div class="section-header">
+      <h3 class="section-title">Cursos Educativos</h3>
+      
+      <!-- ✅ Controles de paginación para Cursos -->
+      <div class="pagination-controls" *ngIf="cursos.length > 0">
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="prevPageCursos()" 
+          [disabled]="cursosPage === 0">
+          ← Atrás
+        </button>
+        
+        <span class="page-info">
+          Página {{ cursosPage + 1 }} de {{ Math.ceil(cursos.length / ITEMS_PER_PAGE) }}
+        </span>
+        
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="nextPageCursos()" 
+          [disabled]="!hasMoreCursos">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
     <div class="courses-grid">
-      <div class="course-card" *ngFor="let producto of cursos" (click)="selectCourse(producto)">
+      <div class="course-card" *ngFor="let producto of cursosPaginados" (click)="selectCourse(producto)">
         <div class="course-card-header" [style.backgroundColor]="getCourseColor(producto.id)">
           <h3 class="course-name">{{ producto.nombre }}</h3>
         </div>
@@ -137,14 +164,43 @@
         </div>
       </div>
     </div>
+    
     <div *ngIf="cursos.length === 0" class="no-data-card">
       {{ searchTerm ? 'No se encontraron cursos que coincidan con la búsqueda.' : 'No hay cursos registrados.' }}
     </div>
   </div>
+
+  <!-- ========================================= -->
+  <!-- SECCIÓN: PÍLDORAS EDUCATIVAS CON PAGINACIÓN -->
+  <!-- ========================================= -->
   <div class="product-section">
-    <h3 class="section-title">Píldoras Educativas</h3>
+    <div class="section-header">
+      <h3 class="section-title">Píldoras Educativas</h3>
+      
+      <!-- ✅ Controles de paginación para Píldoras -->
+      <div class="pagination-controls" *ngIf="pildoras.length > 0">
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="prevPagePildoras()" 
+          [disabled]="pildorasPage === 0">
+          ← Atrás
+        </button>
+        
+        <span class="page-info">
+          Página {{ pildorasPage + 1 }} de {{ Math.ceil(pildoras.length / ITEMS_PER_PAGE) }}
+        </span>
+        
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="nextPagePildoras()" 
+          [disabled]="!hasMorePildoras">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
     <div class="courses-grid">
-      <div class="course-card" *ngFor="let producto of pildoras" (click)="selectCourse(producto)">
+      <div class="course-card" *ngFor="let producto of pildorasPaginadas" (click)="selectCourse(producto)">
         <div class="course-card-header" [style.backgroundColor]="getCourseColor(producto.id)">
           <h3 class="course-name">{{ producto.nombre }}</h3>
         </div>
@@ -167,14 +223,43 @@
         </div>
       </div>
     </div>
+    
     <div *ngIf="pildoras.length === 0" class="no-data-card">
       {{ searchTerm ? 'No se encontraron píldoras.' : 'No hay píldoras registradas.' }}
     </div>
   </div>
+
+  <!-- ========================================= -->
+  <!-- SECCIÓN: INYECCIONES EDUCATIVAS CON PAGINACIÓN -->
+  <!-- ========================================= -->
   <div class="product-section">
-    <h3 class="section-title">Inyecciones Educativas</h3>
+    <div class="section-header">
+      <h3 class="section-title">Inyecciones Educativas</h3>
+      
+      <!-- ✅ Controles de paginación para Inyecciones -->
+      <div class="pagination-controls" *ngIf="inyecciones.length > 0">
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="prevPageInyecciones()" 
+          [disabled]="inyeccionesPage === 0">
+          ← Atrás
+        </button>
+        
+        <span class="page-info">
+          Página {{ inyeccionesPage + 1 }} de {{ Math.ceil(inyecciones.length / ITEMS_PER_PAGE) }}
+        </span>
+        
+        <button 
+          class="btn btn-secondary btn-pagination" 
+          (click)="nextPageInyecciones()" 
+          [disabled]="!hasMoreInyecciones">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
     <div class="courses-grid">
-      <div class="course-card" *ngFor="let producto of inyecciones" (click)="selectCourse(producto)">
+      <div class="course-card" *ngFor="let producto of inyeccionesPaginadas" (click)="selectCourse(producto)">
         <div class="course-card-header" [style.backgroundColor]="getCourseColor(producto.id)">
           <h3 class="course-name">{{ producto.nombre }}</h3>
         </div>
@@ -197,11 +282,15 @@
         </div>
       </div>
     </div>
+    
     <div *ngIf="inyecciones.length === 0" class="no-data-card">
       {{ searchTerm ? 'No se encontraron inyecciones.' : 'No hay inyecciones registradas.' }}
     </div>
   </div>
 
+  <!-- ========================================= -->
+  <!-- MODAL: DETALLES DEL PRODUCTO -->
+  <!-- ========================================= -->
   <div *ngIf="selectedCourse" class="modal-overlay" (click)="unselectCourse()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -430,6 +519,10 @@
       </div>
     </div>
   </div>
+
+  <!-- ========================================= -->
+  <!-- MODAL: GESTIONAR COMPETENCIAS -->
+  <!-- ========================================= -->
   <div *ngIf="showCompetenciesModal" class="modal-overlay" (click)="showCompetenciesModal = false">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
