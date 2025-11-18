@@ -6,8 +6,7 @@
   </div>
 
   <div *ngIf="!isLoading" class="stats-grid">
-    <!-- Tarjeta de Productos Educativos -->
-    <div class="stat-card">
+    <a class="stat-card" routerLink="/admin/productos-educativos">
       <div class="stat-icon courses">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -18,10 +17,9 @@
         <h3>{{ productos.length }}</h3>
         <p>Productos Educativos</p>
       </div>
-    </div>
+    </a>
 
-    <!-- Tarjeta de Participantes -->
-    <div class="stat-card">
+    <a class="stat-card" routerLink="/admin/participantes">
       <div class="stat-icon participants">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -32,10 +30,9 @@
         <h3>{{ participantes.length }}</h3>
         <p>Participantes</p>
       </div>
-    </div>
+    </a>
     
-    <!-- Tarjeta de Docentes -->
-    <div class="stat-card">
+    <a class="stat-card" routerLink="/admin/docentes">
       <div class="stat-icon docentes">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="7" r="4"></circle>
@@ -46,10 +43,9 @@
         <h3>{{ docentes.length }}</h3>
         <p>Docentes</p>
       </div>
-    </div>
+    </a>
 
-    <!-- Tarjeta de Certificados -->
-    <div class="stat-card">
+    <a class="stat-card" routerLink="/admin/certificados">
       <div class="stat-icon certificates">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -60,10 +56,9 @@
         <h3>{{ certificados.length }}</h3>
         <p>Constancias Emitidas</p>
       </div>
-    </div>
+    </a>
 
-    <!-- Tarjeta de Administradores -->
-    <div class="stat-card">
+    <a class="stat-card" routerLink="/admin/administradores">
       <div class="stat-icon admins">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3z"></path>
@@ -73,6 +68,6 @@
         <h3>{{ administradores.length }}</h3>
         <p>Administradores</p>
       </div>
-    </div>
+    </a>
   </div>
 </div>
