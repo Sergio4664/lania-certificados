@@ -32,11 +32,11 @@ def create_participante(participante: ParticipanteCreate, db: Session = Depends(
     return db_participante
 
 @router.get("/", response_model=List[Participante])
-def read_participantes(skip: int = 0, limit: int = 15, db: Session = Depends(get_db)): # ✅ Límite cambiado a 15
-    # 🌟 CORRECCIÓN 1: Filtrar para mostrar solo los participantes NO eliminados.
+def read_participantes(skip: int = 0, limit: int = 15, db: Session = Depends(get_db)): # ✅ Límite: 15
+    # 🌟 CORRECCIÓN 1: Filtrar para mostrar solo los participantes NO eliminados y ordenar por ID descendente.
     participantes = db.query(models.Participante).filter(
         models.Participante.is_deleted == False
-    ).order_by(models.Participante.id).offset(skip).limit(limit).all()
+    ).order_by(models.Participante.id.desc()).offset(skip).limit(limit).all() # ✅ Ordenado por ID descendente
     return participantes
 
 @router.get("/{participante_id}", response_model=Participante)

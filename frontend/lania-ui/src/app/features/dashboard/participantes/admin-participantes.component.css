@@ -1,5 +1,4 @@
-/* 
- * Estilos para Admin Participantes
+/* * Estilos para Admin Participantes
  * CON SOPORTE COMPLETO PARA MÓVILES
  */
 
@@ -57,6 +56,13 @@
   transform: translateY(-1px);
 }
 
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .secondary-btn {
   background: #f1f5f9;
   color: #64748b;
@@ -71,6 +77,38 @@
 .secondary-btn:hover {
   background: #e2e8f0;
 }
+
+/* --- PAGINACIÓN --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.pagination-controls button {
+  /* Herencia del botón, ajuste fino para paginación */
+  font-size: 0.9rem;
+  padding: 10px 16px;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-info {
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* --- FIN PAGINACIÓN --- */
+
 
 .form-card {
   background: white;
@@ -148,7 +186,7 @@
   border-collapse: collapse;
 }
 
-.data-table th, 
+.data-table th,
 .data-table td {
   padding: 16px;
   border-bottom: 1px solid #f1f5f9;
@@ -198,25 +236,25 @@
   background: transparent;
 }
 
-.icon-btn.edit { 
-  color: #d97706; 
+.icon-btn.edit {
+  color: #d97706;
 }
 
-.icon-btn.edit:hover { 
-  background: #fef3c7; 
+.icon-btn.edit:hover {
+  background: #fef3c7;
 }
 
-.icon-btn.delete { 
-  color: #dc2626; 
+.icon-btn.delete {
+  color: #dc2626;
 }
 
-.icon-btn.delete:hover { 
-  background: #fecaca; 
+.icon-btn.delete:hover {
+  background: #fecaca;
 }
 
 /* ========================================
-   MEDIA QUERIES PARA MÓVILES
-   ======================================== */
+   MEDIA QUERIES PARA MÓVILES
+   ======================================== */
 
 /* Tablets (≤1024px) */
 @media (max-width: 1024px) {
@@ -280,6 +318,20 @@
 
   .form-actions button {
     width: 100%;
+  }
+
+  /* Paginación en móvil: usar un diseño más compacto */
+  .pagination-controls {
+    gap: 0.8rem;
+  }
+
+  .pagination-controls button {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .page-info {
+    font-size: 0.8rem;
   }
 
   /* Tabla con scroll horizontal */

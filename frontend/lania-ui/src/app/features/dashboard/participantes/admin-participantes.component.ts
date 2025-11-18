@@ -1,7 +1,6 @@
 // Ruta: frontend/lania-ui/src/app/features/dashboard/participantes/admin-participantes.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-// 🚨 CAMBIO: Importar AbstractControl y ValidatorFn para validadores personalizados
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidatorFn } from '@angular/forms'; 
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -90,46 +89,46 @@ export default class AdminParticipantesComponent implements OnInit {
   currentParticipantId: number | null = null;
   searchTerm: string = '';
   isLoading = false;
-  
-  // ✅ NUEVAS PROPIEDADES para control de límite
+
+  // ✅ PROPIEDADES DE PAGINACIÓN
   readonly PARTICIPANTES_LIMIT = 15;
-  showAllParticipants = false; // Estado para controlar si se muestra la lista completa
+  skip = 0; // Offset (registro inicial a buscar)
+  hasMoreParticipants = false; // Controla el botón Siguiente
 
 
   constructor() {
-    // 🚨 CAMBIO: Aplicación de validadores personalizados
     this.participanteForm = this.fb.group({
       nombre_completo: ['', Validators.required],
-      // Aplicar Validators.email y emailDomainValidator()
       email_personal: ['', [Validators.required, Validators.email, emailDomainValidator()]],
-      // Aplicar Validators.email y emailDomainValidator() (es opcional)
       email_institucional: ['', [Validators.email, emailDomainValidator()]],
-      // Aplicar phoneNumberValidator()
       telefono: ['', [phoneNumberValidator()]],
-      // Aplicar phoneNumberValidator()
       whatsapp: ['', [phoneNumberValidator()]]
     });
   }
   
-  // 🚨 CAMBIO: Getter para un acceso más limpio a los controles en el HTML
   get f() { return this.participanteForm.controls; }
 
   ngOnInit() {
     this.loadParticipants();
   }
 
-  // 🔄 FUNCIÓN MODIFICADA: Usa el límite condicional
+  // 🔄 FUNCIÓN MODIFICADA: Implementa paginación con skip y limit + 1
   loadParticipants() {
     this.isLoading = true;
     
-    // Si showAllParticipants es true, pasamos 'undefined' como límite para obtener toda la lista.
-    // Si es false, pasamos el límite de 15.
-    const finalLimit = this.showAllParticipants ? undefined : this.PARTICIPANTES_LIMIT;
+    // Solicitamos LIMIT + 1 (16 registros) para saber si hay una página siguiente
+    const requestLimit = this.PARTICIPANTES_LIMIT + 1;
 
-    // ✅ Pasamos el límite al servicio (skip es 0 por defecto)
-    this.participanteService.getAll(0, finalLimit).subscribe({
+    // ✅ Pasar skip y el límite de solicitud al servicio
+    this.participanteService.getAll(this.skip, requestLimit).subscribe({
         next: (data) => {
-            this.participantes = data; 
+            // Verificar si hay más de 15 para saber si habilitar 'Siguiente'
+            this.hasMoreParticipants = data.length > this.PARTICIPANTES_LIMIT;
+
+            // Recortar la lista para mostrar solo los 15 elementos de la página actual
+            const currentBatch = data.slice(0, this.PARTICIPANTES_LIMIT);
+
+            this.participantes = currentBatch; 
             this.filterParticipants();
             this.isLoading = false;
         },
@@ -140,14 +139,23 @@ export default class AdminParticipantesComponent implements OnInit {
     });
   }
   
-  // ✅ NUEVA FUNCIÓN: Lógica para "Ver Más"
-  verMasParticipantes(): void {
-    this.showAllParticipants = true;
-    this.loadParticipants(); 
+  // ✅ NUEVA FUNCIÓN: Siguiente página
+  nextPageParticipants(): void {
+    this.skip += this.PARTICIPANTES_LIMIT;
+    this.loadParticipants();
   }
+  
+  // ✅ NUEVA FUNCIÓN: Página anterior
+  prevPageParticipants(): void {
+    // Asegurar que skip nunca sea menor que 0
+    this.skip = Math.max(0, this.skip - this.PARTICIPANTES_LIMIT);
+    this.loadParticipants();
+  }
+
 
   filterParticipants(): void {
     const term = this.searchTerm.toLowerCase();
+    // NOTA: El filtro se aplica sobre la página actual de 15 registros.
     this.filteredParticipants = this.participantes.filter(p =>
       p.nombre_completo.toLowerCase().includes(term) ||
       (p.telefono && p.telefono.includes(term)) ||
@@ -170,17 +178,16 @@ export default class AdminParticipantesComponent implements OnInit {
   }
 
   /**
-   * Elimina un participante mostrando su nombre completo en el mensaje de confirmación.
-   * 🚨 CAMBIO: Ahora recibe el objeto 'participante' completo.
+   * Elimina un participante...
    */
   deleteParticipant(participante: Participante): void {
     if (confirm(`¿Estás seguro de que quieres eliminar a ${participante.nombre_completo}?`)) {
       this.participanteService.delete(participante.id).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante eliminado correctamente.');
-          // ✅ Resetear estado de visualización a limitado y recargar
-          this.showAllParticipants = false; 
-          this.loadParticipants(); 
+          // ✅ Resetear la paginación a la primera página y recargar
+          this.skip = 0; 
+          this.loadParticipants(); // Recargar la lista
         },
         error: (err: HttpErrorResponse) => {
           this.handleError(err, 'No se pudo eliminar al participante');
@@ -190,7 +197,6 @@ export default class AdminParticipantesComponent implements OnInit {
   }
 
   onSubmit() {
-    // 🚨 CAMBIO: Usar la validación de Angular y marcar campos tocados para mostrar errores inline.
     if (this.participanteForm.invalid) {
       this.notificationService.showError('Por favor, corrija los errores en el formulario antes de enviar.');
       this.participanteForm.markAllAsTouched();
@@ -203,8 +209,8 @@ export default class AdminParticipantesComponent implements OnInit {
       this.participanteService.update(this.currentParticipantId, formData).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante actualizado exitosamente.');
-          // ✅ Resetear estado de visualización a limitado y recargar
-          this.showAllParticipants = false;
+          // ✅ Resetear la paginación a la primera página y recargar
+          this.skip = 0;
           this.loadParticipants();
           this.toggleForm();
         },
@@ -214,8 +220,8 @@ export default class AdminParticipantesComponent implements OnInit {
       this.participanteService.create(formData).subscribe({
         next: () => {
           this.notificationService.showSuccess('Participante creado exitosamente.');
-          // ✅ Resetear estado de visualización a limitado y recargar
-          this.showAllParticipants = false;
+          // ✅ Resetear la paginación a la primera página y recargar
+          this.skip = 0;
           this.loadParticipants();
           this.toggleForm();
         },
@@ -224,7 +230,6 @@ export default class AdminParticipantesComponent implements OnInit {
     }
   }
 
-  // 🚨 CAMBIO: Manejo de errores más detallado para errores de validación que se cuelen del backend
   private handleError(error: HttpErrorResponse, fallbackMessage: string) {
     console.error('Backend Error:', error);
     let userMessage = fallbackMessage;

@@ -131,10 +131,23 @@
         </table>
     </div>
 
-    <div *ngIf="filteredParticipants.length === PARTICIPANTES_LIMIT && !showAllParticipants && !searchTerm" 
-         class="mt-4 mb-8 text-center">
-        <button (click)="verMasParticipantes()" class="btn primary-btn">
-            Ver más participantes...
+    <div *ngIf="!isLoading && filteredParticipants.length > 0 && !searchTerm" 
+         class="pagination-controls flex justify-center items-center gap-4 mt-4 mb-8">
+        
+        <button (click)="prevPageParticipants()" 
+                [disabled]="skip === 0" 
+                class="btn btn-secondary btn-sm">
+            ← Atrás
+        </button>
+        
+        <span class="page-info text-sm text-gray-600">
+            Página {{ (skip / PARTICIPANTES_LIMIT) + 1 }}
+        </span>
+        
+        <button (click)="nextPageParticipants()" 
+                [disabled]="!hasMoreParticipants" 
+                class="btn btn-secondary btn-sm">
+            Siguiente →
         </button>
     </div>
     </div>
