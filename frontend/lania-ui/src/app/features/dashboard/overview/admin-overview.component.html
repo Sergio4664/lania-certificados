@@ -1,11 +1,35 @@
 <div class="module-content">
   <h2>Panel de Control</h2>
 
+  <!-- Loading Indicator -->
   <div *ngIf="isLoading" class="loading-indicator">
-    Cargando datos...
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
   </div>
 
-  <div *ngIf="!isLoading" class="stats-grid">
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <div class="error-message">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <h3>Error al cargar los datos</h3>
+      <p>{{ errorMessage }}</p>
+      <button class="retry-button" (click)="retryLoad()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Reintentar
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div *ngIf="!isLoading && !errorMessage" class="stats-grid">
+    <!-- Tarjeta 1: Productos Educativos -->
     <a class="stat-card" routerLink="/admin/productos-educativos">
       <div class="stat-icon courses">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -19,6 +43,7 @@
       </div>
     </a>
 
+    <!-- Tarjeta 2: Participantes -->
     <a class="stat-card" routerLink="/admin/participantes">
       <div class="stat-icon participants">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -32,6 +57,7 @@
       </div>
     </a>
     
+    <!-- Tarjeta 3: Docentes -->
     <a class="stat-card" routerLink="/admin/docentes">
       <div class="stat-icon docentes">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -45,6 +71,7 @@
       </div>
     </a>
 
+    <!-- Tarjeta 4: Certificados -->
     <a class="stat-card" routerLink="/admin/certificados">
       <div class="stat-icon certificates">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -58,6 +85,7 @@
       </div>
     </a>
 
+    <!-- Tarjeta 5: Administradores -->
     <a class="stat-card" routerLink="/admin/administradores">
       <div class="stat-icon admins">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
