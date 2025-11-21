@@ -1,205 +1,347 @@
-:host {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1rem;
-  box-sizing: border-box;
-}
+/* ---------------------------------------------------------------------- */
+/* 1. CONTENEDORES PRINCIPALES Y LAYOUT FLEX (ADAPTADO)                   */
+/* ---------------------------------------------------------------------- */
 
+/* Ajuste del contenedor principal para permitir que el contenido use más espacio y se centre */
 .verificacion-container {
-  width: 100%;
-  max-width: 600px;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 0.5rem 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin: 0 auto;
+    width: 100%;
+    max-width: 1400px; /* Aumenta el ancho máximo total */
+    background: transparent;
+    border-radius: 0;
+    padding: 2rem 1.5rem;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 0 auto;
 }
 
-.resultado-card {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
+/* Contenedor Flexbox para manejar el resultado/formulario (izquierda) y el PDF (derecha) */
+.verificacion-content-wrapper {
+    display: flex;
+    gap: 30px; /* Espacio entre las dos columnas */
+    align-items: flex-start; /* Alinea el contenido al inicio */
 }
+
+/* Contenedor para el formulario y resultados (LADO IZQUIERDO) */
+.verificacion-main-content {
+    flex-grow: 1; /* Permite que ocupe espacio si no hay PDF */
+    flex-shrink: 0;
+    max-width: 450px; /* Limita el ancho del contenido principal para mejor lectura */
+    width: 100%;
+}
+
+/* Mueve el header fuera del flexbox de contenido y lo centra */
+.verificacion-container > .verificacion-header {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem; /* Ajuste para mejor separación visual */
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* 2. ESTILOS DEL VISOR DE PDF (LADO DERECHO - NUEVO)                     */
+/* ---------------------------------------------------------------------- */
+
+.pdf-viewer-panel {
+    /* Estilo del modal/panel lateral a la derecha */
+    flex: 2; 
+    min-width: 300px;
+    height: 70vh; /* Altura fija o relativa a la ventana */
+    min-height: 450px;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: sticky;
+    top: 20px;
+}
+
+.pdf-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background-color: #edf2f7;
+    border-bottom: 1px solid #e2e8f0;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.pdf-panel-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.btn-close-pdf {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4a5568;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.btn-close-pdf:hover {
+    background: #cbd5e0;
+}
+
+.btn-close-pdf svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    stroke: currentColor;
+}
+
+.pdf-panel-body {
+    flex-grow: 1;
+    position: relative;
+    padding: 10px;
+}
+
+.pdf-panel-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+    background: white;
+}
+
+/* Loading overlay específico del PDF */
+.pdf-viewer-panel .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 10;
+    border-radius: 8px;
+}
+
+.pdf-viewer-panel .spinner.large {
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+    border-top-color: #667eea;
+}
+
+.pdf-viewer-panel .loading-overlay p {
+    color: #4a5568;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* 3. ESTILOS BASE Y ELEMENTOS (CORREGIDO PARA VISIBILIDAD)               */
+/* ---------------------------------------------------------------------- */
 
 /* Header */
 .verificacion-header {
-  text-align: center;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
-  margin-bottom: 0.1rem;
+    text-align: center;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    margin-bottom: 1.5rem; /* Ajuste importante para separación */
 }
 
 .verificacion-header h1 {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #2d3748;
-  letter-spacing: -0.3px;
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #2d3748; /* Color oscuro para visibilidad */
+    letter-spacing: -0.3px;
 }
 
 .verificacion-header p {
-  margin: 0 0 0.1rem 0;
-  font-size: 0.78rem;
-  color: #718096;
-  line-height: 1.1;
+    margin: 0.2rem 0 0.5rem 0; /* Ajuste de márgenes para p */
+    font-size: 0.9rem;
+    color: #4a5568; /* Color gris oscuro para visibilidad */
+    line-height: 1.3;
 }
 
 .login-link {
-  font-size: 0.8rem;
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
-  display: inline-block;
-  margin-top: 0;
+    font-size: 0.8rem;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+    display: inline-block;
+    margin-top: 0;
 }
 
 .login-link:hover {
-  color: #764ba2;
-  text-decoration: underline;
+    color: #764ba2;
+    text-decoration: underline;
 }
 
-/* Tarjeta de búsqueda */
+/* Tarjetas (Resultado, Búsqueda, Error) */
+.resultado-card, .search-card, .loading-card, .error-card {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%; 
+}
+
+.resultado-card {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Formulario */
 .search-card {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
+    padding: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 0.4rem;
+    margin-bottom: 0.8rem;
 }
 
 .form-group label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-  color: #2d3748;
-  font-size: 0.82rem;
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    color: #2d3748;
+    font-size: 0.82rem;
 }
 
 .form-group input {
-  width: 100%;
-  padding: 0.5rem 0.8rem;
-  font-size: 0.88rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  box-sizing: border-box;
-  transition: all 0.2s;
-  background: #f7fafc;
+    width: 100%;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.88rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    transition: all 0.2s;
+    background: #f7fafc;
 }
 
 .form-group input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+    border-color: #667eea;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .form-group input.is-invalid {
-  border-color: #e53e3e;
-  background: #fff5f5;
+    border-color: #e53e3e;
+    background: #fff5f5;
 }
 
 .invalid-feedback {
-  color: #e53e3e;
-  font-size: 0.72rem;
-  margin-top: 0.2rem;
-  display: block;
+    color: #e53e3e;
+    font-size: 0.72rem;
+    margin-top: 0.2rem;
+    display: block;
 }
 
 /* Botones */
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.45rem 1rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+    transform: translateY(0);
 }
 
 .btn-primary:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-  box-shadow: none;
+    background: #cbd5e0;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Estilo para el nuevo botón de PDF */
+.btn-pdf-viewer {
+    margin: 0.5rem 0;
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+}
+
+.btn-pdf-viewer:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(229, 62, 62, 0.5);
 }
 
 .btn-secondary {
-  background: #e2e8f0;
-  color: #2d3748;
+    background: #e2e8f0;
+    color: #2d3748;
+    margin-top: 0.5rem;
 }
 
 .btn-secondary:hover {
-  background: #cbd5e0;
+    background: #cbd5e0;
 }
 
 /* Resultado */
 .resultado-card h2 {
-  color: #38a169;
-  margin: 0 0 0.2rem 0;
-  font-size: 1.1rem;
-  font-weight: 700;
+    color: #38a169;
+    margin: 0 0 0.2rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
-/* GRID 3x2 corregido */
+/* GRID 3x2 */
 .resultado-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  column-gap: 0.75rem;
-  row-gap: 0.5rem;
-  margin: 0.2rem 0 0.3rem 0;
-  width: 100%;
-  box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+    margin: 0.2rem 0 0.3rem 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .grid-item {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  border: none;
-  text-align: center;
-  min-height: fit-content;
-  box-sizing: border-box;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+    text-align: center;
+    min-height: fit-content;
+    box-sizing: border-box;
 }
 
 /* Fila 1 */
@@ -212,64 +354,64 @@
 .grid-item:nth-child(5) { grid-column: 4 / span 2; }
 
 .grid-item strong {
-  display: block;
-  font-size: 0.62rem;
-  color: #718096;
-  margin-bottom: 0.1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
+    display: block;
+    font-size: 0.62rem;
+    color: #718096;
+    margin-bottom: 0.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
 .grid-item span {
-  font-size: 0.82rem;
-  color: #2d3748;
-  font-weight: 500;
-  word-break: break-word;
-  line-height: 1.3;
+    font-size: 0.82rem;
+    color: #2d3748;
+    font-weight: 500;
+    word-break: break-word;
+    line-height: 1.3;
 }
 
 /* Badge */
 .valido-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  font-weight: 700;
-  font-size: 0.78rem;
-  color: #38a169;
-  border: 2px solid #38a169;
-  background: #f0fff4;
-  padding: 0.38rem 0.85rem;
-  border-radius: 50px;
-  margin: 0.2rem 0 0.3rem 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #38a169;
+    border: 2px solid #38a169;
+    background: #f0fff4;
+    padding: 0.38rem 0.85rem;
+    border-radius: 50px;
+    margin: 0.75rem 0;
 }
 
 .valido-badge svg {
-  stroke: #38a169;
-  width: 14px;
-  height: 14px;
+    stroke: #38a169;
+    width: 14px;
+    height: 14px;
 }
 
 /* Error y Carga */
 .error-card,
 .loading-card {
-  background: #fff5f5;
-  border: 2px solid #fc8181;
-  padding: 0.9rem;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.45rem;
-  color: #c53030;
+    background: #fff5f5;
+    border: 2px solid #fc8181;
+    padding: 0.9rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.45rem;
+    color: #c53030;
 }
 
 .loading-card {
-  background: #f7fafc;
-  border-color: #cbd5e0;
-  color: #4a5568;
+    background: #f7fafc;
+    border-color: #cbd5e0;
+    color: #4a5568;
 }
 
 .error-card svg { stroke: #e53e3e; width: 18px; height: 18px; }
@@ -278,23 +420,66 @@
 
 /* Spinner */
 .spinner {
-  width: 15px;
-  height: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
 }
 
 .loading-card .spinner {
-  width: 20px;
-  height: 20px;
-  border-color: rgba(102, 126, 234, 0.2);
-  border-top-color: #667eea;
+    width: 20px;
+    height: 20px;
+    border-color: rgba(102, 126, 234, 0.2);
+    border-top-color: #667eea;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* 4. MEDIA QUERIES (RESPONSIVE)                                          */
+/* ---------------------------------------------------------------------- */
+
+@media (max-width: 992px) {
+    /* En pantallas medianas y pequeñas, apila las columnas verticalmente */
+    .verificacion-content-wrapper {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .verificacion-main-content {
+        max-width: 100%; /* Permite que ocupe todo el ancho disponible */
+        order: 1; 
+    }
+
+    .pdf-viewer-panel {
+        height: 60vh;
+        order: 2;
+        position: static;
+        min-height: 400px;
+    }
+}
+
+@media (max-width: 576px) {
+    .verificacion-container {
+        padding: 1rem;
+    }
+
+    /* Ajuste para que el grid ocupe solo dos columnas en móvil */
+    .resultado-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Redistribución de elementos en 2 columnas */
+    .grid-item:nth-child(1) { grid-column: 1 / span 1; }
+    .grid-item:nth-child(2) { grid-column: 2 / span 1; }
+    .grid-item:nth-child(3) { grid-column: 1 / span 1; }
+    .grid-item:nth-child(4) { grid-column: 2 / span 1; }
+    .grid-item:nth-child(5) { grid-column: 1 / span 2; } /* Fecha de emisión a todo el ancho */
 }
