@@ -1,4 +1,3 @@
-//Ruta: frontend/lania-ui/src/app/core/auth.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
@@ -57,18 +56,23 @@ export class AuthService {
     if (!userJson) {
       return null;
     }
-    return JSON.parse(userJson) as CurrentUser;
+    try {
+      return JSON.parse(userJson) as CurrentUser;
+    } catch (e) {
+      console.error("Error al parsear CurrentUser:", e);
+      return null;
+    }
   }
 
   /**
-   * Verifica si el usuario está autenticado.
-   * MEJORADO: Verifica que exista el token Y que sea válido (no expirado)
+   * Verifica si el usuario está autenticado, comprobando que el token exista y no esté expirado.
    */
   isAuthenticated(): boolean {
     const token = this.getToken();
     
     if (!token) {
-      console.warn('⚠️ No hay token en localStorage');
+      console.warn('⚠️ No hay token en localStorage. Redirigiendo a login.');
+      this.logout(); // Asegurarse de limpiar por si acaso
       return false;
     }
 
@@ -77,22 +81,24 @@ export class AuthService {
       const payload = this.decodeToken(token);
       
       if (!payload || !payload.exp) {
-        console.warn('⚠️ Token no tiene formato JWT válido');
+        console.warn('⚠️ Token no tiene formato JWT válido o le falta el campo "exp". Redirigiendo a login.');
+        this.logout();
         return false;
       }
 
-      const expirationDate = new Date(payload.exp * 1000);
+      // Los tokens JWT usan tiempo Unix (segundos), Date() usa milisegundos
+      const expirationDate = new Date(payload.exp * 1000); 
       const now = new Date();
       
-      // Agregar un margen de 5 minutos antes de considerar el token expirado
+      // Margen de 5 minutos antes de considerar el token expirado.
+      // Esto ayuda a renovar el token antes de que expire si el backend lo soporta, 
+      // o a redirigir al usuario antes de que una petición falle.
       const bufferTime = 5 * 60 * 1000; // 5 minutos en milisegundos
       const isExpired = now.getTime() > (expirationDate.getTime() - bufferTime);
 
       if (isExpired) {
-        console.warn('⚠️ Token expirado:', {
-          expiracion: expirationDate.toLocaleString(),
-          ahora: now.toLocaleString()
-        });
+        console.warn('⚠️ Token expirado o a punto de expirar. Redirigiendo a login.');
+        this.logout(); // Limpiar token expirado y redirigir
         return false;
       }
 
@@ -100,25 +106,35 @@ export class AuthService {
       return true;
       
     } catch (error) {
-      console.error('❌ Error al verificar token:', error);
+      console.error('❌ Error al verificar/decodificar token:', error);
+      this.logout(); // Limpiar y redirigir ante error de formato
       return false;
     }
   }
 
   /**
-   * Decodifica un token JWT y retorna el payload
+   * Decodifica un token JWT y retorna el payload.
+   * Utiliza la implementación nativa atob() para evitar dependencias.
    */
   private decodeToken(token: string): any {
     try {
       const parts = token.split('.');
+      // Un JWT válido debe tener 3 partes: Header.Payload.Signature
       if (parts.length !== 3) {
         return null;
       }
       
       const payload = parts[1];
-      const decoded = atob(payload);
+      // Reemplazar caracteres no estándar de base64url por base64 estándar
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      
+      // Decodificar Base64
+      const decoded = atob(base64);
+
+      // JSON.parse(decoded) puede fallar si la codificación no es correcta
       return JSON.parse(decoded);
     } catch (error) {
+      // Un token mal formado o una decodificación fallida resultará en un error
       console.error('Error decodificando token:', error);
       return null;
     }
@@ -130,7 +146,7 @@ export class AuthService {
   private saveAuthData(token: string, user: CurrentUser): void {
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    console.log('💾 Token guardado exitosamente');
+    console.log('💾 Token y usuario guardados exitosamente.');
   }
 
   /**
