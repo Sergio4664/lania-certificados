@@ -1,7 +1,7 @@
 /* Contenedor Principal del Módulo */
 .module-content {
     padding: 20px 25px;
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -15,14 +15,18 @@
 }
 
 /* ---------------------------------------------------------------------- */
-/* STATS GRID Y TARJETAS */
+/* STATS GRID Y TARJETAS - SOLUCIÓN FORZADA */
 /* ---------------------------------------------------------------------- */
 
 .stats-grid {
     display: grid;
-    /* Muestra 5 columnas en pantallas grandes, con un tamaño mínimo de 200px */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 25px;
+    /* CLAVE: Columnas de tamaño FIJO con un máximo */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 200px));
+    /* Centramos el grid */
+    justify-content: center;
+    gap: 15px;
+    max-width: 1100px;
+    margin: 0 auto;
 }
 
 /* Estilo de la Tarjeta (Es un enlace <a>) */
@@ -30,68 +34,86 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px;
+    padding: 18px;
     background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: transform 0.2s, box-shadow 0.2s, border 0.2s;
     text-decoration: none;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: 1px solid #e2e8f0;
+    min-height: 90px;
+    /* IMPORTANTE: Limitar el ancho máximo */
+    max-width: 220px;
 }
 
 /* Efecto Hover */
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border: 1px solid #667eea; /* Borde al hacer hover */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border: 1px solid #667eea;
 }
 
 /* Sección de Icono */
 .stat-icon {
     width: 50px;
     height: 50px;
-    border-radius: 50%;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-icon svg {
     width: 24px;
     height: 24px;
-    stroke: white; /* Asegura que los iconos sean blancos */
+    stroke: white;
+    stroke-width: 2.5;
 }
 
-/* Colores de fondo para los iconos */
-.stat-icon.courses { background-color: #667eea; } /* Productos Educativos */
-.stat-icon.participants { background-color: #48bb78; } /* Participantes */
-.stat-icon.docentes { background-color: #f6ad55; } /* Docentes */
-.stat-icon.certificates { background-color: #e53e3e; } /* Constancias Emitidas */
-.stat-icon.admins { background-color: #9f7aea; } /* Administradores */
+/* Colores de fondo para los iconos con gradientes */
+.stat-icon.courses { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+}
+.stat-icon.participants { 
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); 
+}
+.stat-icon.docentes { 
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); 
+}
+.stat-icon.certificates { 
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); 
+}
+.stat-icon.admins { 
+    background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); 
+}
 
 /* Sección de Información (Texto y número) */
 .stat-info {
     text-align: right;
-    margin-left: 15px;
+    margin-left: 12px;
+    flex: 1;
+    min-width: 0; /* Permite que el texto se ajuste */
 }
 
 .stat-info h3 {
-    font-size: 2.2rem;
+    font-size: 1.85rem;
     font-weight: 800;
     color: #2d3748;
     margin: 0;
     line-height: 1;
+    letter-spacing: -0.5px;
 }
 
 .stat-info p {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #718096;
-    margin: 5px 0 0 0;
+    margin: 6px 0 0 0;
     font-weight: 500;
+    line-height: 1.2;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -172,51 +194,100 @@
     stroke: white;
 }
 
-
 /* ---------------------------------------------------------------------- */
 /* MEDIA QUERIES (RESPONSIVE) */
 /* ---------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
+/* Pantallas grandes */
+@media (min-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(5, 200px);
+        justify-content: center;
+    }
+}
+
+/* Laptops y tablets grandes */
+@media (max-width: 1199px) and (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 200px);
+        gap: 14px;
+    }
+}
+
+/* Tablets pequeñas */
+@media (max-width: 767px) and (min-width: 480px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        max-width: 500px;
+    }
+    
+    .stat-card {
+        max-width: 100%;
+    }
+    
     .module-content {
         padding: 15px;
     }
-    
-    .stats-grid {
-        /* En móvil, muestra 2 columnas */
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-    }
 
-    .stat-card {
-        padding: 15px;
-        /* Cambia a diseño vertical para ahorrar espacio */
-        flex-direction: column; 
-        align-items: flex-start;
-        gap: 10px;
+    .stat-icon {
+        width: 46px;
+        height: 46px;
     }
     
-    .stat-info {
-        text-align: left;
-        margin-left: 0;
-        width: 100%;
+    .stat-icon svg {
+        width: 22px;
+        height: 22px;
     }
-
+    
     .stat-info h3 {
-        font-size: 1.5rem;
+        font-size: 1.7rem;
     }
     
     .stat-info p {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
+    }
+}
+
+/* Móviles */
+@media (max-width: 479px) {
+    .module-content {
+        padding: 12px;
+    }
+    
+    .module-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 18px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        max-width: 100%;
+    }
+    
+    .stat-card {
+        max-width: 100%;
+        padding: 16px;
+        min-height: 80px;
     }
     
     .stat-icon {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
     }
     
     .stat-icon svg {
         width: 20px;
         height: 20px;
+    }
+    
+    .stat-info h3 {
+        font-size: 1.6rem;
+    }
+    
+    .stat-info p {
+        font-size: 0.75rem;
+        margin-top: 5px;
     }
 }
