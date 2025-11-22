@@ -23,7 +23,6 @@ export class AuthService {
     formData.append('username', credentials.username); 
     formData.append('password', credentials.password);
 
-    // ✅ CORRECCIÓN: Se añade el prefijo /auth a la URL
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/token`, formData).pipe(
       tap(response => {
         if (response.access_token && response.user) {
@@ -37,6 +36,7 @@ export class AuthService {
    * Cierra la sesión del usuario.
    */
   logout(): void {
+    console.log('🔓 Cerrando sesión...');
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.router.navigate(['/login']);
@@ -62,9 +62,66 @@ export class AuthService {
 
   /**
    * Verifica si el usuario está autenticado.
+   * MEJORADO: Verifica que exista el token Y que sea válido (no expirado)
    */
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    
+    if (!token) {
+      console.warn('⚠️ No hay token en localStorage');
+      return false;
+    }
+
+    // Verificar si el token es un JWT válido y no está expirado
+    try {
+      const payload = this.decodeToken(token);
+      
+      if (!payload || !payload.exp) {
+        console.warn('⚠️ Token no tiene formato JWT válido');
+        return false;
+      }
+
+      const expirationDate = new Date(payload.exp * 1000);
+      const now = new Date();
+      
+      // Agregar un margen de 5 minutos antes de considerar el token expirado
+      const bufferTime = 5 * 60 * 1000; // 5 minutos en milisegundos
+      const isExpired = now.getTime() > (expirationDate.getTime() - bufferTime);
+
+      if (isExpired) {
+        console.warn('⚠️ Token expirado:', {
+          expiracion: expirationDate.toLocaleString(),
+          ahora: now.toLocaleString()
+        });
+        return false;
+      }
+
+      console.log('✅ Token válido hasta:', expirationDate.toLocaleString());
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error al verificar token:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Decodifica un token JWT y retorna el payload
+   */
+  private decodeToken(token: string): any {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+      
+      const payload = parts[1];
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    } catch (error) {
+      console.error('Error decodificando token:', error);
+      return null;
+    }
   }
 
   /**
@@ -73,13 +130,13 @@ export class AuthService {
   private saveAuthData(token: string, user: CurrentUser): void {
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    console.log('💾 Token guardado exitosamente');
   }
 
   /**
    * Solicita un enlace para restablecer la contraseña.
    */
   forgotPassword(email: string): Observable<{ message: string }> {
-    // ✅ CORRECCIÓN: Se añade el prefijo /auth a la URL
     return this.http.post<{ message: string }>(`${this.apiUrl}/auth/forgot-password`, { email });
   }
 
@@ -87,7 +144,6 @@ export class AuthService {
    * Envía el token y la nueva contraseña para actualizarla.
    */
   resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
-    // ✅ CORRECCIÓN: Se añade el prefijo /auth a la URL
     return this.http.post<{ message: string }>(`${this.apiUrl}/auth/reset-password`, { token, new_password: newPassword });
   }
 }
