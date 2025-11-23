@@ -65,8 +65,7 @@ export default class AdminProductosEducativosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
-    Math = Math; // Exponer Math para usarlo en el template
-
+  Math = Math; // Exponer Math para usarlo en el template
 
   private productos: ProductoEducativoWithDetails[] = [];
   docentes: DocenteDTO[] = [];
@@ -636,14 +635,13 @@ export default class AdminProductosEducativosComponent implements OnInit {
       this.notificationSvc.showError("No se encontró al docente.");
       return;
     }
-    const emailTypeChoice = prompt("Enviar a email: (institucional / personal)", "institucional")?.toLowerCase();
-    const emailType: 'institucional' | 'personal' = (emailTypeChoice === 'personal') ? 'personal' : 'institucional';
-    const targetEmail = emailType === 'personal' ? docente.email_personal : docente.email_institucional;
+    const emailType: 'institucional' | 'personal' = 'institucional';
+    const targetEmail = docente.email_institucional;
     if (!targetEmail) { 
-      this.notificationSvc.showError(`El docente no tiene un email ${emailType} registrado.`); 
+      this.notificationSvc.showError(`El docente no tiene un email institucional registrado.`); 
       return; 
     }
-    this.notificationSvc.showInfo(`Enviando constancia al email ${emailType} (${targetEmail})...`);
+    this.notificationSvc.showInfo(`Enviando constancia al email institucional (${targetEmail})...`);
     this.certificadoSvc.sendEmail(certificadoId, emailType).subscribe({
       next: (res) => this.notificationSvc.showSuccess(res?.message || 'Constancia enviada correctamente.'),
       error: (err: HttpErrorResponse) => this.notificationSvc.showError(err.error?.detail || 'Error al enviar la constancia.')

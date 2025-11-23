@@ -3,14 +3,20 @@ import datetime
 import os
 import json 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from fastapi.responses import FileResponse 
+from fastapi.responses import FileResponse, JSONResponse # ✅ JSONResponse AÑADIDO
 from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import List, Optional
+from typing import List, Optional, Dict # ✅ Dict AÑADIDO (aunque ya existía en typing)
 
 from pathlib import Path
 
 from app.database import get_db
 from app import models
+
+# 🚨 NUEVOS IMPORTS PARA RQ Y CONFIGURACIÓN
+from redis import Redis
+from rq import Queue
+from app.core.config import get_settings
+from app.tasks import emitir_y_enviar_certificados_masivamente_job # 🚨 FUNCIÓN DE TAREA ASÍNCRONA
 
 # --- ✅ 1. CORREÇÃO DE IMPORTAÇÃO ---
 from app.schemas.certificado import (
@@ -24,6 +30,12 @@ CertificadoOut = Certificado
 from app.services.certificate_service import generate_certificate
 from app.services.email_service import send_certificate_email
 from app.routers.dependencies import get_current_admin_user
+
+settings = get_settings() # ✅ OBTENER CONFIGURACIÓN GLOBAL
+
+# 🚨 INICIALIZACIÓN DE LA COLA (Se hace una sola vez al cargar el módulo)
+redis_conn = Redis.from_url(settings.REDIS_URL)
+q = Queue(connection=redis_conn)
 
 router = APIRouter(
     prefix="/admin/certificados",
@@ -64,8 +76,8 @@ def read_all_certificados(db: Session = Depends(get_db)):
 )
 def read_certificados_participantes(
     db: Session = Depends(get_db),
-    skip: int = 0,             # ✅ Offset para la paginación (Atrás/Siguiente)
-    limit: int = 15            # ✅ Límite de resultados por página
+    skip: int = 0, 
+    limit: int = 15 
 ):
     """
     Recupera solo los certificados de participantes (con inscripcion_id),
@@ -98,8 +110,8 @@ def read_certificados_participantes(
 )
 def read_certificados_docentes(
     db: Session = Depends(get_db),
-    skip: int = 0,              # ✅ Offset para la paginación (Atrás/Siguiente)
-    limit: int = 15             # ✅ Límite de resultados por página
+    skip: int = 0, 
+    limit: int = 15 
 ):
     """
     Recupera solo los certificados de docentes (con docente_id),
@@ -150,7 +162,7 @@ def issue_certificate_to_participant(
 ):
     """
     Emite un nuevo certificado para un participante a partir de una inscripción.
-    Distingue entre Constancia (normal) y Reconocimiento (con competencias).
+    Distinguen entre Constancia (normal) y Reconocimiento (con competencias).
     """
     
     if not certificado_create.inscripcion_id:
@@ -191,7 +203,7 @@ def issue_certificate_to_participant(
         try:
             competencias_list = json.loads(producto.competencias)
             if not isinstance(competencias_list, list):
-                    competencias_list = []
+                        competencias_list = []
         except json.JSONDecodeError:
             print(f"Error: El campo 'competencias' del producto {producto.id} no es un JSON válido.")
             competencias_list = []
@@ -462,241 +474,45 @@ def download_certificado_by_folio(
     return FileResponse(file_path, media_type='application/pdf', filename=f"{folio}.pdf")
 
 
-@router.post("/emitir-enviar-masivo/producto/{producto_id}", status_code=status.HTTP_200_OK)
+# 🚨 FUNCIÓN MODIFICADA: Ahora solo encola la tarea en Redis
+@router.post(
+    "/emitir-enviar-masivo/producto/{producto_id}", 
+    response_model=Dict[str, str], # 🚨 Cambia el modelo de respuesta a un simple Dict
+    status_code=status.HTTP_202_ACCEPTED # 🚨 CAMBIO DE ESTADO
+)
 async def issue_and_send_certificates_massively(
     producto_id: int,
     options: dict = Body(default={"con_competencias": False}),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db) # Se mantiene la dependencia por si se requiere validación preliminar
 ):
     """
-    Emite (si no existen) y envía masivamente certificados a participantes
-    Y constancias a docentes de un producto educativo específico.
+    🚨 ASÍNCRONO: Encola la tarea pesada de emisión y envío masivo en RQ.
+    Responde inmediatamente con 202 ACCEPTED.
     """
+    # 1. Extracción de argumentos
     emitir_con_competencias = options.get("con_competencias", False)
-    tipo_emision_str = "RECONOCIMIENTOS (con competencias)" if emitir_con_competencias else "CONSTANCIAS (normales)"
-
-    db_producto = db.query(models.ProductoEducativo).options(
-        selectinload(models.ProductoEducativo.inscripciones).selectinload(models.Inscripcion.participante),
-        selectinload(models.ProductoEducativo.inscripciones).selectinload(models.Inscripcion.certificados),
-        selectinload(models.ProductoEducativo.docentes).selectinload(models.Docente.certificados)
-    ).filter(models.ProductoEducativo.id == producto_id).first()
-
+    
+    # 2. (OPCIONAL) Validación Rápida: Solo para asegurar que el producto existe antes de encolar
+    db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto educativo no encontrado")
 
-    competencias_list_masivo = []
-    if emitir_con_competencias:
-        if db_producto.tipo_producto != models.TipoProductoEnum.CURSO_EDUCATIVO:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="La emisión masiva de Reconocimientos solo aplica a productos tipo 'CURSO_EDUCATIVO'."
-                )
-        
-        if db_producto.competencias:
-            try:
-                competencias_list_masivo = json.loads(db_producto.competencias)
-                if not isinstance(competencias_list_masivo, list) or not competencias_list_masivo:
-                        raise ValueError("El JSON no es una lista válida o está vacía")
-            except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Se intentó emitir con competencias, pero el producto no tiene competencias válidas registradas: {e}"
-                    )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Se intentó emitir con competencias, pero el producto no tiene competencias registradas."
-            )
+    # 3. ENCOLAR EL TRABAJO
+    job = q.enqueue(
+        emitir_y_enviar_certificados_masivamente_job,
+        producto_id,
+        emitir_con_competencias, # Pasa el argumento booleano al worker
+        job_timeout='2h' # Tiempo máximo para la tarea
+    )
 
-    issued_participant_count = 0
-    sent_participant_count = 0
-    skipped_participant_count = 0
-    issued_docente_count = 0
-    sent_docente_count = 0
-    skipped_docente_count = 0
-    errors = []
-
-    print(f"\n--- Iniciando proceso masivo de {tipo_emision_str} para PARTICIPANTES del producto ID: {producto_id} ---")
-    for inscripcion in db_producto.inscripciones:
-        # Busca el certificado del tipo específico
-        certificado_existente = next((cert for cert in inscripcion.certificados
-                                      if cert.con_competencias == emitir_con_competencias), None)
-        
-        certificado_a_enviar = None
-        participante = inscripcion.participante
-        participante_id = participante.id
-        participante_email = participante.email_personal
-
-        if not participante_email:
-            msg = f"PARTICIPANTE {participante_id} ({participante.nombre_completo}) no tiene email personal. Saltando."
-            print(msg); errors.append(msg); continue
-
-        if certificado_existente:
-            print(f"PARTICIPANTE {participante_id}: Certificado ({tipo_emision_str}) ya existe (Folio: {certificado_existente.folio}). Saltando emisión.")
-            certificado_a_enviar = certificado_existente
-            skipped_participant_count += 1
-        else:
-            print(f"PARTICIPANTE {participante_id}: Emitiendo {tipo_emision_str}...")
-            try:
-                instructor_name = db_producto.docentes[0].nombre_completo if db_producto.docentes else "Equipo LANIA"
-                
-                folio, file_path_obj = generate_certificate(
-                    participant_name=participante.nombre_completo,
-                    course_name=db_producto.nombre,
-                    tipo_producto=db_producto.tipo_producto,
-                    modalidad=db_producto.modalidad.value if db_producto.modalidad else 'No especificada',
-                    course_hours=db_producto.horas,
-                    instructor_name=instructor_name,
-                    is_docente=False,
-                    course_date_str="",
-                    con_competencias=emitir_con_competencias,
-                    competencias_list=competencias_list_masivo
-                )
-                
-                file_path = str(file_path_obj)
-                nuevo_certificado = models.Certificado(
-                    inscripcion_id=inscripcion.id, producto_educativo_id=producto_id,
-                    archivo_path=file_path, folio=folio,
-                    fecha_emision=datetime.datetime.now(datetime.timezone.utc),
-                    con_competencias=emitir_con_competencias
-                )
-                db.add(nuevo_certificado)
-                db.flush()
-                certificado_a_enviar = nuevo_certificado
-                issued_participant_count += 1
-                print(f"PARTICIPANTE {participante_id}: {tipo_emision_str} emitido (Folio: {folio}).")
-            except Exception as e:
-                msg = f"PARTICIPANTE {participante_id}: Error emitiendo certificado: {str(e)}"
-                print(msg); errors.append(msg); db.rollback(); continue
-
-        if certificado_a_enviar and certificado_a_enviar.archivo_path:
-            pdf_path_str = certificado_a_enviar.archivo_path
-            pdf_serial = certificado_a_enviar.folio
-            pdf_content_bytes = None
-            try:
-                if os.path.exists(pdf_path_str):
-                    pdf_path = Path(pdf_path_str)
-                    pdf_content_bytes = pdf_path.read_bytes()
-                else:
-                    raise FileNotFoundError(f"Archivo no encontrado en la ruta: {pdf_path_str}")
-
-                print(f"PARTICIPANTE {participante_id}: Enviando a {participante_email}...")
-                send_certificate_email(
-                    recipient_email=participante_email,
-                    recipient_name=participante.nombre_completo,
-                    course_name=db_producto.nombre,
-                    pdf_content=pdf_content_bytes,
-                    serial=pdf_serial
-                )
-                sent_participant_count += 1
-                print(f"PARTICIPANTE {participante_id}: Correo enviado.")
-            except FileNotFoundError as fnf_err:
-                msg = f"PARTICIPANTE {participante_id}: No se envió correo, {str(fnf_err)}."
-                print(msg); errors.append(msg)
-            except Exception as e:
-                msg = f"PARTICIPANTE {participante_id}: Error enviando correo: {str(e)}"
-                print(msg); errors.append(msg)
-
-
-    if not emitir_con_competencias:
-        print(f"\n--- Iniciando proceso masivo para DOCENTES del producto ID: {producto_id} ---")
-        for docente in db_producto.docentes:
-            constancia_existente = next((cert for cert in docente.certificados
-                                          if cert.producto_educativo_id == producto_id), None)
-            constancia_a_enviar = None
-            docente_id = docente.id
-            docente_email = docente.email_institucional or docente.email_personal
-
-            if not docente_email:
-                msg = f"DOCENTE {docente_id} ({docente.nombre_completo}) no tiene email registrado. Saltando."
-                print(msg); errors.append(msg); continue
-
-            if constancia_existente:
-                print(f"DOCENTE {docente_id}: Constancia ya existe (Folio: {constancia_existente.folio}). Saltando emisión.")
-                constancia_a_enviar = constancia_existente
-                skipped_docente_count += 1
-            else:
-                print(f"DOCENTE {docente_id}: Emitiendo constancia...")
-                try:
-                    course_date_str = f"{db_producto.fecha_inicio.strftime('%d/%m/%Y')} al {db_producto.fecha_fin.strftime('%d/%m/%Y')}" if db_producto.fecha_inicio and db_producto.fecha_fin else "Fecha no especificada"
-                    folio, file_path_obj = generate_certificate(
-                        participant_name=docente.nombre_completo,
-                        course_name=db_producto.nombre,
-                        tipo_producto=db_producto.tipo_producto,
-                        modalidad=db_producto.modalidad.value if db_producto.modalidad else 'No especificada',
-                        course_hours=db_producto.horas,
-                        instructor_name=docente.especialidad,
-                        is_docente=True,
-                        course_date_str=course_date_str,
-                        con_competencias=False,
-                        competencias_list=None
-                    )
-                    
-                    file_path = str(file_path_obj)
-                    nueva_constancia = models.Certificado(
-                        docente_id=docente.id, producto_educativo_id=producto_id,
-                        archivo_path=file_path, folio=folio,
-                        fecha_emision=datetime.datetime.now(datetime.timezone.utc),
-                        con_competencias=False
-                    )
-                    db.add(nueva_constancia)
-                    db.flush()
-                    constancia_a_enviar = nueva_constancia
-                    issued_docente_count += 1
-                    print(f"DOCENTE {docente_id}: Constancia emitida (Folio: {folio}).")
-                except Exception as e:
-                    msg = f"DOCENTE {docente_id}: Error emitiendo constancia: {str(e)}"
-                    print(msg); errors.append(msg); db.rollback(); continue
-
-            if constancia_a_enviar and constancia_a_enviar.archivo_path:
-                pdf_path_str = constancia_a_enviar.archivo_path
-                pdf_serial = constancia_a_enviar.folio
-                pdf_content_bytes = None
-                try:
-                    if os.path.exists(pdf_path_str):
-                        pdf_path = Path(pdf_path_str)
-                        pdf_content_bytes = pdf_path.read_bytes()
-                    else:
-                        raise FileNotFoundError(f"Archivo no encontrado en la ruta: {pdf_path_str}")
-
-                    print(f"DOCENTE {docente_id}: Enviando a {docente_email}...")
-                    send_certificate_email(
-                        recipient_email=docente_email,
-                        recipient_name=docente.nombre_completo,
-                        course_name=db_producto.nombre,
-                        pdf_content=pdf_content_bytes,
-                        serial=pdf_serial
-                    )
-                    sent_docente_count += 1
-                    print(f"DOCENTE {docente_id}: Correo enviado.")
-                except FileNotFoundError as fnf_err:
-                    msg = f"DOCENTE {docente_id}: No se envió correo, {str(fnf_err)}."
-                    print(msg); errors.append(msg)
-                except Exception as e:
-                    msg = f"DOCENTE {docente_id}: Error enviando correo: {str(e)}"
-                    print(msg); errors.append(msg)
-    elif emitir_con_competencias:
-        print("\n--- Omitiendo proceso masivo para DOCENTES (emisión de competencias seleccionada) ---")
-
-
-    try:
-        db.commit()
-        print("\nCommit final exitoso.")
-    except Exception as e:
-        db.rollback()
-        print(f"\nError en el commit final: {e}")
-        errors.append(f"Error Crítico: No se pudieron guardar los cambios en la BD: {str(e)}")
-
-    summary_parts = [
-        f"Proceso masivo ({tipo_emision_str}) completado para producto {producto_id}.",
-        f"Participantes: {issued_participant_count} emitidos, {skipped_participant_count} omitidos, {sent_participant_count} enviados."
-    ]
-    if not emitir_con_competencias:
-            summary_parts.append(f"Docentes: {issued_docente_count} emitidos, {skipped_docente_count} omitidos, {sent_docente_count} enviados.")
-
-    response_message = " ".join(summary_parts)
-    if errors:
-        response_message += f" Se encontraron {len(errors)} errores."
-        print("\nErrores durante proceso masivo:", errors)
-
-    return {"message": response_message, "errors": errors}
+    tipo_emision_str = "RECONOCIMIENTOS (competencias)" if emitir_con_competencias else "CONSTANCIAS (normales)"
+    
+    # 4. Respuesta Inmediata (202 ACCEPTED)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "message": f"El proceso de emisión masiva de {tipo_emision_str} para el producto {producto_id} ha sido iniciado en segundo plano.",
+            "job_id": job.id,
+            "status": "enqueued"
+        }
+    )
