@@ -26,7 +26,7 @@ export default class DashboardLayoutComponent implements OnInit {
   currentUser: CurrentUser | null = null;
   menuItems: MenuItem[] = [];
   
-  // ✅ NUEVA PROPIEDAD para controlar el estado del menú
+  // Propiedad para controlar el estado del menú
   isSidebarOpen = false;
 
   ngOnInit() {
@@ -34,12 +34,12 @@ export default class DashboardLayoutComponent implements OnInit {
     this.buildMenu();
   }
 
-  // ✅ NUEVO MÉTODO para toggle del menú
+  // Método para toggle del menú
   toggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
   }
 
-  // ✅ NUEVO MÉTODO para cerrar el menú al hacer clic en un enlace
+  // Método para cerrar el menú al hacer clic en un enlace
   closeSidebar() {
     this.isSidebarOpen = false;
   }
@@ -47,8 +47,8 @@ export default class DashboardLayoutComponent implements OnInit {
   private buildMenu() {
     this.menuItems = [
       { 
-        label: 'Dashboard', 
-        routerLink: '/admin/overview', 
+        label: 'Panel de Control', 
+        routerLink: '/admin/dashboard',  // ✅ CORREGIDO: era '/admin/overview'
         svgIcon: this.sanitizer.bypassSecurityTrustHtml(`<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`) 
       },
       { 
