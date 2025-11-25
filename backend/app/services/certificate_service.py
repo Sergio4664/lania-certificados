@@ -8,19 +8,53 @@ import io
 import re
 from pathlib import Path
 from fastapi import HTTPException
+from sqlalchemy.orm import Session # Necesario para tipar el parámetro db
 
 from app.services.qr_service import generate_qr_png
 from app.core.config import get_settings
 
-# --- ✅ 1. IMPORTAR AMBAS FUNCIONES DE PDF ---
+# --- 1. IMPORTAR AMBAS FUNCIONES DE PDF ---
 from app.services.pdf_service import (
     generate_certificate_pdf, 
-    generate_recognition_pdf # <-- Importar la nueva función
+    generate_recognition_pdf
 )
 
 from app.models.producto_educativo import TipoProductoEnum
+# También necesitamos importar el modelo de Inscripción para la lógica masiva
+# Suponiendo que el modelo se llama Inscripcion y Participante
+# from app.models.inscripciones import Inscripcion
+# from app.models.participante import Participante
+# from app.models.producto_educativo import ProductoEducativo
 
 settings = get_settings()
+
+# 💡 CLASE DE SERVICIO AÑADIDA
+class CertificateService:
+    """Clase de servicio para la lógica de certificados, interactuando con la DB."""
+    
+    def __init__(self, db: Session):
+        """Inicializa el servicio con una sesión de base de datos."""
+        self.db = db
+        
+    def emitir_y_enviar_masivamente(self, producto_id: int):
+        """
+        Lógica para encontrar inscripciones (participantes) de un producto, 
+        generar sus certificados y enviarlos por correo.
+        (ESTA LÓGICA DEBE SER IMPLEMENTADA COMPLETAMENTE)
+        """
+        # Aquí iría la lógica completa, usando self.db, para:
+        # 1. Consultar el Producto Educativo (curso) por ID.
+        # 2. Consultar todas las Inscripciones asociadas a ese producto que estén finalizadas.
+        # 3. Iterar sobre cada inscripción:
+        #    - Llamar a generate_certificate(...)
+        #    - Guardar el folio y ruta del archivo en la DB.
+        #    - Llamar al EmailService para enviar el certificado.
+        
+        # Como es una función placeholder para la ejecución, devolvemos un mensaje:
+        print(f"Iniciando proceso masivo de certificados para producto ID: {producto_id}")
+        # Lógica real no implementada:
+        return f"Proceso masivo iniciado (Producto ID: {producto_id}). La implementación de la lógica de DB y envío de email debe completarse aquí."
+# 💡 FIN DE LA CLASE AÑADIDA
 
 def sanitize_foldername(name: str) -> str:
     """Limpia un string para usarlo como nombre de carpeta seguro."""

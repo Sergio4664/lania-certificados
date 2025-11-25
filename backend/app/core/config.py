@@ -1,38 +1,66 @@
-from pydantic_settings import BaseSettings
-from functools import lru_cache
-from typing import Optional
-from pydantic import SecretStr # 💡 1. Importar SecretStr
+# backend/app/core/config.py
+from typing import Optional, List
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+from dotenv import load_dotenv
+from functools import lru_cache 
+from pydantic import SecretStr, EmailStr # Importar SecretStr
+
+# Cargamos el archivo .env ubicado en el directorio backend
+# Ya que el código de la API se ejecuta desde app/main.py,
+# la ruta debe ser relativa al directorio de la aplicación o usar Path.
+# Usaremos Path para asegurar la ruta: Path(__file__).resolve().parent.parent
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 class Settings(BaseSettings):
+    """
+    Configuración base de la aplicación, cargada desde el entorno o .env.
+    Usa pydantic-settings (Pydantic V2).
+    """
+    # --- CONFIGURACIÓN DE SEGURIDAD Y TOKEN ---
     DATABASE_URL: str
-    SECRET_KEY: SecretStr # 💡 2. Corregido: Usar SecretStr para seguridad
+    SECRET_KEY: SecretStr # Usar SecretStr para ocultar el valor en logs
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    FRONTEND_URL: str = "http://localhost:4200"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # 🎯 CORREGIDO: Se añade la variable faltante que causaba el error 500 en forgot-password
-    # Se recomienda un valor de 30 o 60 minutos para un token de restablecimiento por seguridad.
+    # 💡 Configuración del tiempo de expiración del token de restablecimiento.
     RESET_TOKEN_EXPIRE_MINUTES: int = 60 
 
-    # Variables de Correo (SMTP)
-    SMTP_SERVER: str
-    SMTP_PORT: int
-    SMTP_LOGIN: str
-    SMTP_PASSWORD: str
-    SMTP_SENDER_EMAIL: str
-    SMTP_SENDER_NAME: str
+    # --- CONFIGURACIÓN DE DESPLIEGUE Y SERVICIOS ASÍNCRONOS ---
+    # URL pública base de la aplicación (para generar QR de verificación y enlaces de restablecimiento)
+    BASE_URL: str = "https://siscol.lania.mx:8443"
+    
+    # URL de Redis para RQ (Colas de tareas)
+    REDIS_URL: str = "redis://localhost:6379" 
 
-    # ✅ CORRECCIÓN: Se añade la variable que estaba en .env pero faltaba aquí
+    # --- CONFIGURACIÓN DE CORREO (SMTP/Brevo) ---
+    # Brevo API Key (si se usa la librería 'brevo-python')
     BREVO_API_KEY: Optional[str] = None
+    EMAIL_SENDER: str = "no-reply@tudominio.com"
 
-    # Necesario si el binario no está en el PATH del sistema.
+    # Variables de Correo SMTP (si se usa un cliente SMTP tradicional en lugar de Brevo)
+    SMTP_SERVER: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    SMTP_LOGIN: Optional[str] = None
+    SMTP_PASSWORD: Optional[SecretStr] = None # Usar SecretStr para la contraseña
+    SMTP_SENDER_EMAIL: Optional[EmailStr] = None # Usar EmailStr para validación
+    SMTP_SENDER_NAME: Optional[str] = None
+    
+    # Necesario para pdfkit o wkhtmltopdf
     WKHTMLTOPDF_PATH: Optional[str] = None
+    
+    # Configuración del motor de Pydantic V2
+    model_config = SettingsConfigDict(
+        env_file='.env', 
+        env_file_encoding='utf-8', 
+        case_sensitive=True
+    )
 
-    class Config:
-        env_file = ".env"
-
+# Cache de la configuración (singleton)
 @lru_cache()
 def get_settings():
+    """Retorna la instancia de Settings, usando caché para eficiencia."""
     return Settings()
 
+# 🚨 CORRECCIÓN: Definir la variable global 'settings' para la importación en otros módulos.
 settings = get_settings()

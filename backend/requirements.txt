@@ -10,7 +10,7 @@ pydantic-settings==2.12.0 # ✅ FIX: Usar la última versión estable (Nov 2025)
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
-python-multipart==0.0.6
+python-multipart==0.0.7
 reportlab==4.0.4
 python-dotenv==1.0.0
 # PDF generation from HTML
@@ -25,3 +25,4 @@ PyJWT==2.8.0
 # DEPENDENCIAS DE RQ
 rq
 redis
+qrcode==8.2  # ⬅️ AÑADIR ESTA LÍNEA

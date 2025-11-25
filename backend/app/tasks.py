@@ -1,6 +1,6 @@
 # Ruta: backend/app/tasks.py 
 
-from app.db.session import SessionLocal
+from app.database import SessionLocal  # ⬅️ CORRECCIÓN: Importar desde el archivo correcto
 from app.services.certificate_service import CertificateService
 from typing import List
 

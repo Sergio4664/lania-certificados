@@ -1,3 +1,4 @@
+#Ruta: backend/app/main.py
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles 
@@ -48,3 +49,25 @@ api_router.include_router(admin_certificados.router)
 
 app.include_router(api_router, prefix="/api/v1")
 
+# -------------------------------
+# SERVIR FRONTEND ANGULAR
+# -------------------------------
+from fastapi.responses import FileResponse
+
+# Obtener ruta absoluta del frontend
+FRONTEND_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../frontend/lania-ui/dist/lania-ui")
+)
+
+# Montar archivos estáticos generados por Angular
+app.mount(
+    "/",
+    StaticFiles(directory=FRONTEND_DIST, html=True),
+    name="frontend",
+)
+
+# Ruta principal para Angular (manejo de rutas SPA)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    index_path = os.path.join(FRONTEND_DIST, "index.html")
+    return FileResponse(index_path)
