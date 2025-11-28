@@ -53,18 +53,18 @@ app.include_router(api_router, prefix="/api/v1")
 # SERVIR FRONTEND ANGULAR
 # -------------------------------
 from fastapi.responses import FileResponse
+import os
 
 # Obtener ruta absoluta del frontend
-FRONTEND_DIST = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../frontend/lania-ui/dist/lania-ui")
-)
+BASE_DIR = "/home/lania-siscol/lania-certificaciones"
+FRONTEND_DIST = os.path.join(BASE_DIR, "frontend/lania-ui/dist/lania-ui")
 
 # Montar archivos estáticos generados por Angular
-app.mount(
-    "/",
-    StaticFiles(directory=FRONTEND_DIST, html=True),
-    name="frontend",
+StaticFiles(
+    directory="/home/lania-siscol/lania-certificaciones/frontend/lania-ui/dist",
+    html=True
 )
+
 
 # Ruta principal para Angular (manejo de rutas SPA)
 @app.get("/{full_path:path}")
