@@ -3,28 +3,24 @@ import datetime
 import os
 import json 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from fastapi.responses import FileResponse, JSONResponse # ✅ JSONResponse AÑADIDO
+from fastapi.responses import FileResponse, JSONResponse 
 from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import List, Optional, Dict # ✅ Dict AÑADIDO (aunque ya existía en typing)
+from typing import List, Optional, Dict 
 
 from pathlib import Path
 
 from app.database import get_db
 from app import models
 
-# 🚨 NUEVOS IMPORTS PARA RQ Y CONFIGURACIÓN
-from redis import Redis
-from rq import Queue
 from app.core.config import get_settings
 from app.tasks import emitir_y_enviar_certificados_masivamente_job # 🚨 FUNCIÓN DE TAREA ASÍNCRONA
 
-# --- ✅ 1. CORREÇÃO DE IMPORTAÇÃO ---
 from app.schemas.certificado import (
     Certificado, 
     CertificadoCreate 
 )
 CertificadoOut = Certificado
-# --- FIN DE CORRECCIÓN ---
+
 
 
 from app.services.certificate_service import generate_certificate
@@ -32,10 +28,6 @@ from app.services.email_service import send_certificate_email
 from app.routers.dependencies import get_current_admin_user
 
 settings = get_settings() # ✅ OBTENER CONFIGURACIÓN GLOBAL
-
-# 🚨 INICIALIZACIÓN DE LA COLA (Se hace una sola vez al cargar el módulo)
-redis_conn = Redis.from_url(settings.REDIS_URL)
-q = Queue(connection=redis_conn)
 
 router = APIRouter(
     prefix="/admin/certificados",
@@ -473,46 +465,37 @@ def download_certificado_by_folio(
 
     return FileResponse(file_path, media_type='application/pdf', filename=f"{folio}.pdf")
 
-
-# 🚨 FUNCIÓN MODIFICADA: Ahora solo encola la tarea en Redis
-@router.post(
-    "/emitir-enviar-masivo/producto/{producto_id}", 
-    response_model=Dict[str, str], # 🚨 Cambia el modelo de respuesta a un simple Dict
-    status_code=status.HTTP_202_ACCEPTED # 🚨 CAMBIO DE ESTADO
-)
-async def issue_and_send_certificates_massively(
-    producto_id: int,
-    options: dict = Body(default={"con_competencias": False}),
-    db: Session = Depends(get_db) # Se mantiene la dependencia por si se requiere validación preliminar
+@router.post("/emitir-masivo/{producto_id}", status_code=status.HTTP_202_ACCEPTED)
+def emitir_certificados_masivamente(
+    producto_id: int, 
+    options: Dict = Body(default={"con_competencias": False}),
+    db: Session = Depends(get_db)
 ):
     """
-    🚨 ASÍNCRONO: Encola la tarea pesada de emisión y envío masivo en RQ.
+    🚨 ASÍNCRONO: Encola la tarea pesada de emisión y envío masivo en CELERY.
     Responde inmediatamente con 202 ACCEPTED.
     """
     # 1. Extracción de argumentos
     emitir_con_competencias = options.get("con_competencias", False)
     
-    # 2. (OPCIONAL) Validación Rápida: Solo para asegurar que el producto existe antes de encolar
+    # 2. Validación Rápida: Solo para asegurar que el producto existe antes de encolar
     db_producto = db.query(models.ProductoEducativo).filter(models.ProductoEducativo.id == producto_id).first()
     if not db_producto:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto educativo no encontrado")
 
-    # 3. ENCOLAR EL TRABAJO
-    job = q.enqueue(
-        emitir_y_enviar_certificados_masivamente_job,
-        producto_id,
-        emitir_con_competencias, # Pasa el argumento booleano al worker
-        job_timeout='2h' # Tiempo máximo para la tarea
-    )
-
+    # 3. ✅ ENCOLAR EL TRABAJO USANDO CELERY (.delay())
+    # job = q.enqueue(emitir_y_enviar_certificados_masivamente_job, ...) ❌ ANTERIOR
+    # Celery encola la tarea directamente en Redis y devuelve un objeto AsyncResult
+    job = emitir_y_enviar_certificados_masivamente_job.delay(producto_id, emitir_con_competencias)
+    
     tipo_emision_str = "RECONOCIMIENTOS (competencias)" if emitir_con_competencias else "CONSTANCIAS (normales)"
     
     # 4. Respuesta Inmediata (202 ACCEPTED)
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
         content={
-            "message": f"El proceso de emisión masiva de {tipo_emision_str} para el producto {producto_id} ha sido iniciado en segundo plano.",
+            "message": f"Tarea de emisión masiva de {tipo_emision_str} para producto ID {producto_id} encolada exitosamente.",
             "job_id": job.id,
-            "status": "enqueued"
+            "status_check_url": f"/admin/jobs/{job.id}" # Ruta teórica para verificar estado
         }
     )
