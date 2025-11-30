@@ -1,6 +1,5 @@
-//Ruta: frontend/lania-ui/src/app/core/auth.service.ts
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http'; // 🚨 IMPORTAR HttpHeaders
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '@environments/environment';
@@ -19,11 +18,23 @@ export class AuthService {
    * Realiza el login contra el backend.
    */
   login(credentials: LoginCredentials): Observable<AuthResponse> {
-    const formData = new FormData();
-    formData.append('username', credentials.username); 
-    formData.append('password', credentials.password);
+    
+    // 🚨 PASO 1: Serializar los datos al formato URLSearchParams
+    const body = new URLSearchParams();
+    body.set('username', credentials.username);
+    body.set('password', credentials.password);
+    
+    // 🚨 PASO 2: Definir el Content-Type requerido por FastAPI (OAuth2)
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/x-www-form-urlencoded'
+    });
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/token`, formData).pipe(
+    // 🚨 PASO 3: Enviar la petición POST con el formato y headers correctos
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/token`, // URL es correcta: /auth/token
+      body.toString(),              // Enviar el body serializado como string
+      { headers }                   // Adjuntar los headers
+    ).pipe(
       tap(response => {
         if (response.access_token && response.user) {
           this.saveAuthData(response.access_token, response.user);
