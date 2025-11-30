@@ -4,8 +4,8 @@ export const environment = {
   production: true, 
   
   // ✅ CORRECCIÓN SINTÁCTICA: URL pública limpia y correcta
-  apiUrl: 'https://siscol.lania.mx/api/v1', 
+  apiUrl: 'http://siscol.lania.mx/api/v1', 
 
   // URL base para la verificación pública y QR codes
-  baseUrl: 'https://siscol.lania.mx/' 
+  baseUrl: 'http://siscol.lania.mx/' 
 };

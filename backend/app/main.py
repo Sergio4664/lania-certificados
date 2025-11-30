@@ -21,11 +21,11 @@ app = FastAPI(title="Sistema de Constancias LANIA - API")
 
 # --- Configuración de CORS (Incluye 4201 y URLs de Producción) ---
 origins = [
-    "http://127.0.0.1:4201",
-    "https://siscol.lania.mx", 
-    "https://siscol.lania.mx:4201", 
-    "http://siscol.lania.mx",
-    "http://siscol.lania.mx:4201",
+"http://127.0.0.1:4201",
+"https://siscol.lania.mx", 
+"https://siscol.lania.mx:4201", 
+"http://siscol.lania.mx",
+"http://siscol.lania.mx:4201",
 ]
 
 app.add_middleware(
