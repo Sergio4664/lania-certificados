@@ -62,4 +62,13 @@ FRONTEND_DIST_DIR = str(PROJECT_ROOT / "frontend" / "lania-ui" / "dist" / "lania
 
 # Montar el directorio del frontend en la raíz (/) con html=True.
 # Esto es esencial: si la ruta no coincide con /api/v1 o /static, devuelve index.html.
+# Montaje del frontend
 app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
+
+# SOLO si no tuvieras html=True (no es tu caso)
+from fastapi.responses import FileResponse
+index_path = FRONTEND_DIST_DIR + "/index.html"
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    return FileResponse(index_path)
