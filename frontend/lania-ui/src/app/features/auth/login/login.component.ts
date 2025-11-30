@@ -1,75 +1,66 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, inject } from '@angular/core';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '@app/core/auth.service';
-import { LoginCredentials } from '@shared/interfaces/auth.interface';
-
-// --- IMPORTACIONES DE MATERIAL (SOLO LO QUE SE USA) ---
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon'; 
+import { AuthService } from '../../../core/auth.service';
+import { NotificationService } from '../../../shared/services/notification.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule, 
-    RouterLink,
-    MatProgressSpinnerModule,
-    MatIconModule
-  ],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css'],
 })
-export default class LoginComponent implements OnInit {
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private fb = inject(FormBuilder);
+export class LoginComponent {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private notificationService = inject(NotificationService);
 
-  loginForm!: FormGroup;
-  isLoading = false;
-  error = '';
-  // 🚨 NUEVA PROPIEDAD: Controla si la contraseña es visible (true) u oculta (false)
-  showPassword = false; 
+  isLoading: boolean = false;
 
-  ngOnInit(): void {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]]
-    });
-  }
-
-  /**
-   * Alterna el estado de visibilidad de la contraseña.
-   */
-  togglePasswordVisibility(): void {
-    this.showPassword = !this.showPassword;
+  // Si el usuario ya está autenticado, redirigir inmediatamente
+  constructor() {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
   }
-  
-  onSubmit() {
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
-      return;
-    }
 
-    this.isLoading = true;
-    this.error = '';
+  loginForm = this.fb.group({
+    username: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]]
+  });
 
-    const credentials: LoginCredentials = {
-      username: this.loginForm.value.email,
-      password: this.loginForm.value.password
-    };
+  onSubmit(): void {
+    if (this.loginForm.invalid) {
+      this.notificationService.showError('Por favor, ingresa un correo y contraseña válidos.');
+      return;
+    }
+    this.isLoading = true;
+    
+    const credentials = {
+      username: this.loginForm.value.username!,
+      password: this.loginForm.value.password!
+    };
 
-    this.authService.login(credentials).subscribe({
-      next: () => {
-        this.router.navigate(['/admin/dashboard']);
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.error = err.error?.detail || 'Error de conexión. Inténtelo más tarde.';
-        this.isLoading = false;
-      }
-    });
-  }
+    // 🚨 PASO CRÍTICO: Suscribirse y redirigir
+    this.authService.login(credentials).subscribe({
+      next: (response) => {
+        // Redirección exitosa: el token ya se guardó en el .tap del AuthService
+        this.notificationService.showSuccess('¡Inicio de sesión exitoso!');
+        this.router.navigate(['/dashboard']); // <-- REDIRECCIÓN AÑADIDA
+      },
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Error de login:', err);
+        // Usar el mensaje de error del backend (si existe) o un genérico
+        const errorDetail = err.error?.detail || 'Credenciales incorrectas o error del servidor.';
+        this.notificationService.showError(errorDetail);
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
+    });
+  }
 }

@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 
 // --- Vistas de Autenticación y Públicas ---
-import LoginComponent from '@features/auth/login/login.component';
+import { LoginComponent } from '@features/auth/login/login.component';
 import { ForgotPasswordComponent } from '@features/auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from '@features/auth/reset-password/reset-password.component';
 // Nota: Asumo que tienes un componente PublicVerifyComponent, aunque no se listó en los archivos
