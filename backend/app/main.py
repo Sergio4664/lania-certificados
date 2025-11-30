@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles 
 import os # Importar OS para manejar rutas de forma segura
 import sys # Importar sys para depuración
+from fastapi.responses import FileResponse 
+from pathlib import Path # Importante para rutas relativas robustas
 
 from app.routers import (
     auth,
@@ -18,11 +20,16 @@ from app.routers import (
 
 app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-# --- Configuración de CORS ---
+# --- Configuración de CORS (Incluye 4200 y URLs de Producción) ---
 origins = [
     "http://localhost",
     "http://localhost:4200",
     "http://127.0.0.0:4200",
+    # Posibles dominios de producción (Si accede a su sitio con estos)
+    "https://siscol.lania.mx", 
+    "https://siscol.lania.mx:8443", 
+    "http://siscol.lania.mx",
+    "http://siscol.lania.mx:8443",
 ]
 
 app.add_middleware(
@@ -50,24 +57,14 @@ api_router.include_router(admin_certificados.router)
 app.include_router(api_router, prefix="/api/v1")
 
 # -------------------------------
-# SERVIR FRONTEND ANGULAR
+# SERVIR FRONTEND ANGULAR (RUTA CONFIRMADA)
 # -------------------------------
-from fastapi.responses import FileResponse
-import os
 
-# Obtener ruta absoluta del frontend
-BASE_DIR = "/home/lania-siscol/lania-certificaciones"
-FRONTEND_DIST = os.path.join(BASE_DIR, "frontend/lania-ui/dist/lania-ui")
+# Calcular la ruta al directorio 'dist/lania-ui' de Angular de forma relativa.
+# Esta es la ruta correcta que usted confirmó: ../frontend/lania-ui/dist/lania-ui
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+FRONTEND_PATH = PROJECT_ROOT / "frontend" / "lania-ui" / "dist" / "lania-ui"
+FRONTEND_DIST_DIR = str(FRONTEND_PATH)
 
-# Montar archivos estáticos generados por Angular
-StaticFiles(
-    directory="/home/lania-siscol/lania-certificaciones/frontend/lania-ui/dist",
-    html=True
-)
-
-
-# Ruta principal para Angular (manejo de rutas SPA)
-@app.get("/{full_path:path}")
-async def serve_frontend(full_path: str):
-    index_path = os.path.join(FRONTEND_DIST, "index.html")
-    return FileResponse(index_path)
+# Montar el directorio del frontend en la raíz (/) con html=True.
+app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
