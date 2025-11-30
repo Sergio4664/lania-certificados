@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/auth.service';
-import { NotificationService } from '../../../shared/services/notification.service';
+import { AuthService } from '@core/auth.service';
+import { NotificationService } from '@shared/services/notification.service';
 import { CommonModule } from '@angular/common';
 
 @Component({

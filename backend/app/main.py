@@ -57,8 +57,15 @@ app.include_router(api_router, prefix="/api/v1")
 # -------------------------------
 
 # Calcular la ruta al directorio 'dist/lania-ui' de Angular de forma relativa.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-FRONTEND_DIST_DIR = str(PROJECT_ROOT / "frontend" / "lania-ui" / "dist" / "lania-ui")
+from pathlib import Path
+
+# __file__ es backend/app/main.py → parent.parent → backend
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+# Proyecto raíz, padre de backend
+PROJECT_ROOT = BACKEND_ROOT.parent
+FRONTEND_DIST_DIR = PROJECT_ROOT / "frontend" / "lania-ui" / "dist" / "lania-ui"
+if not FRONTEND_DIST_DIR.exists():
+    raise RuntimeError(f"Frontend build not found in {FRONTEND_DIST_DIR}")
 
 # Montar el directorio del frontend en la raíz (/) con html=True.
 # Esto es esencial: si la ruta no coincide con /api/v1 o /static, devuelve index.html.
