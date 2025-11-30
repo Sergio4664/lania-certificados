@@ -7,7 +7,6 @@
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-      <!-- Muestra el mensaje de error si existe -->
       <div *ngIf="error" class="error-message">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
@@ -28,15 +27,10 @@
         <input 
           id="email"
           type="email"
-          formControlName="email"
-          placeholder="Ingrese su correo institucional"
-          [class.input-invalid]="loginForm.get('email')?.touched && loginForm.get('email')?.invalid"
-          required 
+          formControlName="username" placeholder="Ingrese su correo institucional"
+          [class.input-invalid]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid" required 
         />
-        <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid" class="input-error">
-          <span *ngIf="loginForm.get('email')?.hasError('required')">El correo es requerido.</span>
-          <span *ngIf="loginForm.get('email')?.hasError('email')">Por favor ingrese un correo válido.</span>
-        </div>
+        <div *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid" class="input-error"> <span *ngIf="loginForm.get('username')?.hasError('required')">El correo es requerido.</span> <span *ngIf="loginForm.get('username')?.hasError('email')">Por favor ingrese un correo válido.</span> </div>
       </div>
       
       <div class="form-group">
@@ -49,7 +43,6 @@
           Contraseña
         </label>
         
-        <!-- Contenedor con input y botón de visibilidad -->
         <div class="password-input-container">
           <input 
             id="password"
@@ -60,19 +53,16 @@
             required 
           />
           
-          <!-- Botón para alternar visibilidad con SVG -->
           <button 
             type="button" 
             class="toggle-password-btn" 
             (click)="togglePasswordVisibility()"
             [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
           >
-            <!-- Ojo abierto (cuando está oculta, muestra este para "mostrar") -->
             <svg *ngIf="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
-            <!-- Ojo cerrado/tachado (cuando está visible, muestra este para "ocultar") -->
             <svg *ngIf="showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
               <line x1="1" y1="1" x2="23" y2="23"></line>
@@ -80,8 +70,9 @@
           </button>
         </div>
         
-        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')" class="input-error">
-          La contraseña es requerida.
+        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid" class="input-error">
+          <span *ngIf="loginForm.get('password')?.hasError('required')">La contraseña es requerida.</span>
+          <span *ngIf="loginForm.get('password')?.hasError('minlength')">La contraseña debe tener al menos 8 caracteres.</span>
         </div>
       </div>
       

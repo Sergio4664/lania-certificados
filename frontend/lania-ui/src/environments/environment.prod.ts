@@ -1,3 +1,4 @@
+//Ruta: frontend/lania-ui/src/environments/environment.prod.ts
 export const environment = {
   // Siempre true para producción
   production: true, 

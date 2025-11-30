@@ -27,10 +27,18 @@ export class LoginComponent {
     }
   }
 
+  // 🚨 NOTA: Los nombres de los controles son 'username' y 'password'
   loginForm = this.fb.group({
     username: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]]
+    password: ['', [Validators.required, Validators.minLength(8)]] // 👈 Requiere 8 caracteres
   });
+  
+  // Agrega esta propiedad y método si es necesario para el botón de visibilidad de contraseña
+  showPassword: boolean = false;
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+  // ---
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
