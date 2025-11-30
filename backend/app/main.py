@@ -20,16 +20,16 @@ from app.routers import (
 
 app = FastAPI(title="Sistema de Constancias LANIA - API")
 
-# --- Configuración de CORS (Incluye 4200 y URLs de Producción) ---
+# --- Configuración de CORS (Incluye 4201 y URLs de Producción) ---
 origins = [
     "http://localhost",
-    "http://localhost:4200",
-    "http://127.0.0.0:4200",
+    "http://localhost:4201",
+    "http://127.0.0.0:4201",
     # Posibles dominios de producción (Si accede a su sitio con estos)
     "https://siscol.lania.mx", 
-    "https://siscol.lania.mx:8443", 
+    "https://siscol.lania.mx:4201", 
     "http://siscol.lania.mx",
-    "http://siscol.lania.mx:8443",
+    "http://siscol.lania.mx:4201",
 ]
 
 app.add_middleware(
