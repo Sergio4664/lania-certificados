@@ -22,7 +22,6 @@ app = FastAPI(title="Sistema de Constancias LANIA - API")
 # --- Configuración de CORS (Incluye 4201 y URLs de Producción) ---
 origins = [
     "http://127.0.0.1:4201",
-    # Posibles dominios de producción (Si accede a su sitio con estos)
     "https://siscol.lania.mx", 
     "https://siscol.lania.mx:4201", 
     "http://siscol.lania.mx",
