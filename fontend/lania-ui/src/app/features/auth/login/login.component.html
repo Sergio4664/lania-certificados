@@ -1,0 +1,99 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="header-section">
+      <h1>LANIA</h1>
+      <p>Laboratorio Nacional de Informática Avanzada</p>
+      <h2>Sistema de Constancias</h2>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- 
+        BLOQUE DE ERROR ELIMINADO:
+        Se eliminó el bloque <div *ngIf="error">...</div> 
+        que causaba el error TS2339, ya que el manejo de errores
+        se realiza a través de NotificationService en el componente TS.
+      -->
+
+      <div class="form-group">
+        <label for="email">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Usuario
+        </label>
+        <input 
+          id="email"
+          type="email"
+          formControlName="username" placeholder="Ingrese su correo institucional"
+          [class.input-invalid]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid" required 
+        />
+        <div *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid" class="input-error"> 
+          <span *ngIf="loginForm.get('username')?.hasError('required')">El correo es requerido.</span> 
+          <span *ngIf="loginForm.get('username')?.hasError('email')">Por favor ingrese un correo válido.</span> 
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <circle cx="12" cy="16" r="1"></circle>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Contraseña
+        </label>
+        
+        <div class="password-input-container">
+          <input 
+            id="password"
+            [type]="showPassword ? 'text' : 'password'" 
+            formControlName="password"
+            placeholder="Ingrese su contraseña"
+            [class.input-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+            required 
+          />
+          
+          <button 
+            type="button" 
+            class="toggle-password-btn" 
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          >
+            <svg *ngIf="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg *ngIf="showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid" class="input-error">
+          <span *ngIf="loginForm.get('password')?.hasError('required')">La contraseña es requerida.</span>
+          <span *ngIf="loginForm.get('password')?.hasError('minlength')">La contraseña debe tener al menos 8 caracteres.</span>
+        </div>
+      </div>
+      
+      <button type="submit" [disabled]="loginForm.invalid || isLoading" class="login-btn">
+        <span *ngIf="!isLoading" class="btn-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h6v6M21 3l-7 7M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path>
+          </svg>
+          Iniciar Sesión
+        </span>
+        <span *ngIf="isLoading" class="btn-content">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>Iniciando...</span>
+        </span>
+      </button>
+    </form>
+    
+    <div class="footer">
+      <a routerLink="/forgot-password" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+      <p>&copy; 2025 LANIA. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</div>

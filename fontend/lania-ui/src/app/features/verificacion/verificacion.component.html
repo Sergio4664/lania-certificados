@@ -1,0 +1,173 @@
+<div class="verificacion-container">
+
+  <div class="verificacion-content-wrapper">
+
+    <div class="verificacion-main-content">
+
+      <!-- ===========================
+           TARJETA COMPLETA IZQUIERDA
+      ============================ -->
+      <div *ngIf="certificado; else searchBlock" class="verificacion-card">
+
+        <!-- HEADER DENTRO DEL CARD -->
+        <header class="verificacion-header">
+          <h1>Verificación de Constancias</h1>
+          <p>Ingresa el folio para validar la autenticidad de una constancia.</p>
+          <a routerLink="/login" class="login-link">Ir al Panel de Administración</a>
+        </header>
+
+        <!-- TÍTULO -->
+        <h2 class="titulo-certificado">Certificado Válido</h2>
+
+        <!-- ===========================
+             GRID DE RESULTADOS
+        ============================ -->
+        <div class="resultado-grid">
+
+          <div class="grid-item">
+            <strong>Folio:</strong>
+            <span>{{ certificado.folio }}</span>
+          </div>
+
+          <div class="grid-item">
+            <strong>Emitido a:</strong>
+            <span>{{ certificado.participante_nombre }}</span>
+          </div>
+
+          <div class="grid-item">
+            <strong>Producto Educativo:</strong>
+            <span>{{ certificado.producto_educativo_nombre }}</span>
+          </div>
+
+          <div class="grid-item">
+            <strong>Tipo de Constancia:</strong>
+            <span [ngSwitch]="certificado.con_competencias">
+              <ng-container *ngSwitchCase="true">
+                Reconocimiento de Competencias
+              </ng-container>
+
+              <ng-container *ngSwitchDefault>
+                <span *ngIf="certificado.participante_nombre?.includes('Dr.') 
+                  || certificado.participante_nombre?.includes('M.C.'); else esParticipante">
+                  Constancia de Ponente/Docente
+                </span>
+
+                <ng-template #esParticipante>
+                  Constancia de Participación
+                </ng-template>
+              </ng-container>
+            </span>
+          </div>
+
+          <div class="grid-item">
+            <strong>Tipo:</strong>
+            <span>{{ certificado.tipo_producto }}</span>
+          </div>
+
+          <div class="grid-item">
+            <strong>Fecha de Emisión:</strong>
+            <span>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</span>
+          </div>
+
+        </div>
+
+        <!-- BADGE -->
+        <div class="valido-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          AUTÉNTICO
+        </div>
+
+        <!-- BOTONES -->
+        <div class="botones-container">
+          <button (click)="abrirVisualizadorPdf()" class="btn btn-primary btn-pdf-viewer" [disabled]="isLoadingPdf">
+            <svg width="20" height="20" style="margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            {{ isLoadingPdf ? 'Cargando PDF...' : (showPdfModal ? 'Ocultar Constancia' : 'Ver Constancia (PDF)') }}
+          </button>
+
+          <button (click)="buscarOtro()" class="btn btn-secondary">Verificar otro</button>
+        </div>
+
+      </div>
+      <!-- ===== FIN TARJETA COMPLETA ===== -->
+
+      <!-- ===========================
+           BLOQUE DE BÚSQUEDA
+      ============================ -->
+      <ng-template #searchBlock>
+
+        <div class="search-card">
+
+          <header class="verificacion-header">
+            <h1>Verificación de Constancias</h1>
+            <p>Ingresa el folio para validar la autenticidad de una constancia.</p>
+            <a routerLink="/login" class="login-link">Ir al Panel de Administración</a>
+          </header>
+
+          <form (ngSubmit)="onBuscar()">
+
+            <div class="form-group">
+              <label for="folio">Folio de la Constancia</label>
+
+              <input type="text" id="folio" placeholder="Ej: LANIA-2025-XXXXXX"
+                [formControl]="folioControl"
+                [class.is-invalid]="folioControl.invalid && folioControl.touched">
+
+              <div *ngIf="folioControl.invalid && folioControl.touched" class="invalid-feedback">
+                <small *ngIf="folioControl.errors?.['required']">El folio es requerido.</small>
+              </div>
+            </div>
+
+            <button type="button" (click)="onBuscar()" class="btn btn-primary" [disabled]="isLoading || folioControl.invalid">
+              <span *ngIf="!isLoading">Verificar</span>
+              <span *ngIf="isLoading" class="spinner"></span>
+              <span *ngIf="isLoading">Verificando...</span>
+            </button>
+
+          </form>
+
+        </div>
+
+        <div *ngIf="isLoading" class="loading-card">
+          <span class="spinner"></span>
+          <p>Buscando certificado...</p>
+        </div>
+
+        <div *ngIf="errorMessage && !isLoading" class="error-card">
+          <strong>Error</strong>
+          <p>{{ errorMessage }}</p>
+        </div>
+
+      </ng-template>
+
+    </div>
+
+    <!-- ===========================
+         PANEL PDF A LA DERECHA
+    ============================ -->
+    <div *ngIf="showPdfModal" class="pdf-viewer-panel">
+      <div class="pdf-panel-header">
+        <h3>Constancia Digital</h3>
+        <button (click)="cerrarVisualizadorPdf()" class="btn-close-pdf">
+          X
+        </button>
+      </div>
+
+      <div class="pdf-panel-body">
+        <div *ngIf="isLoadingPdf" class="loading-overlay">
+          <span class="spinner large"></span>
+          <p>Cargando documento...</p>
+        </div>
+
+        <iframe *ngIf="pdfUrl && !isLoadingPdf" [src]="pdfUrl" frameborder="0"></iframe>
+      </div>
+    </div>
+
+  </div>
+
+</div>

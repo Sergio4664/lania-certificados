@@ -1,0 +1,153 @@
+<div class="module-content">
+    <div class="module-header">
+        <h2>Gestión de Participantes</h2>
+        <div class="header-actions">
+            <div class="search-container">
+                <input type="text" [(ngModel)]="searchTerm" (input)="filterParticipants()" placeholder="Buscar por nombre, email o teléfono...">
+            </div>
+            <button class="primary-btn" (click)="toggleForm()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                {{ showForm ? 'Cancelar' : 'Nuevo Participante' }}
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="showForm" class="form-card">
+        <h3>{{ isEditing ? 'Editar Participante' : 'Registrar Nuevo Participante' }}</h3>
+        <form [formGroup]="participanteForm" (ngSubmit)="onSubmit()" class="form-grid">
+            
+            <div class="form-group">
+                <label for="nombre_completo">Nombre Completo *</label>
+                <input id="nombre_completo" formControlName="nombre_completo" required>
+                <div *ngIf="f['nombre_completo'].invalid && (f['nombre_completo'].dirty || f['nombre_completo'].touched)" class="text-danger">
+                    <div *ngIf="f['nombre_completo'].errors?.['required']">
+                        El nombre completo es obligatorio.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email_personal">Email Personal *</label>
+                <input id="email_personal" type="email" formControlName="email_personal" required>
+                <div *ngIf="f['email_personal'].invalid && (f['email_personal'].dirty || f['email_personal'].touched)" class="text-danger">
+                    <div *ngIf="f['email_personal'].errors?.['required']">
+                        El email personal es obligatorio.
+                    </div>
+                    <div *ngIf="f['email_personal'].errors?.['email']">
+                        El formato del email no es válido.
+                    </div>
+                    <div *ngIf="f['email_personal'].errors?.['forbiddenDomain']">
+                        El dominio del correo electrónico no está permitido.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email_institucional">Email Institucional</label>
+                <input id="email_institucional" type="email" formControlName="email_institucional">
+                <div *ngIf="f['email_institucional'].invalid && (f['email_institucional'].dirty || f['email_institucional'].touched)" class="text-danger">
+                    <div *ngIf="f['email_institucional'].errors?.['email']">
+                        El formato del email no es válido.
+                    </div>
+                    <div *ngIf="f['email_institucional'].errors?.['forbiddenDomain']">
+                        El dominio del correo electrónico no está permitido.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input id="telefono" formControlName="telefono">
+                <div *ngIf="f['telefono'].invalid && (f['telefono'].dirty || f['telefono'].touched)" class="text-danger">
+                    <div *ngIf="f['telefono'].errors?.['minlength']">
+                        El número de teléfono debe tener un mínimo de 10 dígitos.
+                    </div>
+                    <div *ngIf="f['telefono'].errors?.['maxlength']">
+                        El número de teléfono debe tener un máximo de 14 dígitos.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="whatsapp">WhatsApp</label>
+                <input id="whatsapp" formControlName="whatsapp">
+                <div *ngIf="f['whatsapp'].invalid && (f['whatsapp'].dirty || f['whatsapp'].touched)" class="text-danger">
+                    <div *ngIf="f['whatsapp'].errors?.['minlength']">
+                        El número de WhatsApp debe tener un mínimo de 10 dígitos.
+                    </div>
+                    <div *ngIf="f['whatsapp'].errors?.['maxlength']">
+                        El número de WhatsApp debe tener un máximo de 14 dígitos.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
+                <button type="submit" class="primary-btn" [disabled]="participanteForm.invalid">{{ isEditing ? 'Actualizar' : 'Crear' }}</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="data-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Email Personal</th>
+                    <th>Email Institucional</th>
+                    <th>Teléfono</th>
+                    <th>WhatsApp</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="isLoading">
+                    <td colspan="6" class="no-data">Cargando...</td>
+                </tr>
+                <tr *ngIf="!isLoading && filteredParticipants.length === 0">
+                    <td colspan="6" class="no-data">No se encontraron participantes.</td>
+                </tr>
+                <tr *ngFor="let participante of filteredParticipants">
+                    <td>{{ participante.nombre_completo }}</td>
+                    <td>{{ participante.email_personal }}</td>
+                    <td>{{ participante.email_institucional || 'N/A' }}</td>
+                    <td>{{ participante.telefono || 'N/A' }}</td>
+                    <td>{{ participante.whatsapp || 'N/A' }}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="icon-btn edit" (click)="editParticipant(participante)" title="Editar Participante">
+                                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button>
+                            <button class="icon-btn delete" (click)="deleteParticipant(participante)" title="Eliminar Participante">
+                                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div *ngIf="!isLoading && filteredParticipants.length > 0 && !searchTerm" 
+         class="pagination-controls flex justify-center items-center gap-4 mt-4 mb-8">
+        
+        <button (click)="prevPageParticipants()" 
+                [disabled]="skip === 0" 
+                class="btn btn-secondary btn-sm">
+            ← Atrás
+        </button>
+        
+        <span class="page-info text-sm text-gray-600">
+            Página {{ (skip / PARTICIPANTES_LIMIT) + 1 }}
+        </span>
+        
+        <button (click)="nextPageParticipants()" 
+                [disabled]="!hasMoreParticipants" 
+                class="btn btn-secondary btn-sm">
+            Siguiente →
+        </button>
+    </div>
+    </div>

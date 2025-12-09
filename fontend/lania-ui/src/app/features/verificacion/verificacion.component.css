@@ -1,0 +1,242 @@
+/* ============================================================
+   CONTENEDOR GENERAL
+============================================================ */
+.verificacion-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    width: 100%;
+}
+
+.verificacion-content-wrapper {
+    display: flex;
+    width: 100%;
+    gap: 2rem;
+}
+
+/* ============================================================
+   CARD PRINCIPAL DE RESULTADOS (TODO EL BLOQUE IZQUIERDO)
+============================================================ */
+.verificacion-card {
+    width: 480px;
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 1.6rem 1.8rem;
+    border: 1px solid #d9ddea;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+/* ============================================================
+   HEADER DENTRO DEL CARD
+============================================================ */
+.verificacion-card .verificacion-header {
+    text-align: center;
+}
+
+.verificacion-card .verificacion-header h1 {
+    margin-bottom: 0.3rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.verificacion-card .verificacion-header p {
+    margin: 0.2rem 0 0.4rem;
+    font-size: 0.88rem;
+    color: #5d6178;
+}
+
+.verificacion-card .login-link {
+    font-size: 0.78rem;
+    color: #4a5de3;
+    font-weight: 600;
+}
+
+/* ============================================================
+   TÍTULO "CERTIFICADO VÁLIDO"
+============================================================ */
+.verificacion-card h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ============================================================
+   GRID COMPACTO + FONDO + SEPARADORES
+============================================================ */
+.resultado-grid {
+    width: 100%;
+    max-width: 360px;
+    background: #f5f6fc;
+    border: 1px solid #d8ddee;
+    border-radius: 16px;
+    overflow: hidden;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+       "folio emitido"
+       "producto producto"
+       "tipo fecha"
+       "constancia constancia";
+}
+
+.resultado-grid .grid-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e6e8f2;
+    border-right: 1px solid #e6e8f2;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.resultado-grid .grid-item:nth-child(even) {
+    border-right: none;
+}
+
+.resultado-grid .grid-item:last-child {
+    border-bottom: none;
+}
+
+/* Áreas */
+.resultado-grid .grid-item:nth-child(1) { grid-area: folio; }
+.resultado-grid .grid-item:nth-child(2) { grid-area: emitido; }
+.resultado-grid .grid-item:nth-child(3) { grid-area: producto; }
+.resultado-grid .grid-item:nth-child(5) { grid-area: tipo; }
+.resultado-grid .grid-item:nth-child(6) { grid-area: fecha; }
+.resultado-grid .grid-item:nth-child(4) {
+    grid-area: constancia;
+    text-align: center;
+    border-right: none;
+}
+
+/* Tipografía */
+.grid-item strong {
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    color: #6a6f86;
+}
+
+.grid-item span {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #212433;
+}
+
+/* ============================================================
+   BADGE AUTÉNTICO
+============================================================ */
+.valido-badge {
+    margin-top: 0.6rem;
+}
+
+/* ============================================================
+   BOTONES BAJO EL GRID (AQUÍ SOLO AGREGAMOS COLORES)
+============================================================ */
+
+.verificacion-card button {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: 0.25s ease-in-out;
+}
+
+/* Botón primario (PDF) */
+.btn-primary {
+    margin-top: 0.4rem;
+    background: linear-gradient(135deg, #6a5be8, #7d3ce2);
+    color: white;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5f51d4, #6e32c3);
+}
+
+/* Botón secundario (Verificar otro) */
+.btn-secondary {
+    background: #eef1f6;
+    border: 1px solid #c8cede;
+    color: #2b2f3c;
+}
+.btn-secondary:hover {
+    background: #e3e6ee;
+}
+
+/* Botón AUTÉNTICO */
+.valido-badge {
+    background: #eaffea;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    border: 2px solid #32b86c;
+    color: #217746;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ============================================================
+   PANEL PDF A LA DERECHA
+============================================================ */
+.pdf-viewer-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.07);
+    border: 1px solid #e3e6ef;
+    overflow: hidden;
+}
+
+/* HEADER DEL PDF */
+.pdf-panel-header {
+    flex-shrink: 0;
+    padding: 1rem;
+    background: #eef1f8;
+    border-bottom: 1px solid #d7dae5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* CUERPO DEL PANEL PDF */
+.pdf-panel-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0 !important;
+    margin: 0;
+}
+
+/* IFRAME LLENA TODO EL PANEL */
+.pdf-panel-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* ============================================================
+   SPINNER PDF
+============================================================ */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255,255,255,0.7);
+    z-index: 10;
+}
+
+.spinner.large {
+    width: 42px;
+    height: 42px;
+    border-width: 4px;
+}

@@ -1,0 +1,233 @@
+### Variables
+@baseUrl = http://127.0.0.1:8000
+@token = {{login.response.body.access_token}}
+
+### ==============================================
+### 1. VERIFICAR QUE LA API ESTÁ CORRIENDO
+### ==============================================
+GET {{baseUrl}}/
+Accept: application/json
+
+### ==============================================
+### 2. LOGIN ADMIN (guarda el token automáticamente)
+### ==============================================
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "sergio@lania.mx",
+  "password": "12345678"
+}
+
+### ==============================================
+### 3. CREAR DATOS DE PRUEBA DIRECTAMENTE
+### ==============================================
+
+### Crear Curso
+POST {{baseUrl}}/api/admin/courses
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "code": "PYTHON-2024",
+  "name": "Curso de Python para Data Science",
+  "start_date": "2024-08-01",
+  "end_date": "2024-08-15",
+  "hours": 40,
+  "created_by": 2
+}
+
+### Crear Participante 1
+POST {{baseUrl}}/api/admin/participants
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "juan.perez@email.com",
+  "full_name": "Juan Pérez García",
+  "phone": "55-1234-5678"
+}
+
+### Crear Participante 2
+POST {{baseUrl}}/api/admin/participants
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "maria.lopez@email.com",
+  "full_name": "María López Hernández", 
+  "phone": "55-8765-4321"
+}
+
+### Crear Participante 3
+POST {{baseUrl}}/api/admin/participants
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "carlos.ruiz@email.com",
+  "full_name": "Carlos Ruiz Mendoza",
+  "phone": "55-5555-1234"
+}
+
+### ==============================================
+### 4. LISTAR DATOS CREADOS
+### ==============================================
+
+### Listar Cursos
+GET {{baseUrl}}/api/admin/courses
+Authorization: Bearer {{token}}
+
+### Listar Participantes  
+GET {{baseUrl}}/api/admin/participants
+Authorization: Bearer {{token}}
+
+### ==============================================
+### 5. EMITIR CERTIFICADOS
+### ==============================================
+
+### Emitir Certificado de Aprobación
+POST {{baseUrl}}/api/admin/certificates/issue
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "course_id": 1,
+  "participant_id": 1,
+  "kind": "APROBACION"
+}
+
+### Emitir Certificado de Asistencia
+POST {{baseUrl}}/api/admin/certificates/issue
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "course_id": 1,
+  "participant_id": 2,
+  "kind": "ASISTENCIA"
+}
+
+### Emitir Certificado de Participación
+POST {{baseUrl}}/api/admin/certificates/issue
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "course_id": 1,
+  "participant_id": 3,
+  "kind": "PARTICIPACION"
+}
+
+### ==============================================
+### 6. LISTAR CERTIFICADOS
+### ==============================================
+
+### Listar todos los certificados
+GET {{baseUrl}}/api/admin/certificates
+Authorization: Bearer {{token}}
+
+### ==============================================
+### 7. VERIFICACIÓN PÚBLICA (sin autenticación)
+### ==============================================
+
+### Verificar certificado por token QR
+### Nota: Después de crear un certificado, copia el qr_token de la respuesta y reemplaza TOKEN_AQUI
+GET {{baseUrl}}/v/t/TOKEN_AQUI
+Accept: application/json
+
+### Descargar PDF por serial
+### Nota: Después de crear un certificado, copia el serial de la respuesta y reemplaza SERIAL_AQUI
+GET {{baseUrl}}/v/serial/SERIAL_AQUI/pdf
+Accept: application/pdf
+
+### ==============================================
+### 8. CONSULTAS ADICIONALES
+### ==============================================
+
+### Obtener curso específico
+GET {{baseUrl}}/api/admin/courses/1
+Authorization: Bearer {{token}}
+
+### Obtener participante específico
+GET {{baseUrl}}/api/admin/participants/1
+Authorization: Bearer {{token}}
+
+### Actualizar curso
+PUT {{baseUrl}}/api/admin/courses/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Curso de Python para Data Science - ACTUALIZADO",
+  "hours": 45
+}
+
+### Actualizar participante
+PUT {{baseUrl}}/api/admin/participants/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "full_name": "Juan Pérez García - ACTUALIZADO",
+  "phone": "55-9999-8888"
+}
+
+### ==============================================
+### 9. PRUEBAS DE ERROR (para verificar validaciones)
+### ==============================================
+
+### Login con credenciales incorrectas
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "wrong@email.com",
+  "password": "wrongpassword"
+}
+
+### Acceder sin token (debería dar error 401)
+GET {{baseUrl}}/api/admin/courses
+
+### Crear participante con email duplicado (después de crear el primero)
+POST {{baseUrl}}/api/admin/participants
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "juan.perez@email.com",
+  "full_name": "Otro Juan Pérez",
+  "phone": "55-0000-0000"
+}
+
+### Crear certificado duplicado (después de crear el primero)
+POST {{baseUrl}}/api/admin/certificates/issue
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "course_id": 1,
+  "participant_id": 1,
+  "kind": "APROBACION"
+}
+
+### Verificar token de certificado inexistente
+GET {{baseUrl}}/v/t/token-inexistente
+Accept: application/json
+
+### Intentar descargar PDF de certificado inexistente
+GET {{baseUrl}}/v/serial/SERIAL-INEXISTENTE/pdf
+Accept: application/pdf
+
+### ==============================================
+### 10. OPERACIONES DE ELIMINACIÓN (usar con cuidado)
+### ==============================================
+
+### Eliminar curso (esto eliminará también certificados relacionados)
+# DELETE {{baseUrl}}/api/admin/courses/1
+# Authorization: Bearer {{token}}
+
+### Eliminar participante (esto eliminará también certificados relacionados)
+# DELETE {{baseUrl}}/api/admin/participants/1
+# Authorization: Bearer {{token}}

@@ -1,0 +1,323 @@
+<div class="module-content">
+    <div class="module-header">
+        <h2>Gestión de Certificados</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" (click)="openCreateModal()">
+                <span class="icon-text">✚</span> Emitir Nuevo Certificado
+            </button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================ -->
+    <!-- SECCIÓN: CERTIFICADOS DE PARTICIPANTES -->
+    <!-- ============================================ -->
+    <div class="table-section">
+        <div class="table-header">
+            <h3>Certificados de Participantes</h3>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    [(ngModel)]="searchTermParticipantes" 
+                    (input)="filterCertificadosParticipantes()" 
+                    placeholder="Buscar por folio, participante o curso...">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Indicador de carga -->
+        <div *ngIf="isLoadingParticipantes" class="loading-indicator">
+            Cargando certificados de participantes...
+        </div>
+
+        <!-- Tabla con datos -->
+        <ng-container *ngIf="!isLoadingParticipantes && filteredCertificadosParticipantes.length > 0">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Participante</th>
+                            <th>Producto Educativo</th>
+                            <th>Correo Personal</th>
+                            <th>Fecha de Emisión</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let certificado of filteredCertificadosParticipantes">
+                            <td>
+                                <a [href]="getVerificationUrl(certificado.folio)" target="_blank">
+                                    {{ certificado.folio }}
+                                </a>
+                            </td>
+                            <td>{{ certificado.inscripcion?.participante?.nombre_completo || 'N/A' }}</td>
+                            <td>{{ certificado.inscripcion?.producto_educativo?.nombre || 'N/A' }}</td>
+                            <td>{{ certificado.inscripcion?.participante?.email_personal || 'N/A' }}</td>
+                            <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+                            <td class="actions-cell">
+                                <button 
+                                    class="icon-btn view" 
+                                    (click)="visualizarCertificado(certificado)" 
+                                    title="Visualizar">
+                                    👁️
+                                </button>
+                                <button 
+                                    class="icon-btn email" 
+                                    (click)="reenviarCertificado(certificado)" 
+                                    title="Reenviar Email">
+                                    📧
+                                </button>
+                                <button 
+                                    class="icon-btn delete" 
+                                    (click)="deleteCertificado(certificado)" 
+                                    title="Eliminar">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Controles de paginación (solo si NO hay búsqueda activa) -->
+            <div *ngIf="!searchTermParticipantes" class="pagination-controls">
+                <button 
+                    class="btn btn-secondary" 
+                    (click)="prevPageParticipantes()" 
+                    [disabled]="skipParticipantes === 0">
+                    ← Anterior
+                </button>
+                
+                <span class="page-info">
+                    Página {{ (skipParticipantes / PARTICIPANTES_LIMIT) + 1 }}
+                </span>
+                
+                <button 
+                    class="btn btn-secondary" 
+                    (click)="nextPageParticipantes()" 
+                    [disabled]="!hasMoreParticipantes">
+                    Siguiente →
+                </button>
+            </div>
+        </ng-container>
+
+        <!-- Mensaje cuando no hay datos -->
+        <div *ngIf="!isLoadingParticipantes && filteredCertificadosParticipantes.length === 0" class="no-data-card">
+            <p *ngIf="searchTermParticipantes">
+                No se encontraron certificados de participantes que coincidan con "<strong>{{ searchTermParticipantes }}</strong>".
+            </p>
+            <p *ngIf="!searchTermParticipantes">
+                No hay certificados de participantes emitidos todavía.
+            </p>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================ -->
+    <!-- SECCIÓN: CERTIFICADOS DE DOCENTES -->
+    <!-- ============================================ -->
+    <div class="table-section">
+        <div class="table-header">
+            <h3>Certificados de Docentes</h3>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    [(ngModel)]="searchTermDocentes" 
+                    (input)="filterCertificadosDocentes()" 
+                    placeholder="Buscar por folio, docente...">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Indicador de carga -->
+        <div *ngIf="isLoadingDocentes" class="loading-indicator">
+            Cargando certificados de docentes...
+        </div>
+
+        <!-- Tabla con datos -->
+        <ng-container *ngIf="!isLoadingDocentes && filteredCertificadosDocentes.length > 0">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Docente</th>
+                            <th>Producto Educativo</th>
+                            <th>Correo Institucional</th>
+                            <th>Fecha de Emisión</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let certificado of filteredCertificadosDocentes">
+                            <td>
+                                <a [href]="getVerificationUrl(certificado.folio)" target="_blank">
+                                    {{ certificado.folio }}
+                                </a>
+                            </td>
+                            <td>{{ certificado.docente?.nombre_completo || 'N/A' }}</td>
+                            <td>{{ certificado.producto_educativo?.nombre || 'N/A' }}</td>
+                            <td>{{ certificado.docente?.email_institucional || 'N/A' }}</td>
+                            <td>{{ certificado.fecha_emision | date:'dd/MM/yyyy' }}</td>
+                            <td class="actions-cell">
+                                <button 
+                                    class="icon-btn view" 
+                                    (click)="visualizarCertificado(certificado)" 
+                                    title="Visualizar">
+                                    👁️
+                                </button>
+                                <button 
+                                    class="icon-btn email" 
+                                    (click)="reenviarCertificado(certificado)" 
+                                    title="Reenviar Email">
+                                    📧
+                                </button>
+                                <button 
+                                    class="icon-btn delete" 
+                                    (click)="deleteCertificado(certificado)" 
+                                    title="Eliminar">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Controles de paginación (solo si NO hay búsqueda activa) -->
+            <div *ngIf="!searchTermDocentes" class="pagination-controls">
+                <button 
+                    class="btn btn-secondary" 
+                    (click)="prevPageDocentes()" 
+                    [disabled]="skipDocentes === 0">
+                    ← Anterior
+                </button>
+                
+                <span class="page-info">
+                    Página {{ (skipDocentes / DOCENTES_LIMIT) + 1 }}
+                </span>
+                
+                <button 
+                    class="btn btn-secondary" 
+                    (click)="nextPageDocentes()" 
+                    [disabled]="!hasMoreDocentes">
+                    Siguiente →
+                </button>
+            </div>
+        </ng-container>
+
+        <!-- Mensaje cuando no hay datos -->
+        <div *ngIf="!isLoadingDocentes && filteredCertificadosDocentes.length === 0" class="no-data-card">
+            <p *ngIf="searchTermDocentes">
+                No se encontraron certificados de docentes que coincidan con "<strong>{{ searchTermDocentes }}</strong>".
+            </p>
+            <p *ngIf="!searchTermDocentes">
+                No hay certificados de docentes emitidos todavía.
+            </p>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- MODAL: EMISIÓN RÁPIDA DE CERTIFICADO -->
+<!-- ============================================ -->
+<div *ngIf="showCreateModal" class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()" [formGroup]="createForm">
+        <div class="modal-header">
+            <h3>Emisión Rápida de Certificado</h3>
+            <button class="modal-close-btn" (click)="closeCreateModal()">×</button>
+        </div>
+
+        <div class="modal-body">
+            
+            <div class="form-group">
+                <label for="productoId">1. Seleccione el Producto Educativo:</label>
+                <select id="productoId" formControlName="productoId" (change)="onProductoSeleccionadoParaCrear()">
+                    <option [ngValue]="null" disabled>Seleccione un producto...</option>
+                    <option *ngFor="let producto of allProductos" [ngValue]="producto.id">
+                        {{ producto.nombre }} ({{ producto.fecha_inicio | date:'dd/MM/yy' }})
+                    </option>
+                </select>
+            </div>
+
+            <div *ngIf="selectedProducto">
+                <div class="form-group">
+                    <label>2. Seleccione el tipo de destinatario:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" value="participante" formControlName="tipoDestinatario">
+                            Participante
+                        </label>
+                        <label>
+                            <input type="radio" value="docente" formControlName="tipoDestinatario">
+                            Docente
+                        </label>
+                    </div>
+                </div>
+
+                <div *ngIf="createForm.get('tipoDestinatario')?.value === 'participante'">
+                    <div class="form-group">
+                        <label for="inscripcionId">3. Seleccione al Participante (Inscripción):</label>
+                        
+                        <select id="inscripcionId" formControlName="inscripcionId" (change)="onParticipanteSeleccionadoParaCrear()">
+                            <option [ngValue]="null" disabled>Seleccione un participante...</option>
+                            <option *ngFor="let inscripcion of inscripcionesDelProducto" [ngValue]="inscripcion.id">
+                                {{ inscripcion.participante.nombre_completo }}
+                            </option>
+                            <option [ngValue]="null" *ngIf="inscripcionesDelProducto.length === 0" disabled>
+                                -- Todos los participantes ya tienen sus certificados --
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" *ngIf="selectedProducto.tipo_producto === 'CURSO_EDUCATIVO'">
+                        <label class="checkbox-label">
+                            <input type="checkbox" formControlName="conCompetencias">
+                            Emitir como Reconocimiento de Competencias
+                        </label>
+                    </div>
+                </div>
+
+                <div *ngIf="createForm.get('tipoDestinatario')?.value === 'docente'">
+                    <div class="form-group">
+                        <label for="docenteId">3. Seleccione al Docente:</label>
+                        <select id="docenteId" formControlName="docenteId">
+                            <option [ngValue]="null" disabled>Seleccione un docente...</option>
+                            <option *ngFor="let docente of docentesDelProducto" [ngValue]="docente.id">
+                                {{ docente.nombre_completo }}
+                            </option>
+                            <option [ngValue]="null" *ngIf="docentesDelProducto.length === 0" disabled>
+                                -- Todos los docentes ya tienen constancia para este producto --
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">
+                Cancelar
+            </button>
+            <button 
+                class="btn btn-primary" 
+                type="button" 
+                (click)="onCreateSubmit()" 
+                [disabled]="createForm.invalid || (!createForm.get('inscripcionId')?.value && !createForm.get('docenteId')?.value)">
+                <span *ngIf="!isLoadingModalData">Emitir Certificado</span>
+                <span *ngIf="isLoadingModalData">Emitiendo...</span>
+            </button>
+        </div>
+    </div>
+</div>

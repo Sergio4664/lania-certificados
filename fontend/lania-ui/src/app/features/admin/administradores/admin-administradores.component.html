@@ -1,0 +1,126 @@
+<div class="admin-container">
+  <header class="admin-header">
+    <h1>Gestión de Administradores</h1>
+    <button class="primary-btn" (click)="toggleForm()">
+      <!-- El texto se ajusta según el estado de edición -->
+      {{ isEditing ? 'Cancelar Edición' : 'Nuevo Administrador' }}
+    </button>
+  </header>
+
+  <div class="content-wrapper">
+
+    <div class="form-card">
+      <h3>{{ isEditing ? 'Editar' : 'Registrar' }} Administrador</h3>
+      <form [formGroup]="adminForm" (ngSubmit)="onSubmit()">
+        
+        <div class="form-group">
+          <label for="nombre_completo">Nombre Completo *</label>
+          <input id="nombre_completo" formControlName="nombre_completo" 
+                 [ngClass]="{ 'is-invalid': f['nombre_completo'].touched && f['nombre_completo'].invalid }">
+          <div *ngIf="f['nombre_completo'].touched && f['nombre_completo'].invalid" class="invalid-feedback">
+            <div *ngIf="f['nombre_completo'].errors?.['required']">El nombre es obligatorio.</div>
+            <div *ngIf="f['nombre_completo'].errors?.['minlength']">Debe tener al menos 3 caracteres.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email (Personal) *</label>
+          <input id="email" type="email" formControlName="email"
+                 [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].invalid }">
+          <div *ngIf="f['email'].touched && f['email'].invalid" class="invalid-feedback">
+              <div *ngIf="f['email'].errors?.['required']">El email es obligatorio.</div>
+              <div *ngIf="f['email'].errors?.['email']">El formato del email no es válido.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email_institucional">Email Institucional *</label>
+          <input id="email_institucional" type="email" formControlName="email_institucional"
+                 [ngClass]="{ 'is-invalid': f['email_institucional'].touched && f['email_institucional'].invalid }">
+          <div *ngIf="f['email_institucional'].touched && f['email_institucional'].invalid" class="invalid-feedback">
+            <div *ngIf="f['email_institucional'].errors?.['required']">El email institucional es obligatorio.</div>
+            <div *ngIf="f['email_institucional'].errors?.['pattern']">El email debe ser del dominio &#64;lania.edu.mx.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="telefono">Teléfono *</label>
+          <input id="telefono" formControlName="telefono"
+                 [ngClass]="{ 'is-invalid': f['telefono'].touched && f['telefono'].invalid }">
+          <div *ngIf="f['telefono'].touched && f['telefono'].invalid" class="invalid-feedback">
+            <div *ngIf="f['telefono'].errors?.['required']">El teléfono es obligatorio.</div>
+            <div *ngIf="f['telefono'].errors?.['pattern']">El teléfono debe tener 10 o 12 dígitos.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="whatsapp">WhatsApp *</label>
+          <input id="whatsapp" formControlName="whatsapp"
+                 [ngClass]="{ 'is-invalid': f['whatsapp'].touched && f['whatsapp'].invalid }">
+          <div *ngIf="f['whatsapp'].touched && f['whatsapp'].invalid" class="invalid-feedback">
+            <div *ngIf="f['whatsapp'].errors?.['required']">El WhatsApp es obligatorio.</div>
+            <div *ngIf="f['whatsapp'].errors?.['pattern']">El WhatsApp debe tener 10 o 12 dígitos.</div>
+          </div>
+        </div>
+
+        <!-- Solo muestra el campo de contraseña si NO se está editando (es decir, en la creación) -->
+        <div class="form-group" *ngIf="!isEditing">
+          <label for="password">Contraseña *</label>
+          <input id="password" type="password" formControlName="password"
+                 [ngClass]="{ 'is-invalid': f['password'].touched && f['password'].invalid }">
+          <div *ngIf="f['password'].touched && f['password'].invalid" class="invalid-feedback">
+            <div *ngIf="f['password'].errors?.['required']">La contraseña es obligatoria.</div>
+            <div *ngIf="f['password'].errors?.['minlength']">Debe tener al menos 8 caracteres.</div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" (click)="toggleForm()">Cancelar</button>
+          <button type="submit" class="primary-btn">
+            {{ isEditing ? 'Actualizar' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre Completo</th>
+            <th>Email Institucional</th>
+            <th>Teléfono</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let admin of administradores">
+            <td>{{ admin.nombre_completo }}</td>
+            <td>{{ admin.email_institucional }}</td>
+            <td>{{ admin.telefono }}</td>
+            <td class="action-buttons">
+              <!-- Botón para Restablecer Contraseña -->
+              <button class="icon-btn key-btn" (click)="sendResetLink(admin.id)" title="Restablecer Contraseña">
+                🔑
+              </button>
+              
+              <button class="icon-btn edit" (click)="toggleForm(admin)">
+                ✏️
+              </button>
+              <button class="icon-btn delete" (click)="deleteAdmin(admin)">
+                <!-- 🚨 CAMBIO AQUÍ: Se pasa el objeto 'admin' completo -->
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="!administradores || administradores.length === 0" class="no-data">
+        No hay administradores registrados.
+      </div>
+    </div>
+
+  </div>
+
+</div>

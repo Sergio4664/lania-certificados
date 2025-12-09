@@ -1,0 +1,383 @@
+/* 
+ * Estilos para Admin Docentes
+ * CON SOPORTE COMPLETO PARA MÓVILES
+ */
+
+.admin-container { 
+  padding: 20px; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+}
+
+.admin-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-header h1 { 
+  color: #1e293b; 
+  margin: 0; 
+  font-size: 28px; 
+  font-weight: 600; 
+}
+
+.header-actions { 
+  display: flex; 
+  align-items: center; 
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-container { 
+  position: relative; 
+}
+
+.search-container input { 
+  padding: 10px 10px 10px 35px; 
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  width: 250px; 
+  transition: all 0.2s; 
+}
+
+.search-container input:focus { 
+  border-color: #667eea; 
+  outline: none; 
+}
+
+.search-icon { 
+  position: absolute; 
+  left: 10px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  color: #9ca3af; 
+}
+
+.primary-btn { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+  color: white; 
+  border: none; 
+  padding: 12px 20px; 
+  border-radius: 8px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: transform 0.2s; 
+}
+
+.primary-btn:hover { 
+  transform: translateY(-1px); 
+}
+
+.secondary-btn { 
+  background: #f1f5f9; 
+  color: #64748b; 
+  border: 1px solid #e2e8f0; 
+  padding: 12px 20px; 
+  border-radius: 8px; 
+  font-weight: 500; 
+  cursor: pointer; 
+  transition: background 0.2s; 
+}
+
+.secondary-btn:hover { 
+  background: #e2e8f0; 
+}
+
+.form-card { 
+  background: white; 
+  border-radius: 12px; 
+  padding: 24px; 
+  margin-bottom: 24px; 
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
+  border: 1px solid #e2e8f0; 
+}
+
+.form-card h3 { 
+  color: #1e293b; 
+  margin: 0 0 20px 0; 
+  font-size: 20px; 
+  font-weight: 600; 
+}
+
+.form-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+  gap: 20px; 
+}
+
+.form-group { 
+  display: flex; 
+  flex-direction: column; 
+}
+
+.form-group label { 
+  color: #374151; 
+  font-weight: 600; 
+  margin-bottom: 8px; 
+  font-size: 14px; 
+}
+
+.form-group input { 
+  padding: 12px; 
+  border: 2px solid #e5e7eb; 
+  border-radius: 8px; 
+  font-size: 14px; 
+  transition: border-color 0.2s; 
+}
+
+.form-group input:focus { 
+  outline: none; 
+  border-color: #3b82f6; 
+}
+
+.text-danger {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.form-actions { 
+  display: flex; 
+  gap: 12px; 
+  grid-column: 1 / -1; 
+  margin-top: 8px; 
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.data-table { 
+  background: white; 
+  border-radius: 12px; 
+  overflow: hidden; 
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.data-table table { 
+  width: 100%; 
+  border-collapse: collapse; 
+}
+
+.data-table th { 
+  background: #f8fafc; 
+  padding: 16px; 
+  text-align: left; 
+  font-weight: 600; 
+  color: #374151; 
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.data-table td { 
+  padding: 16px; 
+  border-bottom: 1px solid #f1f5f9; 
+  color: #64748b; 
+  vertical-align: middle;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.data-table tbody tr:hover { 
+  background: #f8fafc; 
+}
+
+.no-data {
+  text-align: center;
+  padding: 32px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.icon-btn { 
+  width: 36px; 
+  height: 36px; 
+  border: none; 
+  border-radius: 50%; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  transition: all 0.2s; 
+  background-color: transparent;
+  font-size: 18px;
+}
+
+.icon-btn.edit { 
+  color: #f59e0b; 
+}
+.icon-btn.edit:hover {
+  background: #fef3c7;
+}
+
+.icon-btn.delete { 
+  color: #dc2626; 
+}
+.icon-btn.delete:hover { 
+  background: #fecaca; 
+}
+
+.icon-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+  background: #f1f5f9 !important; 
+  color: #9ca3af !important; 
+}
+
+/* ========================================
+   MEDIA QUERIES PARA MÓVILES
+   ======================================== */
+
+/* Tablets (≤1024px) */
+@media (max-width: 1024px) {
+  .admin-container {
+    padding: 16px;
+  }
+
+  .form-grid { 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  }
+}
+
+/* Móviles y tablets pequeñas (≤768px) */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 12px;
+  }
+
+  .admin-header { 
+    flex-direction: column; 
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .admin-header h1 {
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-container input {
+    width: 100%;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-card {
+    padding: 16px;
+  }
+
+  .form-card h3 {
+    font-size: 18px;
+  }
+
+  .form-grid { 
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  /* Tabla con scroll horizontal */
+  .data-table table {
+    min-width: 600px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px;
+    font-size: 0.875rem;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 100%;
+    height: auto;
+    padding: 8px;
+    border-radius: 6px;
+  }
+}
+
+/* Móviles pequeños (≤480px) */
+@media (max-width: 480px) {
+  .admin-container {
+    padding: 8px;
+  }
+
+  .admin-header h1 {
+    font-size: 20px;
+  }
+
+  .form-card {
+    padding: 12px;
+  }
+
+  .form-card h3 {
+    font-size: 16px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+
+  .icon-btn {
+    font-size: 16px;
+    padding: 6px;
+  }
+
+  .no-data {
+    padding: 24px 12px;
+    font-size: 0.9rem;
+  }
+}

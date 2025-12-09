@@ -1,0 +1,411 @@
+/* * Estilos para Admin Participantes
+ * CON SOPORTE COMPLETO PARA MÓVILES
+ */
+
+.module-content h2 {
+  color: #1e293b;
+  margin: 0 0 24px 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-container input {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  width: 250px;
+  transition: all 0.2s;
+}
+
+.search-container input:focus {
+  border-color: #667eea;
+  outline: none;
+}
+
+.primary-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.secondary-btn {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.secondary-btn:hover {
+  background: #e2e8f0;
+}
+
+/* --- PAGINACIÓN --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.pagination-controls button {
+  /* Herencia del botón, ajuste fino para paginación */
+  font-size: 0.9rem;
+  padding: 10px 16px;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-info {
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* --- FIN PAGINACIÓN --- */
+
+
+.form-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.form-card h3 {
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.text-danger {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.data-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.data-table td {
+  color: #64748b;
+}
+
+.data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.no-data {
+  text-align: center;
+  padding: 32px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin: 0 4px;
+  background: transparent;
+}
+
+.icon-btn.edit {
+  color: #d97706;
+}
+
+.icon-btn.edit:hover {
+  background: #fef3c7;
+}
+
+.icon-btn.delete {
+  color: #dc2626;
+}
+
+.icon-btn.delete:hover {
+  background: #fecaca;
+}
+
+/* ========================================
+   MEDIA QUERIES PARA MÓVILES
+   ======================================== */
+
+/* Tablets (≤1024px) */
+@media (max-width: 1024px) {
+  .module-content h2 {
+    font-size: 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+/* Móviles y tablets pequeñas (≤768px) */
+@media (max-width: 768px) {
+  .module-content h2 {
+    font-size: 22px;
+    text-align: center;
+  }
+
+  .module-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-container input {
+    width: 100%;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-card {
+    padding: 16px;
+  }
+
+  .form-card h3 {
+    font-size: 18px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  /* Paginación en móvil: usar un diseño más compacto */
+  .pagination-controls {
+    gap: 0.8rem;
+  }
+
+  .pagination-controls button {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .page-info {
+    font-size: 0.8rem;
+  }
+
+  /* Tabla con scroll horizontal */
+  .data-table table {
+    min-width: 600px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px;
+    font-size: 0.875rem;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .icon-btn {
+    width: 100%;
+    height: auto;
+    padding: 8px;
+    border-radius: 6px;
+    margin: 0;
+  }
+}
+
+/* Móviles pequeños (≤480px) */
+@media (max-width: 480px) {
+  .module-content h2 {
+    font-size: 20px;
+  }
+
+  .form-card {
+    padding: 12px;
+  }
+
+  .form-card h3 {
+    font-size: 16px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+
+  .icon-btn {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  .no-data {
+    padding: 24px 12px;
+    font-size: 0.9rem;
+  }
+
+  .text-danger {
+    font-size: 0.8rem;
+  }
+}
