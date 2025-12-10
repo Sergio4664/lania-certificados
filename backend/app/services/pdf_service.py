@@ -3,8 +3,6 @@
 import asyncio
 import base64
 import locale
-import logging
-import threading
 from datetime import date
 from html import escape as html_escape
 from pathlib import Path
@@ -116,94 +114,40 @@ def _load_css() -> str:
 
 
 # ------------------------------------------------------
-# ------------------------------------------------------
 # RENDER PYPETEER → PDF (CON FIX DE SEÑALES)
 # ------------------------------------------------------
-_render_lock = threading.Lock()
-logger = logging.getLogger(__name__)
-MAX_RENDER_ATTEMPTS = 2
-BROWSER_ARGS = [
-    "--no-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-]
-
-
 def _render_pdf(html_content: str) -> bytes:
     """
     Render seguro de Pyppeteer compatible con FastAPI + Uvicorn.
-
-    Si el llamado ocurre dentro de un bucle de eventos ya activo (por ejemplo,
-    en una ruta async de FastAPI), se ejecuta el render en un hilo separado con
-    su propio bucle para evitar el error "Cannot run the event loop while
-    another loop is running".
     """
 
-    async def run() -> bytes:
+    async def run():
         browser = await launch(
-            headless=True,
-            args=BROWSER_ARGS,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu"
+            ],
             handleSIGINT=False,
             handleSIGTERM=False,
-            handleSIGHUP=False,
+            handleSIGHUP=False
         )
-        try:
-            page = await browser.newPage()
-            await page.setContent(html_content, waitUntil="networkidle0")
-            return await page.pdf({"format": "A4", "printBackground": True})
-        finally:
-            await browser.close()
+        page = await browser.newPage()
+        await page.setContent(html_content, waitUntil="networkidle0")
+        pdf = await page.pdf({"format": "A4", "printBackground": True})
+        await browser.close()
+        return pdf
 
-    def _run_in_new_loop() -> bytes:
-        result: dict[str, bytes] = {}
-        exc: dict[str, BaseException] = {}
-
-        def worker():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result["value"] = loop.run_until_complete(run())
-            except BaseException as e:
-                exc["error"] = e
-            finally:
-                asyncio.set_event_loop(None)
-                loop.close()
-
-        thread = threading.Thread(target=worker)
-        thread.start()
-        thread.join()
-
-        if exc:
-            raise exc["error"]
-        return result["value"]
-
-    def _render_once() -> bytes:
-        try:
-            asyncio.get_running_loop()
-            return _run_in_new_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                return loop.run_until_complete(run())
-            finally:
-                asyncio.set_event_loop(None)
-                loop.close()
-
-    attempts = 0
-    last_error: Optional[BaseException] = None
-    while attempts < MAX_RENDER_ATTEMPTS:
-        attempts += 1
-        try:
-            with _render_lock:
-                return _render_once()
-        except BaseException as err:
-            last_error = err
-            logger.warning("Intento %s de render fallido: %s", attempts, err)
-            if attempts >= MAX_RENDER_ATTEMPTS:
-                break
-
-    raise RuntimeError("Error al generar PDF después de reintentos") from last_error
+    # CORRECCIÓN FINAL: Solo crea y ejecuta el bucle.
+    # Eliminar asyncio.set_event_loop() evita el error de anidamiento.
+    loop = asyncio.new_event_loop()
+    
+    try:
+        # Ejecuta la corrutina en el nuevo bucle
+        return loop.run_until_complete(run())
+    finally:
+        # Limpieza: Cerrar el bucle
+        loop.close()
 
 
 # ------------------------------------------------------
