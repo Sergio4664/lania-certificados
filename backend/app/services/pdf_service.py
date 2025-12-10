@@ -7,8 +7,10 @@ from datetime import date
 from html import escape as html_escape
 from pathlib import Path
 from typing import Optional, List
+# Se remueve 'import nest_asyncio' si fue añadido previamente.
 
-# No se requiere importación de nest_asyncio
+# NUEVA IMPORTACIÓN: Necesaria para manejar la ejecución en un hilo separado
+from concurrent.futures import ThreadPoolExecutor
 
 from pyppeteer import launch
 
@@ -39,7 +41,7 @@ body {
     font-family: 'Roboto', Arial, sans-serif;
     margin: 0; padding: 0;
 }
-
+/* ... (el resto del código CSS se mantiene) ... */
 .certificate-wrapper {
     width: 100%;
     min-height: 100vh;
@@ -114,44 +116,66 @@ def _load_css() -> str:
 
 
 # ------------------------------------------------------
-# RENDER PYPETEER → PDF (CON FIX DE SEÑALES)
+# RENDER PYPETEER → PDF (SOLUCIÓN ROBUSTA PARA UVLOOP)
 # ------------------------------------------------------
+
+# Lógica asíncrona de Pyppeteer aislada
+async def _async_render(html_content: str) -> bytes:
+    """
+    La lógica asíncrona de pyppeteer.
+    """
+    browser = await launch(
+        args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu"
+        ],
+        handleSIGINT=False,
+        handleSIGTERM=False,
+        handleSIGHUP=False
+    )
+    page = await browser.newPage()
+    await page.setContent(html_content, waitUntil="networkidle0")
+    pdf = await page.pdf({"format": "A4", "printBackground": True})
+    await browser.close()
+    return pdf
+
+# Función síncrona que crea y corre un nuevo loop para la corrutina
+def _render_in_new_loop(html_content: str) -> bytes:
+    """
+    Crea, ejecuta y cierra un loop de asyncio estándar para la corrutina 
+    en el hilo actual.
+    """
+    # Se establece None para limpiar cualquier referencia potencial del thread
+    # a un bucle existente.
+    asyncio.set_event_loop(None)
+    
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(_async_render(html_content))
+    finally:
+        loop.close()
+        # Vuelve a poner el bucle a None al terminar
+        asyncio.set_event_loop(None)
+
+
 def _render_pdf(html_content: str) -> bytes:
     """
-    Render seguro de Pyppeteer compatible con FastAPI + Uvicorn.
+    Render seguro de Pyppeteer, delegando la ejecución a un hilo 
+    separado (ThreadPoolExecutor) para evitar el conflicto de bucles (uvloop).
     """
-
-    async def run():
-        browser = await launch(
-            args=[
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu"
-            ],
-            handleSIGINT=False,
-            handleSIGTERM=False,
-            handleSIGHUP=False
-        )
-        page = await browser.newPage()
-        await page.setContent(html_content, waitUntil="networkidle0")
-        pdf = await page.pdf({"format": "A4", "printBackground": True})
-        await browser.close()
-        return pdf
-
-    # CORRECCIÓN FINAL: Solo crea y ejecuta el bucle.
-    # Eliminar asyncio.set_event_loop() evita el error de anidamiento.
-    loop = asyncio.new_event_loop()
-    
-    try:
-        # Ejecuta la corrutina en el nuevo bucle
-        return loop.run_until_complete(run())
-    finally:
-        # Limpieza: Cerrar el bucle
-        loop.close()
+    # Usamos un ThreadPoolExecutor para ejecutar la función en un nuevo hilo.
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        # El método submit ejecuta _render_in_new_loop en el nuevo hilo.
+        # Esto aísla completamente la creación del bucle de asyncio.
+        future = executor.submit(_render_in_new_loop, html_content)
+        # Bloqueamos hasta que el resultado esté listo.
+        return future.result()
 
 
 # ------------------------------------------------------
 # Construcción de texto de fecha
+# ... (el resto del código se mantiene igual) ...
 # ------------------------------------------------------
 def _build_issue_date_text(issue_date: date) -> str:
     return (
@@ -186,7 +210,7 @@ def generate_certificate_pdf(
     modalidad: str,
     docente_specialty: Optional[str] = None,
 ) -> bytes:
-
+    # ... (el resto del código de la función se mantiene igual) ...
     css_text = _load_css()
     date_text = _build_issue_date_text(issue_date)
     qr_data_uri = _build_qr_data_uri(serial)
@@ -272,6 +296,7 @@ def generate_recognition_pdf(
     competencies: List[str],
 ) -> bytes:
 
+    # ... (el resto del código de la función se mantiene igual) ...
     css_text = _load_css()
     date_text = _build_issue_date_text(issue_date)
     qr_data_uri = _build_qr_data_uri(serial)
