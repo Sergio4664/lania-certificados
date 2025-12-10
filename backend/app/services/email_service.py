@@ -5,7 +5,6 @@ from email.mime.base import MIMEBase
 from email import encoders
 import logging
 
-# Se importa la configuración de una manera centralizada
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -13,29 +12,16 @@ settings = get_settings()
 
 def _send_message_via_smtp(msg: MIMEMultipart, recipient_email: str, subject: str):
     """Función helper para manejar la conexión y el envío SMTP."""
-    
-    # 1. Validación de configuración
     if not all([settings.SMTP_SERVER, settings.SMTP_PORT, settings.SMTP_LOGIN, settings.SMTP_PASSWORD, settings.SMTP_SENDER_EMAIL]):
         logger.error("Faltan variables de entorno SMTP. No se puede enviar el correo.")
-        # Usamos logger y no print
         raise ValueError("Configuración de SMTP incompleta.")
-
     try:
-        # Conexión segura con el servidor SMTP
         server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
-        server.starttls()  # Activar la seguridad
-        
-        # 🚨 CORRECCIÓN CRÍTICA: Se añade () a get_secret_value para obtener el valor de la cadena.
-        # Esto resuelve el error: "'function' object has no attribute 'encode'"
+        server.starttls()  
         server.login(
             settings.SMTP_LOGIN,
             settings.SMTP_PASSWORD.get_secret_value() # ✅ Corregido
             )
-
-        
-        # 2. Envío del mensaje
-        # El método send_message requiere que el mensaje sea convertido a bytes o cadena.
-        # msg.as_string() funciona con objetos MIMEMultipart
         server.sendmail(
             settings.SMTP_SENDER_EMAIL, 
             recipient_email, 
@@ -45,7 +31,6 @@ def _send_message_via_smtp(msg: MIMEMultipart, recipient_email: str, subject: st
         logger.info(f"Correo '{subject}' enviado exitosamente a {recipient_email}.")
     except Exception as e:
         logger.error(f"Error al enviar correo vía SMTP a {recipient_email}: {e}")
-        # Relanzamos la excepción para que el servicio que llama sepa que algo falló.
         raise e
 
 # ----------------------------------------------------------------------------------

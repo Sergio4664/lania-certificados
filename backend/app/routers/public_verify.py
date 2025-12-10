@@ -9,8 +9,6 @@ from app import models
 from app.schemas.certificado import CertificadoPublic
 from app.database import get_db
 
-# Se eliminó la importación incorrecta de 'scarlette' para prevenir errores.
-
 router = APIRouter(
     prefix="/public",
     tags=["Public"]
@@ -18,33 +16,23 @@ router = APIRouter(
 
 @router.get("/verificar/{folio}", response_model=CertificadoPublic)
 def verify_certificate_by_folio(folio: str, db: Session = Depends(get_db)):
-    
-    # Cargar todas las posibles relaciones en una sola consulta para optimizar
     certificado = db.query(models.Certificado).options(
-        # Relaciones para el caso PARTICIPANTE (Inscripcion -> Participante)
         joinedload(models.Certificado.inscripcion)
             .joinedload(models.Inscripcion.participante),
-        
-        # Relación directa para el caso DOCENTE (Certificado -> Docente)
         joinedload(models.Certificado.docente), 
-        
-        # Relación con el producto educativo (necesario en ambos casos)
         joinedload(models.Certificado.producto_educativo) 
             .joinedload(models.ProductoEducativo.docentes)
     ).filter(models.Certificado.folio == folio).first()
-
     if not certificado:
         raise HTTPException(status_code=404, detail="Certificado no encontrado")
 
-    # --- Determinar el portador y el producto educativo ---
     inscripcion = certificado.inscripcion
     docente_directo = certificado.docente
     
     nombre_del_portador = None
-    producto = certificado.producto_educativo # El producto es siempre una relación directa del certificado
+    producto = certificado.producto_educativo 
     
     if inscripcion:
-        # Caso 1: Certificado de Participante
         participante = inscripcion.participante
         if participante is None:
             raise HTTPException(status_code=500, detail=f"Error de datos: Inscripción para {folio} existe, pero el participante está ausente.")

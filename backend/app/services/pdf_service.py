@@ -8,8 +8,7 @@ from html import escape as html_escape
 from pathlib import Path
 from typing import Optional, List
 
-import nest_asyncio
-nest_asyncio.apply()
+# El código ya no contiene nest_asyncio, lo cual fue la corrección anterior.
 
 from pyppeteer import launch
 
@@ -121,7 +120,7 @@ def _render_pdf(html_content: str) -> bytes:
     """
     Render seguro de Pyppeteer compatible con FastAPI + Uvicorn.
     """
-    nest_asyncio.apply()
+    # Se espera que este código se ejecute dentro de un ThreadPoolExecutor (gracias a async def en la ruta)
 
     async def run():
         browser = await launch(
@@ -141,7 +140,8 @@ def _render_pdf(html_content: str) -> bytes:
         return pdf
 
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # CORRECCIÓN: Se ELIMINÓ la línea asyncio.set_event_loop(loop)
+    # ya que causaba el error "Cannot run the event loop while another loop is running"
     return loop.run_until_complete(run())
 
 

@@ -48,14 +48,11 @@ def update_administrador(admin_id: int, admin: AdministradorUpdate, db: Session 
     db_admin = db.query(models.Administrador).filter(models.Administrador.id == admin_id).first()
     if db_admin is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador no encontrado")
-    
     update_data = admin.model_dump(exclude_unset=True)
     if "password" in update_data and update_data["password"]:
         update_data["password_hash"] = get_password_hash(update_data.pop("password"))
-
     for key, value in update_data.items():
         setattr(db_admin, key, value)
-        
     db.commit()
     db.refresh(db_admin)
     return db_admin

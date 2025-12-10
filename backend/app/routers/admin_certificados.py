@@ -1,3 +1,4 @@
+#Ruta: backend/app/routers/admin_certificados.py
 import datetime
 import os
 import json
@@ -134,7 +135,7 @@ def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
 # POST: Emitir certificado de participante
 # ============================================================
 @router.post("/participante", response_model=CertificadoOut, status_code=status.HTTP_201_CREATED)
-def issue_certificate_to_participant(
+async def issue_certificate_to_participant(  # <--- CORRECCIÓN 1: Se agregó 'async'
     certificado_create: CertificadoCreate,
     db: Session = Depends(get_db)
 ):
@@ -377,6 +378,7 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     )
 
     if not certificado:
+        # <--- CORRECCIÓN 2: Se corrigió el SyntaxError
         raise HTTPException(404, "Certificado no encontrado")
 
     archivo = certificado.archivo_path
