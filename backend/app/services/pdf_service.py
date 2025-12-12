@@ -124,18 +124,34 @@ async def _async_render(html_content: str) -> bytes:
     """
     La lógica asíncrona de pyppeteer.
     """
+    # 🚨 RUTA DEL BINARIO DE CHROME INSTALADO POR EL ADMINISTRADOR 🚨
+    CHROME_PATH = "/usr/bin/google-chrome-stable" 
+
     browser = await launch(
+        executablePath=CHROME_PATH, # <-- Usa el binario de Chrome del sistema
         args=[
+            # Argumentos necesarios para ejecución en servidor/Docker
             "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu"
+            "--headless=new",          
+            "--disable-gpu",
+            
+            # Argumentos de estabilidad críticos para evitar Target Closed
+            "--disable-setuid-sandbox",
+            "--no-zygote",               
+            "--disable-dev-shm-usage",   
+            
+            # Argumentos para contenido local (si se requiere)
+            "--disable-web-security",  
+            "--ignore-certificate-errors", 
         ],
         handleSIGINT=False,
         handleSIGTERM=False,
         handleSIGHUP=False
     )
     page = await browser.newPage()
-    await page.setContent(html_content, waitUntil="networkidle0")
+    # 💥 CORRECCIÓN CRÍTICA: Se eliminó 'waitUntil' para resolver el TypeError.
+    await page.setContent(html_content) 
+    
     pdf = await page.pdf({"format": "A4", "printBackground": True})
     await browser.close()
     return pdf
