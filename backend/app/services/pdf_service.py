@@ -1,5 +1,3 @@
-# backend/app/services/pdf_service.py
-
 import asyncio
 import base64
 import locale
@@ -32,7 +30,7 @@ except:
 
 
 # ------------------------------------------------------
-# CSS POR DEFECTO (si no existe app/static/styles.css)
+# CSS POR DEFECTO (si no existe app/static/styles.css) - ¡ACTUALIZADO!
 # ------------------------------------------------------
 DEFAULT_CSS = """
 * { box-sizing: border-box; }
@@ -41,66 +39,134 @@ body {
     font-family: 'Roboto', Arial, sans-serif;
     margin: 0; padding: 0;
 }
-/* ... (el resto del código CSS se mantiene) ... */
+
+/* --- Certificate Container --- */
 .certificate-wrapper {
+    /* Ajuste de margen para centrar el contenido sobre el fondo (si lo hay) */
     width: 100%;
     min-height: 100vh;
-    padding: 40px 60px;
+    padding: 70px 100px; /* Margen superior/inferior 70px, lateral 100px */
 }
 
+/* --- Header Section (LANIA, etc.) --- */
+.header-container {
+    text-align: center;
+    margin-bottom: 25px;
+}
+.header-logo {
+    display: block;
+    width: 80px; /* Tamaño del logo */
+    margin: 0 auto 10px auto;
+}
+.header-text {
+    line-height: 1.1;
+}
+.header-text .main {
+    font-size: 16px; 
+    font-weight: 700;
+    color: #000;
+    text-transform: uppercase;
+}
+.header-text .sub {
+    font-size: 10px;
+    color: #444;
+}
+
+
+/* --- Main Content --- */
 .certificate-title {
     text-align: center;
-    font-size: 32px;
+    font-size: 28px; 
     font-weight: 700;
-    color: #b20000;
-    margin-bottom: 8px;
+    color: #000; 
+    margin: 20px 0 10px 0;
 }
 
 .certificate-subtitle {
     text-align: center;
     font-size: 16px;
-    margin-bottom: 18px;
+    margin-bottom: 15px;
 }
 
 .participant-name {
     text-align: center;
-    font-size: 32px;
+    font-size: 40px; /* Letra más grande para el nombre */
     font-weight: 700;
-    margin: 10px 0 18px 0;
+    margin: 10px 0 25px 0;
 }
 
 .course-text {
     text-align: center;
-    font-size: 14px;
-    margin-bottom: 12px;
+    font-size: 16px;
+    margin-bottom: 30px;
+    line-height: 1.5;
 }
 
+/* --- Competencies List --- */
 .competencies-title {
     font-size: 14px;
+    font-weight: 700; 
     margin-top: 16px;
+    text-align: left;
+    margin-left: 40px; /* Alineación con la lista */
 }
 
 .competencies-list {
-    margin: 0 40px;
+    margin: 0 40px 40px 40px; 
     padding-left: 20px;
     font-size: 12px;
+    text-align: justify; /* Justificar texto para mejor lectura */
+    list-style-type: disc; 
+}
+.competencies-list li {
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+/* --- Footer (Date, Signature, QR) --- */
+.issue-date {
+    text-align: right; /* Alineación a la derecha como en el ejemplo */
+    font-size: 10px;
+    margin-top: 50px; 
+    margin-bottom: 10px;
+    padding-right: 40px;
 }
 
 .footer-row {
     display: flex;
     justify-content: space-between;
-    margin-top: 40px;
+    align-items: flex-end; /* Asegura que la línea de la firma quede abajo */
+    margin-top: 30px;
 }
 
-.qr-block img {
-    width: 70px;
-    height: 70px;
-}
-
-.issue-date {
-    text-align: center;
+.qr-block {
+    text-align: left;
     font-size: 10px;
-    margin-top: 20px;
+    width: 150px;
+}
+.qr-block img {
+    width: 80px; 
+    height: 80px;
+}
+.folio {
+    margin-top: 5px;
+    font-weight: 700;
+}
+
+.footer-center {
+    text-align: center;
+    width: 300px; 
+}
+.footer-center .line {
+    border-top: 1px solid #000;
+    margin-bottom: 5px;
+}
+.footer-center .name {
+    font-size: 14px;
+    font-weight: 700;
+}
+.footer-center .role {
+    font-size: 12px;
 }
 """
 
@@ -137,8 +203,8 @@ async def _async_render(html_content: str) -> bytes:
             
             # Argumentos de estabilidad críticos para evitar Target Closed
             "--disable-setuid-sandbox",
-            "--no-zygote",               
-            "--disable-dev-shm-usage",   
+            "--no-zygote",             
+            "--disable-dev-shm-usage",  
             
             # Argumentos para contenido local (si se requiere)
             "--disable-web-security",  
@@ -191,7 +257,6 @@ def _render_pdf(html_content: str) -> bytes:
 
 # ------------------------------------------------------
 # Construcción de texto de fecha
-# ... (el resto del código se mantiene igual) ...
 # ------------------------------------------------------
 def _build_issue_date_text(issue_date: date) -> str:
     return (
@@ -210,8 +275,26 @@ def _build_qr_data_uri(serial: str) -> str:
     return f"data:image/png;base64,{qr_b64}"
 
 
+# ------------------------------------------------------
+# LOGO BASE64 - ¡NUEVA FUNCIÓN!
+# ------------------------------------------------------
+def _build_logo_data_uri() -> str:
+    # Asume que el archivo lania_logo.png está en app/static/
+    logo_path = Path("app/static/lania_logo.png") 
+    try:
+        if logo_path.exists():
+            logo_bytes = logo_path.read_bytes()
+            logo_b64 = base64.b64encode(logo_bytes).decode("ascii")
+            return f"data:image/png;base64,{logo_b64}"
+    except Exception:
+        # Esto ayuda si el archivo no existe o hay un problema de permisos
+        pass 
+    return ""
+# ------------------------------------------------------
+
+
 # =======================================================================
-# ⭐ A) CONSTANCIA TRADICIONAL → HTML + CSS
+# ⭐ A) CONSTANCIA TRADICIONAL → HTML + CSS (SE MANTIENE)
 # =======================================================================
 def generate_certificate_pdf(
     participant_name: str,
@@ -300,7 +383,7 @@ def generate_certificate_pdf(
 
 
 # =======================================================================
-# ⭐ B) RECONOCIMIENTO → HTML + CSS
+# ⭐ B) RECONOCIMIENTO → HTML + CSS - ¡ACTUALIZADO!
 # =======================================================================
 def generate_recognition_pdf(
     participant_name: str,
@@ -312,18 +395,21 @@ def generate_recognition_pdf(
     competencies: List[str],
 ) -> bytes:
 
-    # ... (el resto del código de la función se mantiene igual) ...
     css_text = _load_css()
     date_text = _build_issue_date_text(issue_date)
     qr_data_uri = _build_qr_data_uri(serial)
-
+    logo_data_uri = _build_logo_data_uri() # 👈 Nueva llamada
+    
     items = "\n".join(f"<li>{html_escape(c)}</li>" for c in competencies)
 
     body_html = f"""
     <div class="certificate-wrapper">
-
-        <div class="certificate-title">RECONOCIMIENTO</div>
-        <div class="certificate-subtitle">Otorga el presente a:</div>
+        
+        <div class="header-container">
+            <img src="{logo_data_uri}" class="header-logo" alt="LANIA Logo">
+        </div>
+        <div class="certificate-title">Otorga el presente reconocimiento</div>
+        <div class="certificate-subtitle">a:</div>
 
         <div class="participant-name">{html_escape(participant_name)}</div>
 
@@ -339,16 +425,17 @@ def generate_recognition_pdf(
         <div class="issue-date">{html_escape(date_text)}</div>
 
         <div class="footer-row">
+            
             <div class="qr-block">
                 <img src="{qr_data_uri}">
-                <div>Folio: {html_escape(serial)}</div>
-            </div>
+                <div class="folio">Folio: {html_escape(serial)}</div> </div>
 
             <div class="footer-center">
                 <div class="line"></div>
                 <div class="name">Dr. Juan Manuel Gutiérrez Méndez</div>
                 <div class="role">Director de Proyectos</div>
             </div>
+            
         </div>
 
     </div>
