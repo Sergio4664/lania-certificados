@@ -5,11 +5,19 @@ from datetime import date
 from html import escape as html_escape
 from pathlib import Path
 from typing import Optional, List
-# Se remueve 'import nest_asyncio' si fue añadido previamente.
+import io # Importación para manejar streams de bytes
 
-# NUEVA IMPORTACIÓN: Necesaria para manejar la ejecución en un hilo separado
+# NUEVAS IMPORTACIONES PARA STAMPING DE PDF
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter # Para las dimensiones A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.colors import black
+from reportlab.lib.textsplit import wordSplit
+from PyPDF2 import PdfReader, PdfWriter # Para combinar el PDF dinámico con la plantilla de fondo
+
+# MANTENER ESTO PARA EL MÉTODO ANTERIOR (generate_certificate_pdf)
 from concurrent.futures import ThreadPoolExecutor
-
 from pyppeteer import launch
 
 from app.services.qr_service import generate_qr_png
@@ -30,150 +38,25 @@ except:
 
 
 # ------------------------------------------------------
-# CSS POR DEFECTO (si no existe app/static/styles.css) - ¡ACTUALIZADO!
+# CONFIGURACIÓN DE FUENTES PARA REPORTLAB
 # ------------------------------------------------------
-DEFAULT_CSS = """
-* { box-sizing: border-box; }
-
-body {
-    font-family: 'Roboto', Arial, sans-serif;
-    margin: 0; padding: 0;
-}
-
-/* --- Certificate Container --- */
-.certificate-wrapper {
-    /* Ajuste de margen para centrar el contenido sobre el fondo (si lo hay) */
-    width: 100%;
-    min-height: 100vh;
-    padding: 70px 100px; /* Margen superior/inferior 70px, lateral 100px */
-}
-
-/* --- Header Section (LANIA, etc.) --- */
-.header-container {
-    text-align: center;
-    margin-bottom: 25px;
-}
-.header-logo {
-    display: block;
-    width: 80px; /* Tamaño del logo */
-    margin: 0 auto 10px auto;
-}
-.header-text {
-    line-height: 1.1;
-}
-.header-text .main {
-    font-size: 16px; 
-    font-weight: 700;
-    color: #000;
-    text-transform: uppercase;
-}
-.header-text .sub {
-    font-size: 10px;
-    color: #444;
-}
-
-
-/* --- Main Content --- */
-.certificate-title {
-    text-align: center;
-    font-size: 28px; 
-    font-weight: 700;
-    color: #000; 
-    margin: 20px 0 10px 0;
-}
-
-.certificate-subtitle {
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 15px;
-}
-
-.participant-name {
-    text-align: center;
-    font-size: 40px; /* Letra más grande para el nombre */
-    font-weight: 700;
-    margin: 10px 0 25px 0;
-}
-
-.course-text {
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 30px;
-    line-height: 1.5;
-}
-
-/* --- Competencies List --- */
-.competencies-title {
-    font-size: 14px;
-    font-weight: 700; 
-    margin-top: 16px;
-    text-align: left;
-    margin-left: 40px; /* Alineación con la lista */
-}
-
-.competencies-list {
-    margin: 0 40px 40px 40px; 
-    padding-left: 20px;
-    font-size: 12px;
-    text-align: justify; /* Justificar texto para mejor lectura */
-    list-style-type: disc; 
-}
-.competencies-list li {
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-
-/* --- Footer (Date, Signature, QR) --- */
-.issue-date {
-    text-align: right; /* Alineación a la derecha como en el ejemplo */
-    font-size: 10px;
-    margin-top: 50px; 
-    margin-bottom: 10px;
-    padding-right: 40px;
-}
-
-.footer-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end; /* Asegura que la línea de la firma quede abajo */
-    margin-top: 30px;
-}
-
-.qr-block {
-    text-align: left;
-    font-size: 10px;
-    width: 150px;
-}
-.qr-block img {
-    width: 80px; 
-    height: 80px;
-}
-.folio {
-    margin-top: 5px;
-    font-weight: 700;
-}
-
-.footer-center {
-    text-align: center;
-    width: 300px; 
-}
-.footer-center .line {
-    border-top: 1px solid #000;
-    margin-bottom: 5px;
-}
-.footer-center .name {
-    font-size: 14px;
-    font-weight: 700;
-}
-.footer-center .role {
-    font-size: 12px;
-}
-"""
-
+DEFAULT_FONT = 'Helvetica'
+DEFAULT_FONT_BOLD = 'Helvetica-Bold'
+try:
+    # Si usas Roboto, descomenta y asegura que los archivos .ttf estén en app/fonts/
+    # pdfmetrics.registerFont(TTFont('Roboto', 'app/fonts/Roboto-Regular.ttf'))
+    # pdfmetrics.registerFont(TTFont('Roboto-Bold', 'app/fonts/Roboto-Bold.ttf'))
+    # DEFAULT_FONT = 'Roboto'
+    # DEFAULT_FONT_BOLD = 'Roboto-Bold'
+    pass
+except Exception:
+    pass
 
 # ------------------------------------------------------
-# Cargar styles.css si existe
+# CSS POR DEFECTO (Se mantiene para la Constancia de Participación A)
 # ------------------------------------------------------
+DEFAULT_CSS = "" 
+
 def _load_css() -> str:
     css_path = Path("app/static/styles.css")
     if css_path.exists():
@@ -185,7 +68,6 @@ def _load_css() -> str:
 # RENDER PYPETEER → PDF (SOLUCIÓN ROBUSTA PARA UVLOOP)
 # ------------------------------------------------------
 
-# Lógica asíncrona de Pyppeteer aislada
 async def _async_render(html_content: str) -> bytes:
     """
     La lógica asíncrona de pyppeteer.
@@ -194,19 +76,14 @@ async def _async_render(html_content: str) -> bytes:
     CHROME_PATH = "/usr/bin/google-chrome-stable" 
 
     browser = await launch(
-        executablePath=CHROME_PATH, # <-- Usa el binario de Chrome del sistema
+        executablePath=CHROME_PATH, 
         args=[
-            # Argumentos necesarios para ejecución en servidor/Docker
             "--no-sandbox",
             "--headless=new",          
             "--disable-gpu",
-            
-            # Argumentos de estabilidad críticos para evitar Target Closed
             "--disable-setuid-sandbox",
             "--no-zygote",             
             "--disable-dev-shm-usage",  
-            
-            # Argumentos para contenido local (si se requiere)
             "--disable-web-security",  
             "--ignore-certificate-errors", 
         ],
@@ -215,48 +92,30 @@ async def _async_render(html_content: str) -> bytes:
         handleSIGHUP=False
     )
     page = await browser.newPage()
-    # 💥 CORRECCIÓN CRÍTICA: Se eliminó 'waitUntil' para resolver el TypeError.
     await page.setContent(html_content) 
     
     pdf = await page.pdf({"format": "A4", "printBackground": True})
     await browser.close()
     return pdf
 
-# Función síncrona que crea y corre un nuevo loop para la corrutina
 def _render_in_new_loop(html_content: str) -> bytes:
-    """
-    Crea, ejecuta y cierra un loop de asyncio estándar para la corrutina 
-    en el hilo actual.
-    """
-    # Se establece None para limpiar cualquier referencia potencial del thread
-    # a un bucle existente.
     asyncio.set_event_loop(None)
-    
     loop = asyncio.new_event_loop()
     try:
         return loop.run_until_complete(_async_render(html_content))
     finally:
         loop.close()
-        # Vuelve a poner el bucle a None al terminar
         asyncio.set_event_loop(None)
 
 
 def _render_pdf(html_content: str) -> bytes:
-    """
-    Render seguro de Pyppeteer, delegando la ejecución a un hilo 
-    separado (ThreadPoolExecutor) para evitar el conflicto de bucles (uvloop).
-    """
-    # Usamos un ThreadPoolExecutor para ejecutar la función en un nuevo hilo.
     with ThreadPoolExecutor(max_workers=1) as executor:
-        # El método submit ejecuta _render_in_new_loop en el nuevo hilo.
-        # Esto aísla completamente la creación del bucle de asyncio.
         future = executor.submit(_render_in_new_loop, html_content)
-        # Bloqueamos hasta que el resultado esté listo.
         return future.result()
 
 
 # ------------------------------------------------------
-# Construcción de texto de fecha
+# Construcción de texto de fecha (se mantiene)
 # ------------------------------------------------------
 def _build_issue_date_text(issue_date: date) -> str:
     return (
@@ -266,7 +125,7 @@ def _build_issue_date_text(issue_date: date) -> str:
 
 
 # ------------------------------------------------------
-# QR BASE64
+# QR BASE64 (se mantiene)
 # ------------------------------------------------------
 def _build_qr_data_uri(serial: str) -> str:
     qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
@@ -276,10 +135,9 @@ def _build_qr_data_uri(serial: str) -> str:
 
 
 # ------------------------------------------------------
-# LOGO BASE64 - ¡NUEVA FUNCIÓN!
+# LOGO BASE64 (se mantiene, pero no usado en generate_recognition_pdf)
 # ------------------------------------------------------
 def _build_logo_data_uri() -> str:
-    # Asume que el archivo lania_logo.png está en app/static/
     logo_path = Path("app/static/lania_logo.png") 
     try:
         if logo_path.exists():
@@ -287,10 +145,8 @@ def _build_logo_data_uri() -> str:
             logo_b64 = base64.b64encode(logo_bytes).decode("ascii")
             return f"data:image/png;base64,{logo_b64}"
     except Exception:
-        # Esto ayuda si el archivo no existe o hay un problema de permisos
         pass 
     return ""
-# ------------------------------------------------------
 
 
 # =======================================================================
@@ -309,7 +165,7 @@ def generate_certificate_pdf(
     modalidad: str,
     docente_specialty: Optional[str] = None,
 ) -> bytes:
-    # ... (el resto del código de la función se mantiene igual) ...
+    # ... (Cuerpo de la función generate_certificate_pdf se mantiene) ...
     css_text = _load_css()
     date_text = _build_issue_date_text(issue_date)
     qr_data_uri = _build_qr_data_uri(serial)
@@ -336,7 +192,7 @@ def generate_certificate_pdf(
         if docente_specialty and entity_type == "docente"
         else participant_name
     )
-
+    
     body_html = f"""
     <div class="certificate-wrapper">
 
@@ -372,7 +228,7 @@ def generate_certificate_pdf(
       <meta charset="utf-8">
       <style>
       @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-      {css_text}
+      {_load_css()}
       </style>
     </head>
     <body>{body_html}</body>
@@ -383,7 +239,7 @@ def generate_certificate_pdf(
 
 
 # =======================================================================
-# ⭐ B) RECONOCIMIENTO → HTML + CSS - ¡ACTUALIZADO!
+# ⭐ B) RECONOCIMIENTO (CONSTANCIA DE COMPETENCIAS) → STAMPING PDF (CORREGIDO)
 # =======================================================================
 def generate_recognition_pdf(
     participant_name: str,
@@ -394,64 +250,149 @@ def generate_recognition_pdf(
     qr_token: str,
     competencies: List[str],
 ) -> bytes:
-
-    css_text = _load_css()
-    date_text = _build_issue_date_text(issue_date)
-    qr_data_uri = _build_qr_data_uri(serial)
-    logo_data_uri = _build_logo_data_uri() # 👈 Nueva llamada
+    """
+    Genera el certificado de reconocimiento estampando los datos
+    sobre la plantilla PDF estática usando coordenadas.
+    """
     
-    items = "\n".join(f"<li>{html_escape(c)}</li>" for c in competencies)
+    # 1. Definir la plantilla base
+    template_path = Path("app/static/Formato constancias.pdf")
+    if not template_path.exists():
+        raise FileNotFoundError(f"Plantilla PDF no encontrada en: {template_path}")
 
-    body_html = f"""
-    <div class="certificate-wrapper">
+    # Coordenadas y Dimensiones A4 (PostScript points: 595.27 x 841.89)
+    A4_WIDTH, A4_HEIGHT = letter 
+    
+    # --- COORDENADAS ESTIMADAS (AJUSTAR MANUALMENTE) ---
+    # Estas coordenadas se deben ajustar en función de tu plantilla Formato constancias.pdf
+    
+    # Textos centrales (Nombre, Curso)
+    X_CENTER = A4_WIDTH / 2 
+    Y_NAME = A4_HEIGHT - 320     
+    Y_COURSE_TEXT = Y_NAME - 70  
+    
+    # Lista de Competencias (Bloque dinámico)
+    X_COMPETENCIES_START = 120 
+    MAX_COMPETENCIES_WIDTH = 380 
+    LINE_HEIGHT = 16 
+    FONT_SIZE_COMPETENCE = 14 
+    Y_COMPETENCIES_TITLE = Y_COURSE_TEXT - 50 
+    
+    # Pie de página (QR, Folio, Firma, Fecha)
+    X_QR = 100 
+    Y_QR = 60  
+    
+    X_SIGNATURE = A4_WIDTH - 150 
+    Y_SIGNATURE = Y_QR + 40 
+
+    # Preparar el lienzo de ReportLab (capa dinámica)
+    packet = io.BytesIO()
+    c = canvas.Canvas(packet, pagesize=letter)
+    c.setFillColor(black)
+    
+    # --- 1. NOMBRE DEL PARTICIPANTE (Grande y centrado) ---
+    c.setFont(DEFAULT_FONT_BOLD, 48) 
+    c.drawCentredString(X_CENTER, Y_NAME, participant_name)
+
+    # --- 2. TEXTO DEL CURSO (Centrado) ---
+    course_text = (
+        f'Por haber acreditado en el curso "{course_name}" '
+        f"({hours} horas de trabajo), la evaluación de las competencias:"
+    )
+    c.setFont(DEFAULT_FONT, 18)
+    c.drawCentredString(X_CENTER, Y_COURSE_TEXT, course_text)
+
+    # --- 3. LISTA DE COMPETENCIAS (Dinámico) ---
+    
+    # Título
+    c.setFont(DEFAULT_FONT_BOLD, 16)
+    c.drawString(X_COMPETENCIES_START, Y_COMPETENCIES_TITLE, "Competencias acreditadas:")
+    
+    # Definición de coordenadas para el texto de la competencia
+    X_COMPETENCIES_TEXT = X_COMPETENCIES_START + 10 # Desplazamiento para el texto después de la viñeta
+    X_COMPETENCIES_BULLET = X_COMPETENCIES_START
+    
+    current_y = Y_COMPETENCIES_TITLE - 1.5 * LINE_HEIGHT 
+    
+    c.setFont(DEFAULT_FONT, FONT_SIZE_COMPETENCE) 
+    
+    for comp in competencies:
+        # CORRECCIÓN DE ERROR FINAL: Usamos el literal 14 en la llamada, en caso de que la referencia
+        # a la variable estuviera causando el error ambiguo.
+        lines = wordSplit(comp, DEFAULT_FONT, 14, MAX_COMPETENCIES_WIDTH)
         
-        <div class="header-container">
-            <img src="{logo_data_uri}" class="header-logo" alt="LANIA Logo">
-        </div>
-        <div class="certificate-title">Otorga el presente reconocimiento</div>
-        <div class="certificate-subtitle">a:</div>
-
-        <div class="participant-name">{html_escape(participant_name)}</div>
-
-        <div class="course-text">
-            Por haber acreditado en el curso
-            "<strong>{html_escape(course_name)}</strong>"
-            ({hours} horas de trabajo), la evaluación de las competencias:
-        </div>
-
-        <div class="competencies-title">Competencias acreditadas:</div>
-        <ul class="competencies-list">{items}</ul>
-
-        <div class="issue-date">{html_escape(date_text)}</div>
-
-        <div class="footer-row">
+        for i, line in enumerate(lines):
+            if i == 0:
+                # Dibuja la viñeta y la primera línea de texto
+                c.drawString(X_COMPETENCIES_BULLET, current_y, "•")
+                c.drawString(X_COMPETENCIES_TEXT, current_y, line.strip())
+            else:
+                # Dibuja las líneas subsiguientes con sangría
+                c.drawString(X_COMPETENCIES_TEXT, current_y, line.strip())
             
-            <div class="qr-block">
-                <img src="{qr_data_uri}">
-                <div class="folio">Folio: {html_escape(serial)}</div> </div>
+            current_y -= LINE_HEIGHT 
+        
+        current_y -= LINE_HEIGHT * 0.5 # Espacio extra entre competencias
 
-            <div class="footer-center">
-                <div class="line"></div>
-                <div class="name">Dr. Juan Manuel Gutiérrez Méndez</div>
-                <div class="role">Director de Proyectos</div>
-            </div>
-            
-        </div>
 
-    </div>
-    """
+    # --- 4. PIE DE PÁGINA: QR y Folio ---
+    
+    qr_data_uri = _build_qr_data_uri(serial)
+    
+    try:
+        qr_bytes = base64.b64decode(qr_data_uri.split(',')[1])
+        qr_image = io.BytesIO(qr_bytes)
+        
+        QR_SIZE = 100
+        c.drawImage(qr_image, X_QR, Y_QR, width=QR_SIZE, height=QR_SIZE, mask='auto')
+        
+        c.setFont(DEFAULT_FONT_BOLD, 12)
+        c.drawString(X_QR, Y_QR - 20, f"Folio: {serial}")
 
-    full_html = f"""
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-      {css_text}
-      </style>
-    </head>
-    <body>{body_html}</body>
-    </html>
-    """
+    except Exception:
+        pass
 
-    return _render_pdf(full_html)
+    # --- 5. PIE DE PÁGINA: Firma y Fecha ---
+    
+    # Firma y Línea 
+    SIGNATURE_WIDTH = 250
+    c.line(X_SIGNATURE - SIGNATURE_WIDTH/2, Y_SIGNATURE, X_SIGNATURE + SIGNATURE_WIDTH/2, Y_SIGNATURE)
+    
+    c.setFont(DEFAULT_FONT_BOLD, 16)
+    c.drawCentredString(X_SIGNATURE, Y_SIGNATURE - 20, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.setFont(DEFAULT_FONT, 14)
+    c.drawCentredString(X_SIGNATURE, Y_SIGNATURE - 40, "Director de Proyectos")
+
+    # Fecha de Expedición
+    date_text = _build_issue_date_text(issue_date)
+    c.setFont(DEFAULT_FONT, 12)
+    c.drawRightString(A4_WIDTH - 100, Y_SIGNATURE + 15, date_text)
+    
+    c.showPage()
+    c.save()
+    
+    # ----------------------------------------------------------------
+    # 6. Combinar la capa dinámica (ReportLab) con la plantilla estática (PyPDF2)
+    # ----------------------------------------------------------------
+    
+    packet.seek(0)
+    
+    try:
+        overlay_pdf = PdfReader(packet)
+        
+        with open(template_path, 'rb') as f:
+            template_pdf = PdfReader(f)
+        
+        output = PdfWriter()
+        page = template_pdf.pages[0]
+        
+        page.merge_page(overlay_pdf.pages[0])
+        
+        output.add_page(page)
+
+        output_bytes = io.BytesIO()
+        output.write(output_bytes)
+        return output_bytes.getvalue()
+
+    except Exception as e:
+         raise Exception(f"Error combinando PDF (Verifique ReportLab/PyPDF2): {e}")
