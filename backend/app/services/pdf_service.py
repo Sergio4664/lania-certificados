@@ -1,5 +1,4 @@
 # backend/app/services/pdf_service.py
-
 from io import BytesIO
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
@@ -27,10 +26,18 @@ from app.core.config import settings as app_settings
 # Registrar fuentes
 # ---------------------------------------
 try:
+    # Fuente original (DancingScript-Bold)
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'app/fonts/DancingScript-Bold.ttf'))
 except Exception:
     pdfmetrics.registerFont(TTFont('DancingScript-Bold', 'Helvetica-Bold'))
 
+try:
+    # Nueva fuente para Inyección Educativa (BrittanySignature)
+    # ASUMIENDO que el archivo se llama BrittanySignature.ttf en app/fonts/
+    pdfmetrics.registerFont(TTFont('BrittanySignature', 'app/fonts/BrittanySignature.ttf')) 
+except Exception:
+    pdfmetrics.registerFont(TTFont('BrittanySignature', 'Helvetica-Bold')) # Fallback
+    
 try:
     locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 except locale.Error:
@@ -38,7 +45,6 @@ except locale.Error:
         locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')
     except locale.Error:
         pass
-
 
 # ---------------------------------------
 # Función auxiliar para dibujar párrafos
@@ -171,10 +177,8 @@ def draw_competencies(
         y -= line_height * 0.5
     
     return y
-
-
 # -------------------------------------------------------------------
-# ✔ CONSTANCIA INYECCIÓN EDUCATIVA (participantes) - CORREGIDA
+# ✔ CONSTANCIA INYECCIÓN EDUCATIVA (participantes) - TERCERA CORRECCIÓN
 # -------------------------------------------------------------------
 def generate_inyeccion_participante_pdf(
     participant_name: str,
@@ -187,7 +191,7 @@ def generate_inyeccion_participante_pdf(
 ) -> bytes:
     """
     Genera constancia específica para INYECCIÓN EDUCATIVA (participantes).
-    Estilo: CONSTANCIA tamaño estándar, sin color rojo, nombre en cursiva grande (ajustada).
+    Ajustes finos de coordenadas y espaciado para igualar el formato de 'Ejemplo inyección (2).pdf'.
     """
     
     if template_path is None:
@@ -200,31 +204,55 @@ def generate_inyeccion_participante_pdf(
     center_x = page_width / 2
     text_width = 18 * cm
     
-    # ----------- Estilo para el nombre (Reducido de 48 a 38, usando ParagraphStyle) -------------------
+   # ----------- Estilo para el nombre (Fuente BrittanySignature, 38pt, multilínea) -------------------
     style_participant_name = ParagraphStyle(
         name='ParticipantInyeccion',
-        fontName='DancingScript-Bold',
-        fontSize=38, # Tamaño 38pt (más seguro que 48pt)
+        fontName='BrittanySignature', # Fuente Actualizada
+        fontSize=30, 
         leading=42,
         alignment=TA_CENTER
     )
     
     # ----------- ENCABEZADO "Otorga la presente" -------------------
-    c.setFont("Helvetica", 14)
+    c.setFont("Helvetica", 27)
     c.setFillColorRGB(0, 0, 0)  # Negro
-    c.drawCentredString(center_x, 21.3 * cm, "Otorga la presente")
+    # CORRECCIÓN: Usamos la posición estándar 21.3 cm
+    c.drawCentredString(center_x, 18.5 * cm, "Otorga la presente") 
     
-    # ----------- CONSTANCIA (TAMAÑO Y POSICIÓN AJUSTADOS) -------------------
-    c.setFont("Helvetica-Bold", 36)  # Reducido de 52 a 36 (para mantener consistencia visual con otros)
-    c.setFillColorRGB(0, 0, 0)  # NEGRO, NO ROJO
-    c.drawCentredString(center_x, 20.2 * cm, "CONSTANCIA") # Posición ajustada
+    # ----------- CONSTANCIA (TAMAÑO 36pt, NEGRA, CON INTERLETRADO) -------------------
+    TEXT_TO_SPACE = "CONSTANCIA"
+    font_name = "Helvetica"
+    font_size = 22
+    y_pos = 16 * cm # Posición vertical
+    letter_spacing = 3 # 5 puntos de espaciado extra entre letras (Ajuste aquí)
+
+    # 1. Calcular el ancho total de la palabra con el espaciado
+    total_width = 0
+    for i, char in enumerate(TEXT_TO_SPACE):
+        total_width += stringWidth(char, font_name, font_size)
+        if i < len(TEXT_TO_SPACE) - 1:
+            total_width += letter_spacing
+
+    # 2. Calcular la posición inicial X para centrar la palabra
+    start_x = center_x - (total_width / 2)
+
+    # 3. Dibujar la palabra letra por letra
+    c.setFont(font_name, font_size)
+    c.setFillColorRGB(0, 0, 0)
+    x = start_x
+    
+    for char in TEXT_TO_SPACE:
+        c.drawString(x, y_pos, char)
+        x += stringWidth(char, font_name, font_size) + letter_spacing
     
     # ----------- "a:" -------------------
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(center_x, 18.8 * cm, "a:") # Posición ajustada
+    # CORRECCIÓN: Subimos ligeramente a 19.4 cm
+    c.setFont("Helvetica", 20)
+    c.drawCentredString(center_x, 14.5 * cm, "a:")
     
     # ----------- NOMBRE (USANDO draw_multiline_text) -------------------
-    y_position = 18.2 * cm # Posición de inicio para el nombre
+    # CORRECCIÓN: Posición de inicio ajustada a 18.8 cm
+    y_position = 14 * cm 
     
     # draw_multiline_text es más seguro y maneja nombres largos
     participant_height = draw_multiline_text(
@@ -232,34 +260,50 @@ def generate_inyeccion_participante_pdf(
     )
     
     # Calculamos la posición de inicio para el siguiente bloque de texto
-    y_text = y_position - (participant_height + 0.5 * cm) # Espacio después del nombre
+    # CORRECCIÓN: Usamos 0.8 cm de espacio, mejor que 0.5 cm.
+    y_text = y_position - (participant_height + 2 * cm) 
+
+# ----------- ESTILOS TEXTO CURSO (Interlineado dinámico) -------------------
+    style_normal_course = ParagraphStyle(
+        name='NormalCourse',
+        fontName='Helvetica',
+        fontSize=16,
+        leading=22, # Interlineado interno ajustado: 16pt + 6pt de espacio
+        alignment=TA_CENTER
+    )
+    style_bold_course = ParagraphStyle(
+        name='BoldCourse',
+        fontName='Helvetica-Bold',
+        fontSize=22,
+        leading=28, # Interlineado interno ajustado: 22pt + 6pt de espacio
+        alignment=TA_CENTER
+    )
     
     # ----------- TEXTO "Por su participación..." -------------------
-    c.setFont("Helvetica", 14)
-    text1 = "Por su participación en la Inyección Educativa"
-    c.drawCentredString(center_x, y_text, text1)
+    line1 = "Por su participación en la Inyección Educativa"
+    height1 = draw_multiline_text(c, line1, center_x, y_text, text_width, style_normal_course)
+    y_text -= (height1 + 0.2 * cm) # Espacio entre bloques
     
     # ----------- NOMBRE DEL CURSO (entre comillas, bold) -------------------
-    y_text -= 0.8 * cm
-    c.setFont("Helvetica-Bold", 16)
     course_text = f'"{course_name}",'
-    c.drawCentredString(center_x, y_text, course_text)
+    height2 = draw_multiline_text(c, course_text, center_x, y_text, text_width, style_bold_course)
+    y_text -= (height2 + 0.2 * cm) # Espacio entre bloques
     
     # ----------- DURACIÓN Y MODALIDAD -------------------
-    y_text -= 0.8 * cm
-    c.setFont("Helvetica", 14)
-    duration_text = f"con duración de {hours} horas, modalidad {modalidad.lower()}."
-    c.drawCentredString(center_x, y_text, duration_text)
-    
+    details = f"con duración de {hours} horas, modalidad {modalidad.lower()}."
+    height3 = draw_multiline_text(c, details, center_x, y_text, text_width, style_normal_course) 
+    # Ya no se necesita actualizar y_text si es el último elemento del bloque central
+    # y_text -= (height3 + 0.1 * cm)
+
     # ----------- FIRMA -------------------
     c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(center_x, 6.5 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.drawCentredString(center_x, 2 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
     
     # Línea de firma
-    c.line(center_x - 4 * cm, 6.3 * cm, center_x + 4 * cm, 6.3 * cm)
+    c.line(center_x - 4 * cm, 1.8 * cm, center_x + 4 * cm, 1.8 * cm)
     
     c.setFont("Helvetica", 11)
-    c.drawCentredString(center_x, 5.8 * cm, "Director de Proyectos")
+    c.drawCentredString(center_x, 1.4 * cm, "Director de Proyectos")
     
     # ----------- FECHA -------------------
     issue_str = (
@@ -267,7 +311,7 @@ def generate_inyeccion_participante_pdf(
         f"de {issue_date.strftime('%B')} de {issue_date.year}"
     )
     c.setFont("Helvetica", 10)
-    c.drawCentredString(center_x, 4.2 * cm, issue_str)
+    c.drawCentredString(12 * cm, 0.8 * cm, issue_str)
     
     # ----------- QR CODE (abajo izquierda) -------------------
     qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
@@ -296,7 +340,6 @@ def generate_inyeccion_participante_pdf(
         with BytesIO() as buffer:
             output.write(buffer)
             return buffer.getvalue()
-
 
 # -------------------------------------------------------------------
 # ✔ CONSTANCIA CURSO/PÍLDORA (participantes)
