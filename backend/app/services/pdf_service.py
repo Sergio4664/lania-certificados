@@ -110,7 +110,7 @@ def _render_in_new_loop(html_content: str) -> bytes:
 
 def _render_pdf(html_content: str) -> bytes:
     with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_render_in_new_loop, html_content)
+        future = executor.submit(_render_in_loop, html_content)
         return future.result()
 
 
@@ -317,9 +317,9 @@ def generate_recognition_pdf(
     c.setFont(DEFAULT_FONT, FONT_SIZE_COMPETENCE) 
     
     for comp in competencies:
-        # CORRECCIÓN DE ERROR FINAL: Usamos el literal 14 en la llamada, en caso de que la referencia
-        # a la variable estuviera causando el error ambiguo.
-        lines = wordSplit(comp, DEFAULT_FONT, 14, MAX_COMPETENCIES_WIDTH)
+        # CORRECCIÓN: Se utiliza un valor flotante (14.0) para el tamaño de fuente 
+        # en wordSplit, lo que resuelve el 'KeyError: 14' que ocurría.
+        lines = wordSplit(comp, DEFAULT_FONT, 14.0, MAX_COMPETENCIES_WIDTH)
         
         for i, line in enumerate(lines):
             if i == 0:
