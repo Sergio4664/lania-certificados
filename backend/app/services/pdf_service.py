@@ -177,6 +177,175 @@ def draw_competencies(
         y -= line_height * 0.5
     
     return y
+
+# -------------------------------------------------------------------
+# ✔ CONSTANCIA PILDORA EDUCATIVA (participantes) 
+# -------------------------------------------------------------------
+def generate_pildora_participante_pdf(
+    participant_name: str,
+    course_name: str,
+    hours: int,
+    issue_date: date,
+    serial: str,
+    modalidad: str,
+    template_path: Optional[str] = None
+) -> bytes:
+    """
+    Genera constancia específica para PILDORA EDUCATIVA (participantes).
+    """
+    
+    if template_path is None:
+        template_path = "app/static/Formato constancias.pdf"
+    
+    packet = BytesIO()
+    c = canvas.Canvas(packet, pagesize=letter)
+    
+    page_width, page_height = letter
+    center_x = page_width / 2
+    text_width = 18 * cm
+    
+   # ----------- Estilo para el nombre (Fuente BrittanySignature, 38pt, multilínea) -------------------
+    style_participant_name = ParagraphStyle(
+        name='ParticipantInyeccion',
+        fontName='BrittanySignature', # Fuente Actualizada
+        fontSize=30, 
+        leading=42,
+        alignment=TA_CENTER
+    )
+    
+    # ----------- ENCABEZADO "Otorga la presente" -------------------
+    c.setFont("Helvetica", 27)
+    c.setFillColorRGB(0, 0, 0)  # Negro
+    # CORRECCIÓN: Usamos la posición estándar 21.3 cm
+    c.drawCentredString(center_x, 18.5 * cm, "Otorga la presente") 
+    
+    # ----------- CONSTANCIA (TAMAÑO 36pt, NEGRA, CON INTERLETRADO) -------------------
+    TEXT_TO_SPACE = "CONSTANCIA"
+    font_name = "Helvetica"
+    font_size = 22
+    y_pos = 16 * cm # Posición vertical
+    letter_spacing = 3 # 5 puntos de espaciado extra entre letras (Ajuste aquí)
+
+    # 1. Calcular el ancho total de la palabra con el espaciado
+    total_width = 0
+    for i, char in enumerate(TEXT_TO_SPACE):
+        total_width += stringWidth(char, font_name, font_size)
+        if i < len(TEXT_TO_SPACE) - 1:
+            total_width += letter_spacing
+
+    # 2. Calcular la posición inicial X para centrar la palabra
+    start_x = center_x - (total_width / 2)
+
+    # 3. Dibujar la palabra letra por letra
+    c.setFont(font_name, font_size)
+    c.setFillColorRGB(0, 0, 0)
+    x = start_x
+    
+    for char in TEXT_TO_SPACE:
+        c.drawString(x, y_pos, char)
+        x += stringWidth(char, font_name, font_size) + letter_spacing
+    
+    # ----------- "a:" -------------------
+    # CORRECCIÓN: Subimos ligeramente a 19.4 cm
+    c.setFont("Helvetica", 20)
+    c.drawCentredString(center_x, 14.5 * cm, "a:")
+    
+    # ----------- NOMBRE (USANDO draw_multiline_text) -------------------
+    # CORRECCIÓN: Posición de inicio ajustada a 18.8 cm
+    y_position = 14 * cm 
+    
+    # draw_multiline_text es más seguro y maneja nombres largos
+    participant_height = draw_multiline_text(
+        c, participant_name, center_x, y_position, text_width, style_participant_name
+    )
+    
+    # Calculamos la posición de inicio para el siguiente bloque de texto
+    # CORRECCIÓN: Usamos 0.8 cm de espacio, mejor que 0.5 cm.
+    y_text = y_position - (participant_height + 0.8 * cm) 
+
+# ----------- ESTILOS TEXTO CURSO (Interlineado dinámico) -------------------
+    style_normal_course = ParagraphStyle(
+        name='NormalCourse',
+        fontName='Helvetica',
+        fontSize=20,
+        leading=22, # Se mantiene para el texto normal
+        alignment=TA_CENTER
+    )
+    style_bold_course = ParagraphStyle(
+        name='BoldCourse',
+        fontName='Helvetica-Bold',
+        fontSize=30,
+        leading=35, # <-- CORRECCIÓN CLAVE: Aumentado a 35pt (de 22pt) para un interlineado limpio y formal.
+        alignment=TA_CENTER,
+        leftIndent=50,  # Sangría de 50 puntos a la izquierda
+        rightIndent=50  # Sangría de 50 puntos a la derecha
+    )
+    
+    # ----------- TEXTO "Por su participación..." -------------------
+    line1 = "Por su asistencia a la píldora educativa"
+    height1 = draw_multiline_text(c, line1, center_x, y_text, text_width, style_normal_course)
+    # CORRECCIÓN CLAVE: Aumentamos el espacio aquí para una mejor separación visual.
+    y_text -= (height1 + 0.3 * cm) # <-- Espacio entre Línea 1 y Curso ajustado a 0.8 cm (era 0.2 cm)
+    
+    # ----------- NOMBRE DEL CURSO (entre comillas, bold) -------------------
+    course_text = f'"{course_name}"'
+    height2 = draw_multiline_text(c, course_text, center_x, y_text, text_width, style_bold_course)
+    # Se mantiene un buen espacio entre el Curso y los Detalles.
+    y_text -= (height2 + 0.3 * cm) 
+    
+    # ----------- DURACIÓN Y MODALIDAD -------------------
+    details = f"con duración de {hours} horas, modalidad {modalidad.lower()}."
+    height3 = draw_multiline_text(c, details, center_x, y_text, text_width, style_normal_course)
+    # Ya no se necesita actualizar y_text si es el último elemento del bloque central
+    # y_text -= (height3 + 0.3 * cm)
+
+    # ----------- FIRMA -------------------
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(center_x, 2 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
+    
+    # Línea de firma
+    c.line(center_x - 4 * cm, 1.8 * cm, center_x + 4 * cm, 1.8 * cm)
+    
+    c.setFont("Helvetica", 11)
+    c.drawCentredString(center_x, 1.4 * cm, "Director de Proyectos")
+    
+    # ----------- FECHA -------------------
+    issue_str = (
+        f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días "
+        f"de {issue_date.strftime('%B')} de {issue_date.year}"
+    )
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(12 * cm, 0.8 * cm, issue_str)
+    
+    # ----------- QR CODE (abajo izquierda) -------------------
+    qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
+    qr_png_bytes = generate_qr_png(qr_url)
+    qr_image = ImageReader(BytesIO(qr_png_bytes))
+    
+    c.drawImage(qr_image, 1.5 * cm, 1.2 * cm, width=50, height=50, mask="auto")
+    
+    c.setFont("Helvetica", 7)
+    c.drawString(1.5 * cm, 0.8 * cm, f"Folio: {serial}")
+    
+    # ----------- GUARDAR -------------------
+    c.save()
+    packet.seek(0)
+    
+    # ----------- COMBINAR CON PLANTILLA -------------------
+    new_pdf = PdfReader(packet)
+    
+    with open(template_path, "rb") as tpl:
+        existing_pdf = PdfReader(tpl)
+        output = PdfWriter()
+        page = existing_pdf.pages[0]
+        page.merge_page(new_pdf.pages[0])
+        output.add_page(page)
+        
+        with BytesIO() as buffer:
+            output.write(buffer)
+            return buffer.getvalue()
+
+
 # -------------------------------------------------------------------
 # ✔ CONSTANCIA INYECCIÓN EDUCATIVA (participantes) - TERCERA CORRECCIÓN
 # -------------------------------------------------------------------
@@ -627,6 +796,18 @@ def generate_certificate_pdf(
             template_path=template_path
         )
     
+    # PILDORA EDUCATIVA (participantes)
+    if tipo_producto == TipoProductoEnum.PILDORA_EDUCATIVA:
+        return generate_pildora_participante_pdf(
+            participant_name=participant_name,
+            course_name=course_name,
+            hours=hours,
+            issue_date=issue_date,
+            serial=serial,
+            modalidad=modalidad,
+            template_path=template_path
+        )
+    
     # INYECCIÓN EDUCATIVA (participantes)
     if tipo_producto == TipoProductoEnum.INYECCION_EDUCATIVA:
         return generate_inyeccion_participante_pdf(
@@ -638,6 +819,8 @@ def generate_certificate_pdf(
             modalidad=modalidad,
             template_path=template_path
         )
+    
+    
     
     # CURSO o PÍLDORA (participantes)
     return generate_curso_participante_pdf(
