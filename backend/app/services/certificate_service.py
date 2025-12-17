@@ -3,7 +3,7 @@
 import uuid
 import json
 import re
-from datetime import datetime
+from datetime import date, datetime # Aseguramos la importación de 'date'
 from pathlib import Path
 from typing import Optional, List
 
@@ -48,7 +48,9 @@ def generate_certificate(
     competencias_list: Optional[List[str]] = None,
     instructor_name: Optional[str] = None,
     is_docente: bool = False,
-    course_date_str: str = "",
+    # CORRECCIÓN 1: Usar objetos date en lugar de str
+    course_start_date: Optional[date] = None,
+    course_end_date: Optional[date] = None,
 ) -> tuple[str, str]:
     """
     Genera el PDF (tradicional o con competencias) usando pdf_service
@@ -97,10 +99,14 @@ def generate_certificate(
                 issue_date=issue_date,
                 serial=folio,
                 qr_token=folio,
-                course_date=course_date_str,
                 entity_type=entity_type,
                 tipo_producto=tipo_producto,
                 modalidad=modalidad,
+                # CORRECCIÓN 2: Pasar las nuevas fechas como argumentos
+                course_start_date=course_start_date, 
+                course_end_date=course_end_date,
+                # La posición de entity_type, tipo_producto y modalidad se respeta
+                # según la corrección de orden de argumentos hecha en pdf_service.py
                 docente_specialty=docente_specialty,
             )
 
@@ -246,6 +252,9 @@ class CertificateService:
                         else None,
                         instructor_name=instructor_name,
                         is_docente=False,
+                        # No se pasan fechas aquí para participantes
+                        # course_start_date=None, 
+                        # course_end_date=None,
                     )
 
                     certificado = models.Certificado(
@@ -320,13 +329,7 @@ class CertificateService:
             # ---------------------------------------------------------
             if not existing:
                 try:
-                    if producto.fecha_inicio and producto.fecha_fin:
-                        course_date_str = (
-                            f"{producto.fecha_inicio.strftime('%d/%m/%Y')} "
-                            f"al {producto.fecha_fin.strftime('%d/%m/%Y')}"
-                        )
-                    else:
-                        course_date_str = "Fecha no especificada"
+                    # CORRECCIÓN 3: Eliminada la lógica de 'course_date_str'
 
                     folio, path = generate_certificate(
                         participant_name=docente.nombre_completo,
@@ -340,7 +343,9 @@ class CertificateService:
                         competencias_list=None,
                         instructor_name=docente.especialidad,
                         is_docente=True,
-                        course_date_str=course_date_str,
+                        # CORRECCIÓN 4: Pasar directamente los objetos date (o None)
+                        course_start_date=producto.fecha_inicio,
+                        course_end_date=producto.fecha_fin,
                     )
 
                     certificado_doc = models.Certificado(

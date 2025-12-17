@@ -135,7 +135,7 @@ def read_single_certificado(certificado_id: int, db: Session = Depends(get_db)):
 # POST: Emitir certificado de participante
 # ============================================================
 @router.post("/participante", response_model=CertificadoOut, status_code=status.HTTP_201_CREATED)
-async def issue_certificate_to_participant(  # <--- CORRECCIÓN 1: Se agregó 'async'
+async def issue_certificate_to_participant(  
     certificado_create: CertificadoCreate,
     db: Session = Depends(get_db)
 ):
@@ -208,7 +208,7 @@ async def issue_certificate_to_participant(  # <--- CORRECCIÓN 1: Se agregó '
             course_hours=producto.horas,
             instructor_name=instructor_name,
             is_docente=False,
-            course_date_str="",
+            # CORRECCIÓN: Se eliminó el argumento obsoleto 'course_date_str'
             con_competencias=con_competencias_check,
             competencias_list=competencias_list
         )
@@ -265,10 +265,7 @@ def issue_certificate_to_docente(
             f"Ya existe un certificado para este docente en este producto (Folio: {existing.folio})."
         )
 
-    course_date_str = (
-        f"{db_producto.fecha_inicio.strftime('%d/%m/%Y')} al {db_producto.fecha_fin.strftime('%d/%m/%Y')}"
-        if db_producto.fecha_inicio and db_producto.fecha_fin else "Fecha no especificada"
-    )
+    # CORRECCIÓN: Se eliminó la creación de 'course_date_str'
 
     folio, path = generate_certificate(
         participant_name=db_docente.nombre_completo,
@@ -278,7 +275,9 @@ def issue_certificate_to_docente(
         course_hours=db_producto.horas,
         instructor_name=db_docente.especialidad,
         is_docente=True,
-        course_date_str=course_date_str,
+        # CORRECCIÓN: Se pasan los objetos de fecha de inicio y fin
+        course_start_date=db_producto.fecha_inicio,
+        course_end_date=db_producto.fecha_fin,
         con_competencias=False,
         competencias_list=None
     )
@@ -378,7 +377,6 @@ def delete_certificado(certificado_id: int, db: Session = Depends(get_db)):
     )
 
     if not certificado:
-        # <--- CORRECCIÓN 2: Se corrigió el SyntaxError
         raise HTTPException(404, "Certificado no encontrado")
 
     archivo = certificado.archivo_path

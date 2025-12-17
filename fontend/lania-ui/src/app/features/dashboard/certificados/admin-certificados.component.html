@@ -1,9 +1,9 @@
 <div class="module-content">
     <div class="module-header">
-        <h2>Gestión de Certificados</h2>
+        <h2>Gestión de Constancias</h2>
         <div class="header-actions">
             <button class="btn btn-primary" (click)="openCreateModal()">
-                <span class="icon-text">✚</span> Emitir Nuevo Certificado
+                <span class="icon-text">✚</span> Emitir Nueva constancia
             </button>
         </div>
     </div>
@@ -11,11 +11,11 @@
     <hr>
 
     <!-- ============================================ -->
-    <!-- SECCIÓN: CERTIFICADOS DE PARTICIPANTES -->
+    <!-- SECCIÓN: CONSTANCIAS DE PARTICIPANTES -->
     <!-- ============================================ -->
     <div class="table-section">
         <div class="table-header">
-            <h3>Certificados de Participantes</h3>
+            <h3>Constancias de Participantes</h3>
             <div class="search-container">
                 <input 
                     type="text" 
@@ -31,7 +31,7 @@
 
         <!-- Indicador de carga -->
         <div *ngIf="isLoadingParticipantes" class="loading-indicator">
-            Cargando certificados de participantes...
+            Cargando constancias de participantes...
         </div>
 
         <!-- Tabla con datos -->
@@ -109,10 +109,10 @@
         <!-- Mensaje cuando no hay datos -->
         <div *ngIf="!isLoadingParticipantes && filteredCertificadosParticipantes.length === 0" class="no-data-card">
             <p *ngIf="searchTermParticipantes">
-                No se encontraron certificados de participantes que coincidan con "<strong>{{ searchTermParticipantes }}</strong>".
+                No se encontraron constancias de participantes que coincidan con "<strong>{{ searchTermParticipantes }}</strong>".
             </p>
             <p *ngIf="!searchTermParticipantes">
-                No hay certificados de participantes emitidos todavía.
+                No hay constancias de participantes emitidas todavía.
             </p>
         </div>
     </div>
@@ -120,11 +120,11 @@
     <hr>
 
     <!-- ============================================ -->
-    <!-- SECCIÓN: CERTIFICADOS DE DOCENTES -->
+    <!-- SECCIÓN: CONSTANCIAS DE DOCENTES -->
     <!-- ============================================ -->
     <div class="table-section">
         <div class="table-header">
-            <h3>Certificados de Docentes</h3>
+            <h3>Constancias de Docentes</h3>
             <div class="search-container">
                 <input 
                     type="text" 
@@ -140,7 +140,7 @@
 
         <!-- Indicador de carga -->
         <div *ngIf="isLoadingDocentes" class="loading-indicator">
-            Cargando certificados de docentes...
+            Cargando constancias de docentes...
         </div>
 
         <!-- Tabla con datos -->
@@ -218,10 +218,10 @@
         <!-- Mensaje cuando no hay datos -->
         <div *ngIf="!isLoadingDocentes && filteredCertificadosDocentes.length === 0" class="no-data-card">
             <p *ngIf="searchTermDocentes">
-                No se encontraron certificados de docentes que coincidan con "<strong>{{ searchTermDocentes }}</strong>".
+                No se encontraron constancias de docentes que coincidan con "<strong>{{ searchTermDocentes }}</strong>".
             </p>
             <p *ngIf="!searchTermDocentes">
-                No hay certificados de docentes emitidos todavía.
+                No hay constancias de docentes emitidas todavía.
             </p>
         </div>
     </div>
@@ -229,12 +229,12 @@
 
 
 <!-- ============================================ -->
-<!-- MODAL: EMISIÓN RÁPIDA DE CERTIFICADO -->
+<!-- MODAL: EMISIÓN RÁPIDA DE CCONSTANCIA -->
 <!-- ============================================ -->
 <div *ngIf="showCreateModal" class="modal-overlay" (click)="closeCreateModal()">
     <div class="modal-content" (click)="$event.stopPropagation()" [formGroup]="createForm">
         <div class="modal-header">
-            <h3>Emisión Rápida de Certificado</h3>
+            <h3>Emisión Rápida de Constancias</h3>
             <button class="modal-close-btn" (click)="closeCreateModal()">×</button>
         </div>
 
@@ -275,7 +275,7 @@
                                 {{ inscripcion.participante.nombre_completo }}
                             </option>
                             <option [ngValue]="null" *ngIf="inscripcionesDelProducto.length === 0" disabled>
-                                -- Todos los participantes ya tienen sus certificados --
+                                -- Todos los participantes ya tienen sus constancias --
                             </option>
                         </select>
                     </div>
@@ -315,7 +315,7 @@
                 type="button" 
                 (click)="onCreateSubmit()" 
                 [disabled]="createForm.invalid || (!createForm.get('inscripcionId')?.value && !createForm.get('docenteId')?.value)">
-                <span *ngIf="!isLoadingModalData">Emitir Certificado</span>
+                <span *ngIf="!isLoadingModalData">Emitir Constancia</span>
                 <span *ngIf="isLoadingModalData">Emitiendo...</span>
             </button>
         </div>

@@ -1,4 +1,3 @@
-# backend/app/services/pdf_service.py
 from io import BytesIO
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
@@ -11,40 +10,47 @@ from reportlab.platypus import Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.lib.colors import HexColor
 from datetime import date
 import locale
 from typing import Optional, List
-
 
 from app.services.qr_service import generate_qr_png
 from app.models.producto_educativo import TipoProductoEnum
 from app.core.config import settings as app_settings
 
 # ---------------------------------------
-# Registro de fuentes (ESTABLE – sin CFF)
+# Registro de fuentes (CORREGIDO)
 # ---------------------------------------
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-import locale
 
 # ---------- Dancing Script ----------
 try:
-    pdfmetrics.registerFont(
-        TTFont("DancingScript-Bold", "app/fonts/DancingScript-Bold.ttf")
-    )
+    pdfmetrics.registerFont(TTFont("DancingScript-Bold", "app/fonts/DancingScript-Bold.ttf"))
 except Exception:
     pass
 
 # ---------- Brittany Signature ----------
 try:
-    pdfmetrics.registerFont(
-        TTFont("BrittanySignature", "app/fonts/BrittanySignature.ttf")
-    )
+    pdfmetrics.registerFont(TTFont("BrittanySignature", "app/fonts/BrittanySignature.ttf"))
 except Exception:
     pass
 
-# ---------- Localización en español ----------
+# ---------- Myriad Pro Regular (AJUSTE PARA EVITAR CURSIVA) ----------
+try:
+    # Registramos con un nombre específico para evitar confusiones de familia
+    pdfmetrics.registerFont(
+        TTFont("MyriadPro-Regular", "app/fonts/MyriadPro-Regular.ttf")
+    )
+    # Vinculamos la familia para que las etiquetas <b> funcionen, 
+    # pero el 'normal' apunta explícitamente al archivo regular.
+    pdfmetrics.registerFontFamily(
+        'MyriadPro-Regular', 
+        normal='MyriadPro-Regular', 
+        bold='Helvetica-Bold'
+    )
+except Exception as e:
+    print(f"Error al cargar MyriadPro: {e}")
+
+# ---------- Localización ----------
 try:
     locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 except locale.Error:
@@ -54,135 +60,66 @@ except locale.Error:
         pass
 
 # ---------------------------------------
-# Función auxiliar para dibujar párrafos
+# Funciones Auxiliares
 # ---------------------------------------
+
 def draw_multiline_text(c, text, x, y, max_width, style):
     p = Paragraph(text, style)
     p.wrapOn(c, max_width, 10 * cm)
     p_height = p.height
-
     if style.alignment == TA_LEFT:
         p.drawOn(c, x, y - p_height)
     else:
         p.drawOn(c, x - (max_width / 2), y - p_height)
-
     return p_height
 
-
-# ---------------------------------------
-# Función para calcular líneas de texto
-# ---------------------------------------
 def calculate_text_lines(text: str, font_name: str, font_size: int, max_width: float) -> int:
-    """
-    Calcula cuántas líneas ocupa un texto dado el ancho máximo.
-    """
     words = text.split()
-    if not words:
-        return 0
-    
-    lines = 0
-    current_line = ""
-    
+    if not words: return 0
+    lines, current_line = 0, ""
     for word in words:
         test_line = f"{current_line} {word}".strip()
-        width = stringWidth(test_line, font_name, font_size)
-        
-        if width <= max_width:
+        if stringWidth(test_line, font_name, font_size) <= max_width:
             current_line = test_line
         else:
             lines += 1
             current_line = word
-    
-    if current_line:
-        lines += 1
-    
-    return lines
+    return lines + 1 if current_line else lines
 
-
-# ---------------------------------------
-# Función para calcular tamaño óptimo
-# ---------------------------------------
-def calculate_optimal_font_size(
-    competencies: List[str],
-    max_width: float,
-    available_height: float,
-    max_font_size: int = 14,
-    min_font_size: int = 8,
-    line_spacing: float = 1.3
-) -> int:
-    """
-    Calcula el tamaño de fuente óptimo para que todas las competencias
-    quepan en el espacio disponible.
-    """
+def calculate_optimal_font_size(competencies, max_width, available_height, max_font_size=12, min_font_size=9):
     for font_size in range(max_font_size, min_font_size - 1, -1):
         total_height = 0
-        line_height = font_size * line_spacing
-        
+        line_height = font_size * 1.4
         for comp in competencies:
-            num_lines = calculate_text_lines(comp, 'Helvetica', font_size, max_width)
-            # Altura de la competencia + espacio extra entre competencias
+            num_lines = calculate_text_lines(comp, 'MyriadPro-Regular', font_size, max_width)
             total_height += (num_lines * line_height) + (line_height * 0.5)
-        
-        # Si cabe con este tamaño, lo usamos
         if total_height <= available_height:
             return font_size
-    
-    # Si no cabe ni con el tamaño mínimo, devolvemos el mínimo
     return min_font_size
 
-
-# ---------------------------------------
-# Función para dibujar competencias con bullets
-# ---------------------------------------
-def draw_competencies(
-    c: canvas.Canvas,
-    competencies: List[str],
-    x: float,
-    y_start: float,
-    max_width: float,
-    font_name: str,
-    font_size: int,
-    line_spacing: float = 1.3
-) -> float:
-    """
-    Dibuja las competencias con bullets y retorna la posición Y final.
-    """
+def draw_competencies(c, competencies, x, y_start, max_width, font_name, font_size, line_spacing=1.4):
     y = y_start
     line_height = font_size * line_spacing
     c.setFont(font_name, font_size)
     
     for comp in competencies:
         words = comp.split()
-        if not words:
-            continue
-        
         current_line = ""
         is_first_line = True
-        
         for word in words:
             test_line = f"{current_line} {word}".strip()
-            width = stringWidth(test_line, font_name, font_size)
-            
-            if width <= max_width:
+            if stringWidth(test_line, font_name, font_size) <= max_width:
                 current_line = test_line
             else:
-                # Dibujar la línea actual
-                if current_line:
-                    bullet = "• " if is_first_line else "  "
-                    c.drawString(x, y, f"{bullet}{current_line}")
-                    y -= line_height
-                    is_first_line = False
-                current_line = word
-        
-        # Dibujar la última línea de la competencia
+                bullet = "• " if is_first_line else "  "
+                c.drawString(x, y, f"{bullet}{current_line}")
+                y -= line_height
+                is_first_line, current_line = False, word
         if current_line:
             bullet = "• " if is_first_line else "  "
             c.drawString(x, y, f"{bullet}{current_line}")
             y -= line_height
-        
-        # Espacio extra entre competencias
-        y -= line_height * 0.5
-    
+        y -= line_height * 0.4
     return y
 
 # -------------------------------------------------------------------
@@ -680,6 +617,36 @@ def generate_curso_participante_pdf(
             output.write(buffer)
             return buffer.getvalue()
 
+# ---------------------------------------
+# Utilidad de formato académico de fechas
+# ---------------------------------------
+from datetime import date # Ya está importado al inicio, pero se incluye para completar el bloque de código que proporcionaste.
+
+def format_spanish_date_range(start_date: date, end_date: date) -> str:
+    """
+    Formatea fechas para constancias académicas en español formal.
+    """
+
+    # Caso 1: misma fecha (día, mes y año)
+    if start_date == end_date:
+        return (
+            f"impartida el día {start_date.day} de "
+            f"{start_date.strftime('%B')} de {start_date.year}"
+        )
+
+    # Caso 2: mismo mes y mismo año
+    if start_date.month == end_date.month and start_date.year == end_date.year:
+        return (
+            f"impartida del {start_date.day} al {end_date.day} de "
+            f"{start_date.strftime('%B')} de {start_date.year}"
+        )
+
+    # Caso 3: meses o años distintos
+    return (
+        f"impartida del {start_date.day} de {start_date.strftime('%B')} de {start_date.year} "
+        f"al {end_date.day} de {end_date.strftime('%B')} de {end_date.year}"
+    )
+
 # -------------------------------------------------------------------
 # ✔ CONSTANCIA DOCENTE (todas las modalidades)
 # -------------------------------------------------------------------
@@ -688,7 +655,8 @@ def generate_docente_pdf(
     course_name: str,
     issue_date: date,
     serial: str,
-    course_date: str,
+    course_start_date: date, 
+    course_end_date: date,
     docente_specialty: Optional[str] = None,
     template_path: Optional[str] = None
 ) -> bytes:
@@ -797,8 +765,10 @@ def generate_docente_pdf(
     )
     y_position -= (height2 + 0.2 * cm)
 
+    date_range_str = format_spanish_date_range(course_start_date, course_end_date)
+
     # ----------- DETALLES -------------------
-    details = f"impartido el {course_date}."
+    details = f"{date_range_str}." 
     draw_multiline_text(
     c, details, center_x, y_position, text_width, style_normal_course
     )
@@ -853,10 +823,13 @@ def generate_certificate_pdf(
     issue_date: date,
     serial: str,
     qr_token: str,
-    course_date: str,
     entity_type: str,
     tipo_producto: TipoProductoEnum,
     modalidad: str,
+    # Argumentos de fecha actualizados:
+    course_start_date: Optional[date] = None, 
+    course_end_date: Optional[date] = None,
+    # ---
     docente_specialty: Optional[str] = None,
     template_path: Optional[str] = None
 ) -> bytes:
@@ -871,7 +844,10 @@ def generate_certificate_pdf(
             course_name=course_name,
             issue_date=issue_date,
             serial=serial,
-            course_date=course_date,
+            # Se pasan las fechas de inicio y fin (objects date):
+            course_start_date=course_start_date,
+            course_end_date=course_end_date,
+            # ---
             docente_specialty=docente_specialty,
             template_path=template_path
         )
@@ -911,12 +887,10 @@ def generate_certificate_pdf(
             modalidad=modalidad,
             template_path=template_path
         )
-    
-    
 
 
 # -------------------------------------------------------------------
-# ✔ RECONOCIMIENTO (competencias con auto-ajuste)
+# RECONOCIMIENTO (USANDO MyriadPro-Regular)
 # -------------------------------------------------------------------
 def generate_recognition_pdf(
     participant_name: str,
@@ -928,99 +902,95 @@ def generate_recognition_pdf(
     competencies: List[str],
     template_path: Optional[str] = None
 ) -> bytes:
-    """
-    Genera un PDF de reconocimiento con competencias que se auto-ajustan.
-    """
-    
     if template_path is None:
         template_path = "app/static/Formato constancias.pdf"
     
     packet = BytesIO()
     c = canvas.Canvas(packet, pagesize=letter)
-    
     page_width, page_height = letter
     center_x = page_width / 2
     
-    # ----------- COORDENADAS BASE -------------------
-    y_name = page_height - 320
-    y_course = y_name - 70
-    
-    x_comp = 120
-    max_width_comp = 380
-    y_comp_title = y_course - 50
-    
-    y_qr = 60
-    bottom_limit = y_qr + 120
-    available_height = y_comp_title - bottom_limit
-    
-    # ----------- CALCULAR TAMAÑO ÓPTIMO -------------------
-    optimal_font_size = calculate_optimal_font_size(
-        competencies=competencies,
-        max_width=max_width_comp,
-        available_height=available_height,
-        max_font_size=14,
-        min_font_size=8,
-        line_spacing=1.3
+    text_width_main = 18 * cm
+    max_width_comp = 15 * cm
+    x_comp_left = center_x - (max_width_comp / 2)
+    y_limit_signature = 6.0 * cm 
+
+    style_participant_name = ParagraphStyle(
+        name='ParticipantRecognition',
+        fontName='BrittanySignature', 
+        fontSize=30, leading=38, alignment=TA_CENTER
     )
-    
-    # ----------- NOMBRE -------------------
-    c.setFont("Helvetica-Bold", 48)
-    c.drawCentredString(center_x, y_name, participant_name)
-    
-    # ----------- CURSO -------------------
+
+    style_course_info = ParagraphStyle(
+        name='CourseInfo',
+        fontName='Helvetica',
+        fontSize=15, leading=20, alignment=TA_CENTER,
+        leftIndent=30, rightIndent=30
+    )
+
+    # 1. Títulos
+    c.setFont("Helvetica", 28)
+    c.drawCentredString(center_x, 19.5 * cm, "Otorga el presente reconocimiento")
     c.setFont("Helvetica", 18)
-    course_text = f'Por haber acreditado el curso "{course_name}" ({hours} horas)'
-    c.drawCentredString(center_x, y_course, course_text)
+    c.drawCentredString(center_x, 18.2 * cm, "a:")
     
-    # ----------- TÍTULO COMPETENCIAS -------------------
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(x_comp, y_comp_title, "Competencias acreditadas:")
+    # 2. Nombre
+    y_current = 17.8 * cm 
+    participant_height = draw_multiline_text(c, participant_name, center_x, y_current, text_width_main, style_participant_name)
     
-    # ----------- COMPETENCIAS -------------------
-    y_start_comp = y_comp_title - (optimal_font_size * 1.3 * 1.5)
+    # 3. Info Curso (Uso de etiquetas <b> permitido por el registro de familia)
+    y_current -= (participant_height + 0.8 * cm) 
+    course_text_line = f"Por haber acreditado en el curso <b>\"{course_name}\"</b> ({hours} horas de trabajo), la evaluación de las competencias:"
+    course_height = draw_multiline_text(c, course_text_line, center_x, y_current, text_width_main, style_course_info) 
     
+    # 4. Competencias (DIBUJO CON FUENTE CORREGIDA)
+    y_current -= (course_height + 0.6 * cm)
+    available_height = y_current - y_limit_signature
+    
+    optimal_font_size = calculate_optimal_font_size(
+        competencies, max_width_comp, available_height, 12, 9
+    )
+
     draw_competencies(
         c=c,
         competencies=competencies,
-        x=x_comp,
-        y_start=y_start_comp,
+        x=x_comp_left,
+        y_start=y_current,
         max_width=max_width_comp,
-        font_name='Helvetica',
+        font_name='MyriadPro-Regular', # <--- NOMBRE EXACTO REGISTRADO
         font_size=optimal_font_size,
-        line_spacing=1.3
+        line_spacing=1.4
     )
     
-    # ----------- QR -------------------
-    qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
-    qr_png_bytes = generate_qr_png(qr_url)
-    qr_image = ImageReader(BytesIO(qr_png_bytes))
-    c.drawImage(qr_image, 100, y_qr, width=100, height=100, mask="auto")
-    
+    # 5. Firmas y Fecha
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(100, y_qr - 20, f"Folio: {serial}")
+    c.drawCentredString(center_x, 2.5 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.line(center_x - 3.5 * cm, 2.3 * cm, center_x + 3.5 * cm, 2.3 * cm)
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(center_x, 1.9 * cm, "Director de Proyectos")
     
-    # ----------- FECHA -------------------
-    issue_str = (
-        f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días "
-        f"de {issue_date.strftime('%B')} de {issue_date.year}"
-    )
-    c.setFont("Helvetica", 12)
-    c.drawRightString(page_width - 100, y_qr + 115, issue_str)
+    issue_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(12 * cm, 1.0 * cm, issue_str)
     
-    c.showPage()
+    # 6. QR y Folio
+    qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
+    qr_image = ImageReader(BytesIO(generate_qr_png(qr_url)))
+    c.drawImage(qr_image, 1.5 * cm, 1.5 * cm, width=50, height=50, mask="auto")
+    c.setFont("Helvetica", 7)
+    c.drawString(1.5 * cm, 1.1 * cm, f"Folio del certificado: {serial}")
+    
     c.save()
     packet.seek(0)
     
-    # ----------- COMBINAR -------------------
-    overlay_pdf = PdfReader(packet)
-    
+    # Merge con PDF base
+    new_pdf = PdfReader(packet)
     with open(template_path, "rb") as tpl:
-        template_pdf = PdfReader(tpl)
+        existing_pdf = PdfReader(tpl)
         output = PdfWriter()
-        page = template_pdf.pages[0]
-        page.merge_page(overlay_pdf.pages[0])
+        page = existing_pdf.pages[0]
+        page.merge_page(new_pdf.pages[0])
         output.add_page(page)
-        
         with BytesIO() as buffer:
             output.write(buffer)
             return buffer.getvalue()
