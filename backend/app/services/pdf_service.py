@@ -34,31 +34,36 @@ try:
 except Exception:
     pass
 
-# ---------- Myriad Pro Regular (AJUSTE PARA EVITAR CURSIVA) ----------
 try:
-    # Registramos con un nombre específico para evitar confusiones de familia
-    pdfmetrics.registerFont(
-        TTFont("MyriadPro-Regular", "app/fonts/MyriadPro-Regular.ttf")
-    )
-    # Vinculamos la familia para que las etiquetas <b> funcionen, 
-    # pero el 'normal' apunta explícitamente al archivo regular.
-    pdfmetrics.registerFontFamily(
-        'MyriadPro-Regular', 
-        normal='MyriadPro-Regular', 
-        bold='Helvetica-Bold'
-    )
-except Exception as e:
-    print(f"Error al cargar MyriadPro: {e}")
-
-# ---------- Localización ----------
-try:
-    locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
-except locale.Error:
+    # 1. Registro de fuentes individuales (Asegúrate de incluir la Italic aquí)
+    pdfmetrics.registerFont(TTFont("MyriadPro-Regular", "app/fonts/font/MyriadPro-Regular.ttf"))
+    pdfmetrics.registerFont(TTFont("MyriadPro-Bold", "app/fonts/font/MyriadPro-Bold.ttf"))
+    
+    # INTENTO DE REGISTRO DE ITALIC REAL
     try:
-        locale.setlocale(locale.LC_TIME, "Spanish_Spain.1252")
-    except locale.Error:
-        pass
-
+        pdfmetrics.registerFont(TTFont("MyriadPro-Italic", "app/fonts/font/MyriadPro-It.ttf"))
+        FUENTE_MYRIAD_ITALIC = "MyriadPro-Italic"
+    except:
+        # Si no existe el archivo Italic, usamos el Regular como alias para que no truene
+        pdfmetrics.registerFont(TTFont("MyriadPro-Italic", "app/fonts/font/MyriadPro-Regular.ttf"))
+        FUENTE_MYRIAD_ITALIC = "MyriadPro-Italic"
+    
+    # 2. Definición de la Familia (Actualizada con la fuente Italic)
+    pdfmetrics.registerFontFamily(
+        'Myriad-Final', 
+        normal='MyriadPro-Regular', 
+        bold='MyriadPro-Bold', 
+        italic='MyriadPro-Italic',
+        boldItalic='MyriadPro-Bold'
+    )
+    
+    # Variable global para las competencias
+    FUENTE_COMPETENCIAS = "MyriadPro-Italic"
+    
+    print(">>> [SISTEMA] EXITO: Familia MyriadPro (incluyendo Italic) registrada correctamente.")
+except Exception as e:
+    FUENTE_COMPETENCIAS = "Helvetica-Oblique" # Fallback a cursiva estándar
+    print(f">>> [ERROR] No se pudo cargar Myriad Pro: {e}")
 # ---------------------------------------
 # Funciones Auxiliares
 # ---------------------------------------
@@ -87,11 +92,13 @@ def calculate_text_lines(text: str, font_name: str, font_size: int, max_width: f
     return lines + 1 if current_line else lines
 
 def calculate_optimal_font_size(competencies, max_width, available_height, max_font_size=12, min_font_size=9):
+    # Forzamos el uso del nombre registrado para el cálculo de medidas
     for font_size in range(max_font_size, min_font_size - 1, -1):
         total_height = 0
         line_height = font_size * 1.4
         for comp in competencies:
-            num_lines = calculate_text_lines(comp, 'MyriadPro-Regular', font_size, max_width)
+            # CORRECCIÓN: Usar Myriad-Final aquí es vital para el cálculo de espacio
+            num_lines = calculate_text_lines(comp, 'MyriadPro-Italic', font_size, max_width)
             total_height += (num_lines * line_height) + (line_height * 0.5)
         if total_height <= available_height:
             return font_size
@@ -100,26 +107,52 @@ def calculate_optimal_font_size(competencies, max_width, available_height, max_f
 def draw_competencies(c, competencies, x, y_start, max_width, font_name, font_size, line_spacing=1.4):
     y = y_start
     line_height = font_size * line_spacing
-    c.setFont(font_name, font_size)
+
+    # ---------- AJUSTES DE DISEÑO PERSONALIZABLES ----------
+    sangria_lateral = -0.5 * cm        # <--- Mueve a la IZQUIERDA y DERECHA (Simétrico)
+    espacio_entre_punto_y_texto = "   " # <--- Espacios después del punto (•)
+    target_font = "MyriadPro-Italic"  # Fuente confirmada en tus logs
+    # -------------------------------------------------------
+
+    # Calculamos el ancho real donde puede escribirse el texto
+    # Restamos la sangría de ambos lados para que no choque con el borde derecho
+    ancho_efectivo = max_width - (2 * sangria_lateral)
+    # La coordenada X donde empieza el texto se desplaza por la sangría izquierda
+    x_dibujo = x + sangria_lateral
+
+    c.setFont(target_font, font_size)
     
     for comp in competencies:
         words = comp.split()
         current_line = ""
         is_first_line = True
+        
         for word in words:
             test_line = f"{current_line} {word}".strip()
-            if stringWidth(test_line, font_name, font_size) <= max_width:
+            
+            # Usamos ancho_efectivo para el salto de línea automático
+            if stringWidth(test_line, target_font, font_size) <= ancho_efectivo:
                 current_line = test_line
             else:
-                bullet = "• " if is_first_line else "  "
-                c.drawString(x, y, f"{bullet}{current_line}")
+                c.setFont(target_font, font_size)
+                # Si es la primera línea ponemos punto, si no, espacios de alineación
+                bullet = f"•{espacio_entre_punto_y_texto}" if is_first_line else f" {espacio_entre_punto_y_texto} "
+                
+                c.drawString(x_dibujo, y, f"{bullet}{current_line}")
+                
                 y -= line_height
                 is_first_line, current_line = False, word
+        
+        # Dibujar la última línea de la competencia actual
         if current_line:
-            bullet = "• " if is_first_line else "  "
-            c.drawString(x, y, f"{bullet}{current_line}")
+            c.setFont(target_font, font_size)
+            bullet = f"•{espacio_entre_punto_y_texto}" if is_first_line else f" {espacio_entre_punto_y_texto} "
+            c.drawString(x_dibujo, y, f"{bullet}{current_line}")
             y -= line_height
+            
+        # Espacio pequeño entre un bloque de competencia y el siguiente
         y -= line_height * 0.4
+        
     return y
 
 # -------------------------------------------------------------------
@@ -918,7 +951,7 @@ def generate_recognition_pdf(
     style_participant_name = ParagraphStyle(
         name='ParticipantRecognition',
         fontName='BrittanySignature', 
-        fontSize=30, leading=38, alignment=TA_CENTER
+        fontSize=20, leading=38, alignment=TA_CENTER
     )
 
     style_course_info = ParagraphStyle(
@@ -957,21 +990,21 @@ def generate_recognition_pdf(
         x=x_comp_left,
         y_start=y_current,
         max_width=max_width_comp,
-        font_name='MyriadPro-Regular', # <--- NOMBRE EXACTO REGISTRADO
-        font_size=optimal_font_size,
+	font_name='MyriadPro-Italic', # <--- USA EL NOMBRE BASE REGISTRADO        
+	font_size=optimal_font_size,
         line_spacing=1.4
     )
     
     # 5. Firmas y Fecha
     c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(center_x, 2.5 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
-    c.line(center_x - 3.5 * cm, 2.3 * cm, center_x + 3.5 * cm, 2.3 * cm)
+    c.drawCentredString(12 * cm, 2.5 * cm, "Dr. Juan Manuel Gutiérrez Méndez")
+    c.line(12 * cm - 3.5 * cm, 2.3 * cm, 12 * cm + 3.5 * cm, 2.3 * cm)
     c.setFont("Helvetica", 10)
-    c.drawCentredString(center_x, 1.9 * cm, "Director de Proyectos")
+    c.drawCentredString(12* cm, 1.9 * cm, "Director de Proyectos")
     
     issue_str = f"Se expide en la ciudad de Xalapa, Ver., a los {issue_date.day} días de {issue_date.strftime('%B')} de {issue_date.year}"
     c.setFont("Helvetica", 10)
-    c.drawCentredString(12 * cm, 1.0 * cm, issue_str)
+    c.drawCentredString(14 * cm, 1.0 * cm, issue_str)
     
     # 6. QR y Folio
     qr_url = f"{app_settings.BASE_URL}/verificacion/{serial}"
